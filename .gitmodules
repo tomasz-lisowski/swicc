@@ -1,0 +1,3 @@
+[submodule "lib/make-pal"]
+	path = lib/make-pal
+	url = https://github.com/tomasz-lisowski/make-pal.git

@@ -1,0 +1,5 @@
+# Compiler output
+build/
+
+# Clangd config
+compile_flags.txt
