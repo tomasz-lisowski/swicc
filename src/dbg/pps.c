@@ -1,8 +1,8 @@
-#include "usim.h"
+#include "uicc.h"
 #include <stdbool.h>
 #include <stdio.h>
 
-usim_ret_et usim_dbg_str_pps(char *const buf_str, uint16_t *const buf_str_len,
+uicc_ret_et uicc_dbg_pps_str(char *const buf_str, uint16_t *const buf_str_len,
                              uint8_t const *const buf_pps,
                              uint16_t const buf_pps_len)
 {
@@ -13,11 +13,11 @@ usim_ret_et usim_dbg_str_pps(char *const buf_str, uint16_t *const buf_str_len,
     uint8_t buf_pps_next = 2U;
 
     uint16_t const di = pps1_present && buf_pps_next < buf_pps_len
-                            ? usim_lookup_di[buf_pps[buf_pps_next] & 0x0F]
+                            ? uicc_io_di_arr[buf_pps[buf_pps_next] & 0x0F]
                             : 0;
     uint16_t const fi =
         pps1_present && buf_pps_next < buf_pps_len
-            ? usim_lookup_fi[(buf_pps[buf_pps_next] & 0xF0) >> 4U]
+            ? uicc_io_fi_arr[(buf_pps[buf_pps_next] & 0xF0) >> 4U]
             : 0;
     if (pps1_present)
     {
@@ -40,15 +40,15 @@ usim_ret_et usim_dbg_str_pps(char *const buf_str, uint16_t *const buf_str_len,
                                  pps0 & 0x0F, fi, di, spu);
     if (bytes_written < 0)
     {
-        return USIM_RET_BUFFER_TOO_SHORT;
+        return UICC_RET_BUFFER_TOO_SHORT;
     }
     else
     {
         *buf_str_len = (uint16_t)
             bytes_written; /* NOTE: Safe cast due to args of snprintf */
-        return USIM_RET_SUCCESS;
+        return UICC_RET_SUCCESS;
     }
 #else
-    return USIM_RET_SUCCESS;
+    return UICC_RET_SUCCESS;
 #endif
 }

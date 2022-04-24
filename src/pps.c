@@ -1,4 +1,4 @@
-#include "usim.h"
+#include "uicc.h"
 #include <string.h>
 
 static uint8_t pps_pck(uint8_t const *const buf_rx, uint16_t const buf_rx_len)
@@ -12,14 +12,14 @@ static uint8_t pps_pck(uint8_t const *const buf_rx, uint16_t const buf_rx_len)
     return pck;
 }
 
-static usim_ret_et pps_xchg_success(uint8_t const *const buf_rx,
+static uicc_ret_et pps_xchg_success(uint8_t const *const buf_rx,
                                     uint16_t const buf_rx_len,
                                     uint8_t const *const buf_tx,
                                     uint16_t const buf_tx_len)
 {
     if (buf_tx_len == buf_rx_len && memcmp(buf_tx, buf_rx, buf_tx_len) == 0)
     {
-        return USIM_RET_SUCCESS;
+        return UICC_RET_SUCCESS;
     }
     else
     {
@@ -27,25 +27,25 @@ static usim_ret_et pps_xchg_success(uint8_t const *const buf_rx,
          * The interface sent parameters that are not supported by the card so
          * the PPS exchange is not done.
          */
-        return USIM_RET_PPS_FAILED;
+        return UICC_RET_PPS_FAILED;
     }
 }
 
-static usim_ret_et pps_parse(pps_params_st *const pps_params,
+static uicc_ret_et pps_parse(uicc_pps_params_st *const pps_params,
                              uint8_t const *const buf_rx,
                              uint16_t const buf_rx_len)
 {
-    if (buf_rx_len < 2U || buf_rx_len > 6U || buf_rx[0U] != USIM_PPS_PPSS ||
+    if (buf_rx_len < 2U || buf_rx_len > 6U || buf_rx[0U] != UICC_PPS_PPSS ||
         pps_pck(buf_rx, buf_rx_len) != 0U)
     {
-        return USIM_RET_PPS_INVALID;
+        return UICC_RET_PPS_INVALID;
     }
 
     uint8_t const pps0 = buf_rx[1U];
     if ((pps0 & 0b10000000) != 0U)
     {
         /* PPS0 bit 8 is RFU and should be 0 */
-        return USIM_RET_PPS_INVALID;
+        return UICC_RET_PPS_INVALID;
     }
     uint8_t const t_proposed = pps0 & 0x0F;
 
@@ -75,7 +75,7 @@ static usim_ret_et pps_parse(pps_params_st *const pps_params,
                 if (ppsi != 0U)
                 {
                     /* PPS3 is RFU and should be 0 */
-                    return USIM_RET_PPS_INVALID;
+                    return UICC_RET_PPS_INVALID;
                 }
                 break;
             }
@@ -88,7 +88,7 @@ static usim_ret_et pps_parse(pps_params_st *const pps_params,
                  * PPS0 indicated presence of the PPSi byte but RX buf is too
                  * short to contain it.
                  */
-                return USIM_RET_PPS_INVALID;
+                return UICC_RET_PPS_INVALID;
             }
             else
             {
@@ -102,20 +102,21 @@ static usim_ret_et pps_parse(pps_params_st *const pps_params,
             (uint8_t)(pps_mask << 1U); /* Safe cast due to range of for loop. */
     }
     pps_params->t = t_proposed;
-    return USIM_RET_SUCCESS;
+    return UICC_RET_SUCCESS;
 }
 
-usim_ret_et pps_deparse(pps_params_st *const pps_params, uint8_t const pps0,
-                        uint8_t *const buf_tx, uint16_t *const buf_tx_len)
+static uicc_ret_et pps_deparse(uicc_pps_params_st *const pps_params,
+                               uint8_t const pps0, uint8_t *const buf_tx,
+                               uint16_t *const buf_tx_len)
 {
     /* The PPS response message */
-    uint8_t ppsi[USIM_PPS_LEN_MAX];
+    uint8_t ppsi[UICC_PPS_LEN_MAX];
     uint8_t ppsi_next = 0U;
-    ppsi[ppsi_next++] = USIM_PPS_PPSS;
+    ppsi[ppsi_next++] = UICC_PPS_PPSS;
     ppsi[ppsi_next++] = pps0; /* PPS0 */
 
-    if ((pps_params->fi_idx == USIM_TP_CONF_DEFAULT &&
-         pps_params->di_idx == USIM_TP_CONF_DEFAULT) ||
+    if ((pps_params->fi_idx == UICC_TP_CONF_DEFAULT &&
+         pps_params->di_idx == UICC_TP_CONF_DEFAULT) ||
         (pps0 & 0b00010000) == 0 /* PPS1 was not present? */)
     {
         /**
@@ -145,7 +146,7 @@ usim_ret_et pps_deparse(pps_params_st *const pps_params, uint8_t const pps0,
 
     if (ppsi_next > *buf_tx_len)
     {
-        return USIM_RET_BUFFER_TOO_SHORT;
+        return UICC_RET_BUFFER_TOO_SHORT;
     }
     else
     {
@@ -155,30 +156,30 @@ usim_ret_et pps_deparse(pps_params_st *const pps_params, uint8_t const pps0,
 
         memcpy(buf_tx, ppsi, ppsi_next);
         *buf_tx_len = ppsi_next;
-        return USIM_RET_SUCCESS;
+        return UICC_RET_SUCCESS;
     }
 }
 
-usim_ret_et usim_pps(pps_params_st *const pps_params,
+uicc_ret_et uicc_pps(uicc_pps_params_st *const pps_params,
                      uint8_t const *const buf_rx, uint16_t const buf_rx_len,
                      uint8_t *const buf_tx, uint16_t *const buf_tx_len)
 {
-    usim_ret_et ret = pps_parse(pps_params, buf_rx, buf_rx_len);
-    if (ret != USIM_RET_SUCCESS)
+    uicc_ret_et ret = pps_parse(pps_params, buf_rx, buf_rx_len);
+    if (ret != UICC_RET_SUCCESS)
     {
         return ret;
     }
 
     ret = pps_deparse(pps_params, buf_rx[1U], buf_tx, buf_tx_len);
-    if (ret != USIM_RET_SUCCESS)
+    if (ret != UICC_RET_SUCCESS)
     {
         return ret;
     }
 
     ret = pps_xchg_success(buf_rx, buf_rx_len, buf_tx, *buf_tx_len);
-    if (ret != USIM_RET_SUCCESS)
+    if (ret != UICC_RET_SUCCESS)
     {
         return ret;
     }
-    return USIM_RET_SUCCESS;
+    return UICC_RET_SUCCESS;
 }

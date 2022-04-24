@@ -1,5 +1,5 @@
-#include <usim/common.h>
-#include <usim/io.h>
+#include "uicc/common.h"
+#include "uicc/io.h"
 
 #pragma once
 /**
@@ -7,13 +7,13 @@
  * ISO 7816-3:2006 p.11 sec.6
  */
 
-typedef enum usim_fsm_state_e
+typedef enum uicc_fsm_state_e
 {
     /**
      * SIM is not connected (mechanically) to any device or the device has not
      * begun using it by applying signals to the contacts.
      */
-    USIM_FSM_STATE_OFF,
+    UICC_FSM_STATE_OFF,
 
     /**
      * At this point the card must be mechanically connected and activated
@@ -26,7 +26,7 @@ typedef enum usim_fsm_state_e
      * Contacts must be setup like so: RST=L, VCC=ON, I/O=H (reception mode),
      * CLK=ON. ISO 7816-3:2006 p.9 sec.6.2.1.
      */
-    USIM_FSM_STATE_ACTIVATION,
+    UICC_FSM_STATE_ACTIVATION,
 
     /**
      * Device is in the activation state.
@@ -35,7 +35,7 @@ typedef enum usim_fsm_state_e
      * 3. then it is set back to H.
      * ISO 7816-3:2006 p.10 sec.6.2.2
      */
-    USIM_FSM_STATE_RESET_COLD,
+    UICC_FSM_STATE_RESET_COLD,
 
     /**
      * Continutation of the cold reset state.
@@ -52,7 +52,7 @@ typedef enum usim_fsm_state_e
      * Once selected a COC, it should not be changed by an interface until after
      * a deactivation according to ISO 7816-3:2006 p.11 sec.6.2.4.
      */
-    USIM_FSM_STATE_ATR_REQ,
+    UICC_FSM_STATE_ATR_REQ,
 
     /**
      * Card is sending the ATR response.
@@ -67,7 +67,7 @@ typedef enum usim_fsm_state_e
      * (default values) or use the first offered transmission protocol
      * (default values). ISO 7816-3:2006 p.11 sec.6.3.1
      */
-    USIM_FSM_STATE_ATR_RES,
+    UICC_FSM_STATE_ATR_RES,
 
     /**
      * Device must be in a cold reset or during the sending of the ATR response
@@ -80,7 +80,7 @@ typedef enum usim_fsm_state_e
      * 4. If card does not send ATR, interface performs deactivation.
      * ISO 7816-3:2006 p.10 sec.6.2.3
      */
-    USIM_FSM_STATE_RESET_WARM,
+    UICC_FSM_STATE_RESET_WARM,
 
     /**
      * After card sent an ATR with an absent TA2, the interface can send first
@@ -89,7 +89,7 @@ typedef enum usim_fsm_state_e
      * default values.
      * ISO 7816-3:2006 p.11-12 sec.6.3.1
      */
-    USIM_FSM_STATE_PPS_REQ,
+    UICC_FSM_STATE_PPS_REQ,
 
     /**
      * Based on the previous transitions and what has been received, one of 3
@@ -98,22 +98,29 @@ typedef enum usim_fsm_state_e
      * 2. First offered (by card) tranmission protocol with default values.
      * 3. Negotiated transmission protocol with negotiated values.
      * ISO 7816-3:2006 p.11 sec.6.3.1
-     */
-    USIM_FSM_STATE_TP_CONFD,
-
-    /**
+     *
      * Card is ready for receiving commands so it waits for the interface to
      * send one.
      */
-    USIM_FSM_STATE_CMD_WAIT,
+    UICC_FSM_STATE_CMD_WAIT,
 
-    USIM_FSM_STATE_CMD_RES,
-} usim_fsm_state_et;
+    /**
+     * Received message header and sent a response that either requests the rest
+     * of the data or a preemptive failure due to a problem in the header or
+     * unsupported message.
+     */
+    UICC_FSM_STATE_CMD_HDR,
+
+    /**
+     * Received the full TPDU message.
+     */
+    UICC_FSM_STATE_CMD_FULL,
+} uicc_fsm_state_et;
 
 /**
  * @brief Given an IO state update, perform the correct state transition or
  * remain in the same one.
- * @param usim_state The USIM state right now.
+ * @param uicc_state
  * @return Return code.
  */
-usim_ret_et usim_fsm(usim_st *const usim_state);
+uicc_ret_et uicc_fsm(uicc_st *const uicc_state);

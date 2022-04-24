@@ -1,9 +1,9 @@
-#include "usim.h"
+#include "uicc.h"
 
 /**
  * ATR defined according to ISO 7816-3:2006 p.15-20 sec.8
  */
-uint8_t const usim_atr[USIM_ATR_LEN] = {
+uint8_t const uicc_atr[UICC_ATR_LEN] = {
     0b00111011, /**
                  * LSB>MSB
                  * TS =   L (implicit character start indicator)

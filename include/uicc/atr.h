@@ -1,15 +1,14 @@
-#include <stdint.h>
-#include <usim/common.h>
+#include "uicc/common.h"
 
 #pragma once
 /**
  * ATR = Answer-to-reset
  */
 
-#define USIM_ATR_LEN 10
+#define UICC_ATR_LEN 10
 
 /**
  * Card ATR for use when the interface shall either enter a negotiation (PPS
  * exchange) or select the first offered transmission protofcol i.e. T=0.
  */
-extern uint8_t const usim_atr[USIM_ATR_LEN];
+extern uint8_t const uicc_atr[UICC_ATR_LEN];
