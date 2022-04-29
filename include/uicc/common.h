@@ -18,6 +18,8 @@ typedef enum uicc_ret_e
         1, /* In principle =1, allows for use as 'if' condition. */
     UICC_RET_APDU_HDR_TOO_SHORT,
     UICC_RET_APDU_UNHANDLED,
+    UICC_RET_APDU_DATA_WAIT, /* There will be (more) data coming for the current
+                                command. */
     UICC_RET_APDU_RES_INVALID,
     UICC_RET_TPDU_HDR_TOO_SHORT,
     UICC_RET_BUFFER_TOO_SHORT,

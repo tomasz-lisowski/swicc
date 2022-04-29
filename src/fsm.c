@@ -130,7 +130,7 @@ static uicc_ret_et fsm_handle_s_atr_res(uicc_st *const uicc_state)
 
 static uicc_ret_et fsm_handle_s_reset_warm(uicc_st *const uicc_state)
 {
-    uicc_ret_et ret = UICC_RET_UNKNOWN;
+    uicc_ret_et ret;
     ret = uicc_reset(uicc_state);
     if (ret != UICC_RET_SUCCESS)
     {
@@ -198,18 +198,106 @@ static uicc_ret_et fsm_handle_s_pps_req(uicc_st *const uicc_state)
 
 static uicc_ret_et fsm_handle_s_cmd_wait(uicc_st *const uicc_state)
 {
+    if (uicc_state->cont_state_rx == FSM_STATE_CONT_READY &&
+        uicc_state->buf_rx_len == 5U /* Expecting just header. */)
+    {
+        uicc_tpdu_cmd_st tpdu_cmd;
+        if (uicc_tpdu_cmd_parse(uicc_state->buf_rx, uicc_state->buf_rx_len,
+                                &tpdu_cmd) == UICC_RET_SUCCESS)
+        {
+            uicc_apdu_cmd_st apdu_cmd;
+            if (uicc_tpdu_to_apdu(&apdu_cmd, &tpdu_cmd) == UICC_RET_SUCCESS)
+            {
+                uicc_apdu_res_st apdu_res;
+                uicc_ret_et const apdu_handle_ret =
+                    uicc_apdu_handle(uicc_state, &apdu_cmd, &apdu_res);
+                if (apdu_handle_ret == UICC_RET_SUCCESS ||
+                    apdu_handle_ret == UICC_RET_APDU_DATA_WAIT)
+                {
+                    if (uicc_apdu_res_deparse(
+                            uicc_state->buf_tx, &uicc_state->buf_tx_len,
+                            &apdu_cmd, &apdu_res) == UICC_RET_SUCCESS)
+                    {
+                        if (apdu_handle_ret == UICC_RET_APDU_DATA_WAIT)
+                        {
+                            /**
+                             * Store the command header for use in the next
+                             * state when the rest of the data is received.
+                             */
+                            memcpy(&uicc_state->internal.apdu_cmd_hdr_cur,
+                                   apdu_cmd.hdr, sizeof(uicc_apdu_cmd_hdr_st));
+
+                            /* There is more data to come for this command. */
+                            uicc_state->internal.fsm_state =
+                                UICC_FSM_STATE_CMD_DATA;
+                        }
+                        else
+                        {
+                            /* The command has been handled from just the header
+                             * (or rejected early). */
+                            uicc_state->internal.fsm_state =
+                                UICC_FSM_STATE_CMD_WAIT;
+                        }
+                        return UICC_RET_FSM_TRANSITION_WAIT;
+                    }
+                }
+            }
+        }
+    }
+    uicc_state->internal.fsm_state = UICC_FSM_STATE_OFF;
     uicc_state->buf_tx_len = 0;
     return UICC_RET_FSM_TRANSITION_WAIT;
 }
 
-static uicc_ret_et fsm_handle_s_cmd_hdr(uicc_st *const uicc_state)
+static uicc_ret_et fsm_handle_s_cmd_data(uicc_st *const uicc_state)
 {
+    if (uicc_state->cont_state_rx == FSM_STATE_CONT_READY &&
+        uicc_state->buf_rx_len <= UICC_DATA_MAX)
+    {
+        uicc_apdu_cmd_st apdu_cmd;
+        uicc_apdu_data_st apdu_data;
+        apdu_cmd.hdr = &uicc_state->internal.apdu_cmd_hdr_cur;
+        apdu_cmd.data = &apdu_data;
+
+        memcpy(apdu_cmd.hdr, &uicc_state->internal.apdu_cmd_hdr_cur,
+               sizeof(uicc_apdu_cmd_hdr_st));
+        memcpy(apdu_cmd.data->b, uicc_state->buf_rx, uicc_state->buf_rx_len);
+        apdu_cmd.data->len = uicc_state->buf_rx_len;
+
+        uicc_apdu_res_st apdu_res;
+        uicc_ret_et const apdu_handle_ret =
+            uicc_apdu_handle(uicc_state, &apdu_cmd, &apdu_res);
+        if (apdu_handle_ret == UICC_RET_SUCCESS)
+        {
+            if (uicc_apdu_res_deparse(uicc_state->buf_tx,
+                                      &uicc_state->buf_tx_len, &apdu_cmd,
+                                      &apdu_res) == UICC_RET_SUCCESS)
+            {
+                uicc_state->internal.fsm_state = UICC_FSM_STATE_CMD_FULL;
+                return UICC_RET_FSM_TRANSITION_NOW;
+            }
+        }
+    }
+    /**
+     * NOTE: If the APDU handler wants data multiple times (which is not
+     * supported or expected) it leads to a fallthrough to here.
+     */
+    uicc_state->internal.fsm_state = UICC_FSM_STATE_OFF;
     uicc_state->buf_tx_len = 0;
     return UICC_RET_FSM_TRANSITION_WAIT;
 }
 
 static uicc_ret_et fsm_handle_s_cmd_full(uicc_st *const uicc_state)
 {
+    if (uicc_state->cont_state_rx == FSM_STATE_CONT_READY)
+    {
+        /* Ensure the state of the SIM is ready to handle another command. */
+        memset(&uicc_state->internal.apdu_cmd_hdr_cur, 0,
+               sizeof(uicc_apdu_cmd_hdr_st));
+        uicc_state->internal.fsm_state = UICC_FSM_STATE_CMD_WAIT;
+        return UICC_RET_FSM_TRANSITION_WAIT;
+    }
+    uicc_state->internal.fsm_state = UICC_FSM_STATE_OFF;
     uicc_state->buf_tx_len = 0;
     return UICC_RET_FSM_TRANSITION_WAIT;
 }
@@ -223,7 +311,7 @@ static uicc_ret_et (*const fsm_lookup_handle[])(uicc_st *const) = {
     [UICC_FSM_STATE_RESET_WARM] = fsm_handle_s_reset_warm,
     [UICC_FSM_STATE_PPS_REQ] = fsm_handle_s_pps_req,
     [UICC_FSM_STATE_CMD_WAIT] = fsm_handle_s_cmd_wait,
-    [UICC_FSM_STATE_CMD_HDR] = fsm_handle_s_cmd_hdr,
+    [UICC_FSM_STATE_CMD_DATA] = fsm_handle_s_cmd_data,
     [UICC_FSM_STATE_CMD_FULL] = fsm_handle_s_cmd_full,
 };
 

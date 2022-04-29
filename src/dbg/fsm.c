@@ -11,7 +11,7 @@ static char const *const uicc_dbg_table_str_fsm_state[] = {
     [UICC_FSM_STATE_RESET_WARM] = "warm reset",
     [UICC_FSM_STATE_PPS_REQ] = "PPS request came in",
     [UICC_FSM_STATE_CMD_WAIT] = "waiting for command",
-    [UICC_FSM_STATE_CMD_HDR] = "received command header",
+    [UICC_FSM_STATE_CMD_DATA] = "waiting for data",
     [UICC_FSM_STATE_CMD_FULL] = "received full/complete message",
 };
 #endif

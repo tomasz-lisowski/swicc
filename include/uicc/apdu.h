@@ -32,6 +32,7 @@ typedef enum uicc_apdu_cla_type_e
     UICC_APDU_CLA_TYPE_RFU, /* Reserved for future use */
 } uicc_apdu_cla_type_et;
 
+/* First byte of status word. ISO 7816-4:2020 p.17 sec.5.6 table.6. */
 typedef enum uicc_apdu_sw1_e
 {
     /* Normal processing. */
@@ -59,10 +60,12 @@ typedef enum uicc_apdu_sw1_e
     UICC_APDU_SW1_CHER_CLA,       /* CLA unsupported. */
     UICC_APDU_SW1_CHER_UNK,       /* No diagnosis. */
 
-    /* Procedure byte. */
+    /* Procedure byte. ISO 7816-3:2006 p.23 sec.10.3.3 table.11. */
     UICC_APDU_SW1_PROC_NULL, /* Request no action on data transfer */
     UICC_APDU_SW1_PROC_ACK,  /* Acknowledgement leading to transfer of rest of
                                 data. */
+    /* The case where procedure byte is a regular SW1 is handled like the other
+     * SW1 values. */
 } uicc_apdu_sw1_et;
 
 /**
@@ -99,15 +102,20 @@ typedef struct uicc_apdu_cmd_hdr_s
     uint8_t p2;
 } uicc_apdu_cmd_hdr_st;
 
+typedef struct uicc_apdu_data_s
+{
+    uint16_t len;
+    uint8_t b[UICC_DATA_MAX];
+} uicc_apdu_data_st;
+
 /**
  * An internal format of the APDU command which is the result of parsing a raw
  * APDU command.
  */
 typedef struct uicc_apdu_cmd_s
 {
-    uicc_apdu_cmd_hdr_st hdr;
-    uint16_t data_len;
-    uint8_t data[UICC_DATA_MAX];
+    uicc_apdu_cmd_hdr_st *hdr;
+    uicc_apdu_data_st *data;
 } uicc_apdu_cmd_st;
 
 /**
@@ -118,8 +126,7 @@ typedef struct uicc_apdu_res_s
 {
     uicc_apdu_sw1_et sw1;
     uint8_t sw2;
-    uint16_t data_len;
-    uint8_t data[UICC_DATA_MAX];
+    uicc_apdu_data_st data;
 } uicc_apdu_res_st;
 
 typedef uicc_ret_et uicc_apdu_handler_ft(uicc_st *const uicc_state,
@@ -179,9 +186,11 @@ uicc_ret_et uicc_apdu_cmd_parse(uint8_t const *const buf_raw,
  * @param buf_raw Where to write the raw response.
  * @param buf_raw_len Should contain the maximum length of the raw buffer. This
  * will receive the final length of the written response on success.
+ * @param cmd The command for which we are creating the response.
  * @param res The response struct.
  * @return Return code.
  */
 uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
                                   uint16_t *const buf_raw_len,
+                                  uicc_apdu_cmd_st const *const cmd,
                                   uicc_apdu_res_st const *const res);

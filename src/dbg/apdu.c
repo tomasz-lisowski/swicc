@@ -350,22 +350,23 @@ uicc_ret_et uicc_dbg_apdu_cmd_str(char *const buf_str,
                                   uicc_apdu_cmd_st const *const apdu_cmd)
 {
 #ifdef DEBUG
-    int bytes_written = snprintf(
-        buf_str, *buf_str_len,
-        // clang-format off
-        "(APDU"
-        "\n  (CLA (CHAIN '%s') (SM '%s') (INFO '%s') (LCHAN %u))"
-        "\n  (INS OP '%s')"
-        "\n  (P1 0x%x)"
-        "\n  (P2 0x%x))",
-        // clang-format on
-        uicc_dbg_apdu_cla_ccc_str(apdu_cmd->hdr.cla),
-        uicc_dbg_apdu_cla_sm_str(apdu_cmd->hdr.cla),
-        uicc_dbg_apdu_cla_type_str(apdu_cmd->hdr.cla), apdu_cmd->hdr.cla.lchan,
-        apdu_cmd->hdr.cla.type == UICC_APDU_CLA_TYPE_INTERINDUSTRY
-            ? uicc_dbg_apdu_ins_str(apdu_cmd->hdr.ins)
-            : "???",
-        apdu_cmd->hdr.p1, apdu_cmd->hdr.p2);
+    int bytes_written =
+        snprintf(buf_str, *buf_str_len,
+                 // clang-format off
+                 "(APDU"
+                 "\n  (CLA (CHAIN '%s') (SM '%s') (INFO '%s') (LCHAN %u))"
+                 "\n  (INS OP '%s')"
+                 "\n  (P1 0x%x)"
+                 "\n  (P2 0x%x))",
+                 // clang-format on
+                 uicc_dbg_apdu_cla_ccc_str(apdu_cmd->hdr->cla),
+                 uicc_dbg_apdu_cla_sm_str(apdu_cmd->hdr->cla),
+                 uicc_dbg_apdu_cla_type_str(apdu_cmd->hdr->cla),
+                 apdu_cmd->hdr->cla.lchan,
+                 apdu_cmd->hdr->cla.type == UICC_APDU_CLA_TYPE_INTERINDUSTRY
+                     ? uicc_dbg_apdu_ins_str(apdu_cmd->hdr->ins)
+                     : "???",
+                 apdu_cmd->hdr->p1, apdu_cmd->hdr->p2);
     if (bytes_written < 0)
     {
         return UICC_RET_BUFFER_TOO_SHORT;

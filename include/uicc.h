@@ -44,6 +44,9 @@ typedef struct uicc_s
     uint16_t buf_tx_len;
     struct uicc_internal_s
     {
+        uicc_apdu_cmd_hdr_st
+            apdu_cmd_hdr_cur; /* Store the header of the actively handled APDU
+                                 command. */
         uicc_fsm_state_et fsm_state;
         uicc_tp_st tp;
         uicc_fs_st fs;

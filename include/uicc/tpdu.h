@@ -7,34 +7,28 @@
  */
 
 /**
- * The header as it comes on the wire.
- */
-typedef struct uicc_tpdu_cmd_hdr_raw_s
-{
-    uicc_apdu_cmd_hdr_raw_st hdr_apdu;
-    uint8_t p3;
-} __attribute__((__packed__)) uicc_tpdu_cmd_hdr_raw_st;
-
-/**
- * An internal format of the TPDU command header.
- */
-typedef struct uicc_tpdu_cmd_hdr_s
-{
-    uicc_apdu_cmd_hdr_st hdr_apdu;
-    uint8_t p3;
-} uicc_tpdu_cmd_hdr_st;
-
-/**
  * An internal format of the TPDU command which is the result of parsing a raw
  * TPDU command.
+ * NOTE: P3 is byte 0 of data to allow for APDU struct to be created by
+ * obtaining references to parts of the TPDU struct.
  */
 typedef struct uicc_tpdu_cmd_s
 {
-    uicc_tpdu_cmd_hdr_st hdr;
-    uint16_t data_len;
-    uint8_t data[UICC_DATA_MAX];
+    uicc_apdu_cmd_hdr_st hdr;
+    uicc_apdu_data_st data;
 } uicc_tpdu_cmd_st;
 
 uicc_ret_et uicc_tpdu_cmd_parse(uint8_t const *const buf_raw,
                                 uint16_t const buf_raw_len,
-                                uicc_tpdu_cmd_st *const tpdu_cmd);
+                                uicc_tpdu_cmd_st *const cmd);
+
+/**
+ * @brief Extract the APDU contained in the TPDU.
+ * @param apdu_cmd
+ * @param tpdu_cmd
+ * @return Return code.
+ * @note The APDU contains references to the TPDU data to avoid copying so the
+ * TPDU must remain valid for as long as the APDU is needed.
+ */
+uicc_ret_et uicc_tpdu_to_apdu(uicc_apdu_cmd_st *const apdu_cmd,
+                              uicc_tpdu_cmd_st *const tpdu_cmd);

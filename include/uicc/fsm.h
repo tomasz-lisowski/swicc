@@ -105,11 +105,11 @@ typedef enum uicc_fsm_state_e
     UICC_FSM_STATE_CMD_WAIT,
 
     /**
-     * Received message header and sent a response that either requests the rest
-     * of the data or a preemptive failure due to a problem in the header or
-     * unsupported message.
+     * Received message header and sent a response that requests the rest
+     * of the data. This state is not reached for messages without data or if
+     * the message failed early after just the header.
      */
-    UICC_FSM_STATE_CMD_HDR,
+    UICC_FSM_STATE_CMD_DATA,
 
     /**
      * Received the full TPDU message.

@@ -6,6 +6,10 @@ uicc_ret_et uicc_dbg_tpdu_cmd_str(char *const buf_str,
                                   uicc_tpdu_cmd_st const *const tpdu_cmd)
 {
 #ifdef DEBUG
+    if (tpdu_cmd->data.len < 1U)
+    {
+        return UICC_RET_TPDU_HDR_TOO_SHORT;
+    }
     int bytes_written = snprintf(
         buf_str, *buf_str_len,
         // clang-format off
@@ -16,14 +20,13 @@ uicc_ret_et uicc_dbg_tpdu_cmd_str(char *const buf_str,
         "\n  (P2 0x%x)"
         "\n  (P3 0x%x))",
         // clang-format on
-        uicc_dbg_apdu_cla_ccc_str(tpdu_cmd->hdr.hdr_apdu.cla),
-        uicc_dbg_apdu_cla_sm_str(tpdu_cmd->hdr.hdr_apdu.cla),
-        uicc_dbg_apdu_cla_type_str(tpdu_cmd->hdr.hdr_apdu.cla),
-        tpdu_cmd->hdr.hdr_apdu.cla.lchan,
-        tpdu_cmd->hdr.hdr_apdu.cla.type == UICC_APDU_CLA_TYPE_INTERINDUSTRY
-            ? uicc_dbg_apdu_ins_str(tpdu_cmd->hdr.hdr_apdu.ins)
+        uicc_dbg_apdu_cla_ccc_str(tpdu_cmd->hdr.cla),
+        uicc_dbg_apdu_cla_sm_str(tpdu_cmd->hdr.cla),
+        uicc_dbg_apdu_cla_type_str(tpdu_cmd->hdr.cla), tpdu_cmd->hdr.cla.lchan,
+        tpdu_cmd->hdr.cla.type == UICC_APDU_CLA_TYPE_INTERINDUSTRY
+            ? uicc_dbg_apdu_ins_str(tpdu_cmd->hdr.ins)
             : "???",
-        tpdu_cmd->hdr.hdr_apdu.p1, tpdu_cmd->hdr.hdr_apdu.p2, tpdu_cmd->hdr.p3);
+        tpdu_cmd->hdr.p1, tpdu_cmd->hdr.p2, tpdu_cmd->data.b[0U]);
     if (bytes_written < 0)
     {
         return UICC_RET_BUFFER_TOO_SHORT;

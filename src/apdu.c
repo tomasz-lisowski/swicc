@@ -15,7 +15,7 @@ static uicc_ret_et apdu_h_unk(__attribute__((unused)) uicc_st *const uicc_state,
 {
     res->sw1 = UICC_APDU_SW1_CHER_INS;
     res->sw2 = 0;
-    res->data_len = 0;
+    res->data.len = 0;
     return UICC_RET_SUCCESS;
 }
 
@@ -31,17 +31,17 @@ uicc_ret_et uicc_apdu_handle(uicc_st *const uicc_state,
                              uicc_apdu_res_st *const res)
 {
     uicc_ret_et ret = UICC_RET_APDU_UNHANDLED;
-    switch (cmd->hdr.cla.type)
+    switch (cmd->hdr->cla.type)
     {
     case UICC_APDU_CLA_TYPE_INVALID:
     case UICC_APDU_CLA_TYPE_RFU:
         res->sw1 = UICC_APDU_SW1_CHER_CLA; /* Marked as unsupported class. */
         res->sw2 = 0;
-        res->data_len = 0;
+        res->data.len = 0;
         ret = UICC_RET_SUCCESS;
         break;
     case UICC_APDU_CLA_TYPE_INTERINDUSTRY:
-        ret = uicc_apdu_h[cmd->hdr.ins](uicc_state, cmd, res);
+        ret = uicc_apdu_h[cmd->hdr->ins](uicc_state, cmd, res);
         break;
     case UICC_APDU_CLA_TYPE_PROPRIETARY:
         if (uicc_state->internal.handle_pro == NULL)
@@ -60,7 +60,7 @@ uicc_ret_et uicc_apdu_handle(uicc_st *const uicc_state,
         ret = UICC_RET_SUCCESS;
         res->sw1 = UICC_APDU_SW1_CHER_INS;
         res->sw2 = 0;
-        res->data_len = 0;
+        res->data.len = 0;
     }
     return ret;
 }
@@ -127,44 +127,49 @@ uicc_ret_et uicc_apdu_cmd_parse(uint8_t const *const buf_raw,
                                 uint16_t const buf_raw_len,
                                 uicc_apdu_cmd_st *const cmd)
 {
-    if (buf_raw_len < sizeof(uicc_apdu_cmd_hdr_raw_st))
+    if (buf_raw_len < sizeof(uicc_apdu_cmd_hdr_raw_st) ||
+        buf_raw_len > sizeof(uicc_apdu_cmd_hdr_raw_st) + UICC_DATA_MAX)
     {
         return UICC_RET_APDU_HDR_TOO_SHORT;
     }
 
     memset(cmd, 0, sizeof(uicc_apdu_cmd_st));
-    cmd->hdr.cla = uicc_apdu_cmd_cla_parse(buf_raw[0]);
-    cmd->hdr.ins = buf_raw[1];
-    cmd->hdr.p1 = buf_raw[2];
-    cmd->hdr.p2 = buf_raw[3];
+    cmd->hdr->cla = uicc_apdu_cmd_cla_parse(buf_raw[0]);
+    cmd->hdr->ins = buf_raw[1U];
+    cmd->hdr->p1 = buf_raw[2U];
+    cmd->hdr->p2 = buf_raw[3U];
+    cmd->data->len =
+        (uint16_t)(buf_raw_len -
+                   sizeof(uicc_apdu_cmd_hdr_raw_st)); /* Safe cast due to checks
+                                                         at start. */
+    memcpy(cmd->data->b, &buf_raw[sizeof(uicc_apdu_cmd_hdr_raw_st)],
+           cmd->data->len);
     return UICC_RET_SUCCESS;
 }
 
 uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
                                   uint16_t *const buf_raw_len,
+                                  uicc_apdu_cmd_st const *const cmd,
                                   uicc_apdu_res_st const *const res)
 {
     /* Ensure there is space in the raw buffers for the whole response. */
     if (*buf_raw_len <
-        res->data_len + (res->sw1 == UICC_APDU_SW1_PROC_NULL ||
+        res->data.len + (res->sw1 == UICC_APDU_SW1_PROC_NULL ||
                                  res->sw1 == UICC_APDU_SW1_PROC_ACK
                              ? 1U
                              : 2U))
     {
         return UICC_RET_BUFFER_TOO_SHORT;
     }
-    if (res->data_len > sizeof(res->data))
+    if (res->data.len > UICC_DATA_MAX)
     {
-        /**
-         * Unexpected. Also the sizeof here is safe because the buffer size is
-         * static.
-         */
+        /* Unexpected. */
         return UICC_RET_UNKNOWN;
     }
-    *buf_raw_len = res->data_len;
-    memcpy(buf_raw, res->data, res->data_len);
+    *buf_raw_len = res->data.len;
+    memcpy(buf_raw, res->data.b, res->data.len);
     uint16_t *const status =
-        (uint16_t *)&buf_raw[res->data_len]; /* Safe cast because size of raw
+        (uint16_t *)&buf_raw[res->data.len]; /* Safe cast because size of raw
                                                 buffer was checked. */
 
     static uint16_t const sw1_raw[] = {
@@ -217,18 +222,26 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
         *buf_raw_len = (uint16_t)(*buf_raw_len +
                                   2U); /* Safe cast due to check at the
                                           start that ensures res will fit. */
-        break;
+        return UICC_RET_SUCCESS;
     case UICC_APDU_SW1_PROC_NULL:
-    case UICC_APDU_SW1_PROC_ACK:
-        if (res->data_len != 0 || res->sw2 != 0)
+        if (res->data.len != 0 || res->sw2 != 0)
         {
             return UICC_RET_APDU_RES_INVALID;
         }
-        buf_raw[0U] = (uint8_t)(sw1_raw[res->sw1] >>
-                                8); /* Safe cast, extracting most significant
-                                       byte from 2 byte number. */
+        buf_raw[0U] = 0x60;
         *buf_raw_len = 1;
-        break;
+        return UICC_RET_SUCCESS;
+    case UICC_APDU_SW1_PROC_ACK:
+        if (res->data.len != 0 || res->sw2 != 0)
+        {
+            return UICC_RET_APDU_RES_INVALID;
+        }
+        /* NOTE: Can also be INS XOR 0xFF to get the next (one) byte but this is
+         * not supported in this implementation. Older 7816-3 standard editions
+         * defined two other ways that have been deprecated now. */
+        buf_raw[0U] = cmd->hdr->ins; /* The raw INS byte. */
+        *buf_raw_len = 1;
+        return UICC_RET_APDU_DATA_WAIT;
     }
     return UICC_RET_SUCCESS;
 }

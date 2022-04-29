@@ -3,18 +3,30 @@
 
 uicc_ret_et uicc_tpdu_cmd_parse(uint8_t const *const buf_raw,
                                 uint16_t const buf_raw_len,
-                                uicc_tpdu_cmd_st *const tpdu_cmd)
+                                uicc_tpdu_cmd_st *const cmd)
 {
-    if (buf_raw_len < sizeof(uicc_tpdu_cmd_hdr_raw_st))
+    if (buf_raw_len < sizeof(uicc_apdu_cmd_hdr_raw_st) + 1U /* P3 */)
     {
         return UICC_RET_TPDU_HDR_TOO_SHORT;
     }
 
-    memset(tpdu_cmd, 0, sizeof(uicc_tpdu_cmd_st));
-    tpdu_cmd->hdr.hdr_apdu.cla = uicc_apdu_cmd_cla_parse(buf_raw[0]);
-    tpdu_cmd->hdr.hdr_apdu.ins = buf_raw[1];
-    tpdu_cmd->hdr.hdr_apdu.p1 = buf_raw[2];
-    tpdu_cmd->hdr.hdr_apdu.p2 = buf_raw[3];
-    tpdu_cmd->hdr.p3 = buf_raw[4];
+    uint16_t const hdr_len = sizeof(uicc_apdu_cmd_hdr_raw_st) + 1U;
+    memset(cmd, 0U, sizeof(uicc_tpdu_cmd_st));
+    cmd->hdr.cla = uicc_apdu_cmd_cla_parse(buf_raw[0U]);
+    cmd->hdr.ins = buf_raw[1U];
+    cmd->hdr.p1 = buf_raw[2U];
+    cmd->hdr.p2 = buf_raw[3U];
+    cmd->data.b[0U] = buf_raw[hdr_len];
+    cmd->data.len = (uint16_t)(buf_raw_len -
+                               hdr_len); /* Safe cast due to check at start. */
+    memcpy(&cmd->data.b[1U], &buf_raw[hdr_len], cmd->data.len);
+    return UICC_RET_SUCCESS;
+}
+
+uicc_ret_et uicc_tpdu_to_apdu(uicc_apdu_cmd_st *const apdu_cmd,
+                              uicc_tpdu_cmd_st *const tpdu_cmd)
+{
+    apdu_cmd->hdr = &tpdu_cmd->hdr;
+    apdu_cmd->data = &tpdu_cmd->data;
     return UICC_RET_SUCCESS;
 }
