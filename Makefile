@@ -11,17 +11,16 @@ MAIN_NAME:=$(LIB_PREFIX)uicc
 MAIN_SRC:=$(wildcard $(DIR_SRC)/*.c) $(wildcard $(DIR_SRC)/dbg/*.c)
 MAIN_OBJ:=$(MAIN_SRC:$(DIR_SRC)/%.c=$(DIR_BUILD)/%.o)
 MAIN_DEP:=$(MAIN_OBJ:%.o=%.d)
-MAIN_CC_FLAGS:=-g -Werror -Wno-unused-parameter -W -Wall -Wextra -Wconversion -Wshadow \
-	-fPIC \
+MAIN_CC_FLAGS:=-Werror -Wno-unused-parameter -W -Wall -Wextra -Wconversion -Wshadow \
+	-fPIC -O2 \
 	-I$(DIR_INCLUDE) -I$(DIR_BUILD_LIB)/cjson/$(DIR_INCLUDE) \
 	-L$(DIR_BUILD_LIB)/cjson -lcjson
 MAIN_AR_FLAGS:=-rcs
 
-all: all-lib
-	$(MAKE) -j all-conc
-all-fast:
-	$(MAKE) -j all-conc
-all-conc: main
+all: all-lib main
+all-fast: main
+all-dbg: MAIN_CC_FLAGS+=-g -DDEBUG
+all-dbg: main
 all-lib: cjson
 
 # Create static library.
@@ -57,4 +56,4 @@ clean:
 	$(call pal_rmdir,$(DIR_BUILD_LIB))
 	$(call pal_rmdir,$(DIR_LIB)/cjson/build)
 
-.PHONY: all all-fast all-conc all-lib main cjson clean
+.PHONY: all all-fast all-dbg all-lib main cjson clean

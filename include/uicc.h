@@ -47,6 +47,6 @@ typedef struct uicc_s
         uicc_fsm_state_et fsm_state;
         uicc_tp_st tp;
         uicc_fs_st fs;
-        uicc_apdu_handler_ft *handler_proprietary;
+        uicc_apdu_handler_ft *handle_pro; /* For all proprietary classes. */
     } internal;
 } uicc_st;

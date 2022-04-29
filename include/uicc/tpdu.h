@@ -3,7 +3,7 @@
 
 #pragma once
 /**
- * TPDU = Transport protocol data unit
+ * TPDU = Transmission protocol data unit
  */
 
 /**
@@ -21,7 +21,7 @@ typedef struct uicc_tpdu_cmd_hdr_raw_s
 typedef struct uicc_tpdu_cmd_hdr_s
 {
     uicc_apdu_cmd_hdr_st hdr_apdu;
-    uint8_t param_3;
+    uint8_t p3;
 } uicc_tpdu_cmd_hdr_st;
 
 /**
@@ -31,8 +31,7 @@ typedef struct uicc_tpdu_cmd_hdr_s
 typedef struct uicc_tpdu_cmd_s
 {
     uicc_tpdu_cmd_hdr_st hdr;
-    uint16_t data_len_cmd;
-    uint16_t data_len_res;
+    uint16_t data_len;
     uint8_t data[UICC_DATA_MAX];
 } uicc_tpdu_cmd_st;
 

@@ -16,8 +16,10 @@ typedef enum uicc_ret_e
     UICC_RET_UNKNOWN = 0,
     UICC_RET_SUCCESS =
         1, /* In principle =1, allows for use as 'if' condition. */
-    UICC_RET_APDU_CMD_TOO_SHORT,
-    UICC_RET_TPDU_CMD_TOO_SHORT,
+    UICC_RET_APDU_HDR_TOO_SHORT,
+    UICC_RET_APDU_UNHANDLED,
+    UICC_RET_APDU_RES_INVALID,
+    UICC_RET_TPDU_HDR_TOO_SHORT,
     UICC_RET_BUFFER_TOO_SHORT,
 
     UICC_RET_FSM_TRANSITION_WAIT, /* Wait for I/O state change then run FSM. */

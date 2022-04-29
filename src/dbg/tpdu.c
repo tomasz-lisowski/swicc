@@ -9,22 +9,21 @@ uicc_ret_et uicc_dbg_tpdu_cmd_str(char *const buf_str,
     int bytes_written = snprintf(
         buf_str, *buf_str_len,
         // clang-format off
-                 "(TPDU"
-                 "\n  (CLA (CHAIN '%s') (SM '%s') (INFO '%s') (LCHAN %u))"
-                 "\n  (INS OP '%s')"
-                 "\n  (P1 0x%x)"
-                 "\n  (P2 0x%x)"
-                 "\n  (P3 0x%x))",
+        "(TPDU"
+        "\n  (CLA (CHAIN '%s') (SM '%s') (INFO '%s') (LCHAN %u))"
+        "\n  (INS OP '%s')"
+        "\n  (P1 0x%x)"
+        "\n  (P2 0x%x)"
+        "\n  (P3 0x%x))",
         // clang-format on
-        uicc_dbg_apdu_cla_ccc_str(tpdu_cmd->hdr.hdr_apdu.class),
-        uicc_dbg_apdu_cla_sm_str(tpdu_cmd->hdr.hdr_apdu.class),
-        uicc_dbg_apdu_cla_type_str(tpdu_cmd->hdr.hdr_apdu.class),
-        tpdu_cmd->hdr.hdr_apdu.class.lchan,
-        tpdu_cmd->hdr.hdr_apdu.class.type == UICC_APDU_CLA_TYPE_INTERINDUSTRY
-            ? uicc_dbg_apdu_ins_str(tpdu_cmd->hdr.hdr_apdu.instruction)
+        uicc_dbg_apdu_cla_ccc_str(tpdu_cmd->hdr.hdr_apdu.cla),
+        uicc_dbg_apdu_cla_sm_str(tpdu_cmd->hdr.hdr_apdu.cla),
+        uicc_dbg_apdu_cla_type_str(tpdu_cmd->hdr.hdr_apdu.cla),
+        tpdu_cmd->hdr.hdr_apdu.cla.lchan,
+        tpdu_cmd->hdr.hdr_apdu.cla.type == UICC_APDU_CLA_TYPE_INTERINDUSTRY
+            ? uicc_dbg_apdu_ins_str(tpdu_cmd->hdr.hdr_apdu.ins)
             : "???",
-        tpdu_cmd->hdr.hdr_apdu.param_1, tpdu_cmd->hdr.hdr_apdu.param_2,
-        tpdu_cmd->hdr.param_3);
+        tpdu_cmd->hdr.hdr_apdu.p1, tpdu_cmd->hdr.hdr_apdu.p2, tpdu_cmd->hdr.p3);
     if (bytes_written < 0)
     {
         return UICC_RET_BUFFER_TOO_SHORT;
