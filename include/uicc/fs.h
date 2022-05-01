@@ -4,47 +4,142 @@
 #pragma once
 
 #define UICC_FS_MAGIC_LEN 8U
-#define UICC_FS_MAGIC 0xAC55494343AC4653
+#define UICC_FS_MAGIC 0x5346AC43434955AC
+
+#define UICC_FS_NAME_LEN_MAX 16U
+
+typedef enum uicc_fs_item_type_e
+{
+    UICC_FS_ITEM_TYPE_INVALID,
+
+    UICC_FS_ITEM_TYPE_FILE_MF,
+    UICC_FS_ITEM_TYPE_FILE_ADF,
+    UICC_FS_ITEM_TYPE_FILE_DF,
+    UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT,
+    UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED,
+    // UICC_FS_ITEM_TYPE_FILE_EF_LINEARVARIABLE,
+    UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC,
+    // UICC_FS_ITEM_TYPE_FILE_EF_DATO,
+
+    UICC_FS_ITEM_TYPE_DATO_BERTLV,
+    UICC_FS_ITEM_TYPE_HEX,
+    UICC_FS_ITEM_TYPE_ASCII,
+} uicc_fs_item_type_et;
+
+/**
+ * Life cycle status as specified in ISO 7816-4:2020 p.31 sec.7.4.10 table.15.
+ */
+typedef enum uicc_fs_lcs_e
+{
+    UICC_FS_LCS_NINFO,        /* No info given */
+    UICC_FS_LCS_CREAT,        /* Creation */
+    UICC_FS_LCS_INIT,         /* Initialization */
+    UICC_FS_LCS_OPER_ACTIV,   /* Operational + Activated */
+    UICC_FS_LCS_OPER_DEACTIV, /* Operational + Deactivated */
+    UICC_FS_LCS_TERM,         /* Termination */
+} uicc_fs_lcs_et;
 
 typedef uint64_t uicc_fs_magic_kt;
 static_assert(sizeof(uicc_fs_magic_kt) == UICC_FS_MAGIC_LEN,
-              "UICC FS file magic data type length is not equal to the "
-              "magic itself");
+              "UICC FS file magic data type size is not equal to the "
+              "magic length");
 
-typedef uint16_t uicc_fs_fid_kt;
-typedef uint16_t uicc_fs_record_id_kt;
-typedef uint8_t uicc_fs_record_idx_kt;
+typedef uint16_t uicc_fs_id_kt;      /* ID like FID. */
+typedef uint8_t uicc_fs_sid_kt;      /* Short ID like SFI. */
+typedef uint16_t uicc_fs_rcrd_id_kt; /* Record 'number' or ID. */
+typedef uint8_t uicc_fs_rcrd_idx_kt; /* Record index. */
 
+/* The in-memory struct storing a UICC FS disk. */
 typedef struct uicc_fs_disk_s
 {
     uint8_t *buf;
-    uint32_t len;
+    uint32_t len;  /* Number of bytes in the buf that are occupied. */
+    uint32_t size; /* The allocated size of the buffer. */
 } uicc_fs_disk_st;
 
-/* Describes a file in the file system. File can be an EF, DF, or ADF. */
-typedef struct uicc_fs_file_s
+/**
+ * A represenatation of a header of any item in the UICC FS.
+ * NOTE: This is the parsed representation.
+ */
+typedef struct uicc_fs_item_hdr_s
 {
-    uint32_t offset;
+    uicc_fs_item_type_et type;
+    uint32_t offset_start;
     uint32_t size;
-} uicc_fs_file_st;
+    uicc_fs_lcs_et lcs;
+} uicc_fs_item_hdr_st;
+typedef struct uicc_fs_item_hdr_raw_s
+{
+    uint32_t size;
+    uint8_t lcs;
+    uint8_t type;
+} __attribute__((packed)) uicc_fs_item_hdr_raw_st;
+
+/**
+ * Common header for all files (MF, EF, ADF, DF).
+ * NOTE: This is the parsed representation.
+ */
+typedef struct uicc_fs_file_hdr_s
+{
+    uicc_fs_item_hdr_st item;
+    uicc_fs_id_kt id;
+    uicc_fs_sid_kt sid;
+    uint8_t name_len;
+    char name[UICC_FS_NAME_LEN_MAX + 1U]; /* +1U for null-terminator */
+} uicc_fs_file_hdr_st;
+typedef struct uicc_fs_file_hdr_raw_s
+{
+    uicc_fs_item_hdr_raw_st item;
+    uicc_fs_id_kt id;
+    uicc_fs_sid_kt sid;
+    char name[UICC_FS_NAME_LEN_MAX + 1U]; /* +1U for null-terminator */
+} __attribute__((packed)) uicc_fs_file_hdr_raw_st;
+
+/**
+ * Header of a linear fixed EF.
+ * NOTE: This is the parsed representation.
+ */
+typedef struct uicc_fs_ef_linearfixed_hdr_s
+{
+    uicc_fs_file_hdr_st file;
+    uint8_t rcrd_size;
+} uicc_fs_ef_linearfixed_hdr_st;
+typedef struct uicc_fs_ef_linearfixed_hdr_raw_s
+{
+    uicc_fs_file_hdr_raw_st file;
+    uint8_t rcrd_size;
+} __attribute__((packed)) uicc_fs_ef_linearfixed_hdr_raw_st;
+/**
+ * Header of a cyclic EF is the same as for a linear fixed EF.
+ */
+typedef uicc_fs_ef_linearfixed_hdr_st uicc_fs_ef_cyclic_hdr_st;
+typedef uicc_fs_ef_linearfixed_hdr_raw_st uicc_fs_ef_cyclic_hdr_raw_st;
 
 /* Describes a record of an EF. */
-typedef struct uicc_fs_record_s
+typedef struct uicc_fs_rcrd_s
 {
-    uicc_fs_record_id_kt id;
-} uicc_fs_record_st;
+    uint32_t parent_offset_start;
+    uicc_fs_rcrd_id_kt id;
+    uicc_fs_rcrd_idx_kt idx;
+    uint32_t offset_start;
+    uint32_t size;
+} uicc_fs_rcrd_st;
 
-/* Describes a transparent buffer A.k.a. a DataString. */
+/* Describes a transparent buffer. */
 typedef struct uicc_fs_data_s
 {
-    uint32_t offset;
+    uint32_t parent_offset;
+    uint32_t offset_start;
+    uint32_t offset_select;
+    uint32_t size;
 } uicc_fs_data_st;
 
 /* Describes a data object or a part of one. */
 typedef struct uicc_fs_do_s
 {
     uint32_t parent_offset;
-    uint32_t len;
+    uint32_t offset_start;
+    uint32_t size;
 } uicc_fs_do_st;
 
 /**
@@ -54,15 +149,15 @@ typedef struct uicc_fs_do_s
  */
 typedef struct uicc_fs_va_s
 {
-    uicc_fs_file_st cur_adf;
-    uicc_fs_file_st cur_df;
-    uicc_fs_file_st cur_ef;
+    uicc_fs_item_hdr_st cur_adf;
+    uicc_fs_item_hdr_st cur_df;
+    uicc_fs_item_hdr_st cur_ef;
     /**
      * 'curFile' described in ISO 7816-4:2020 p.22 sec.7.2.1 is
      * skipped because it will be computed using 'cur_df' and
      * 'cur_ef'.
      */
-    uicc_fs_record_st cur_record;
+    uicc_fs_rcrd_st cur_rcrd;
     uicc_fs_data_st cur_data;
     uicc_fs_do_st cur_do_constr;
     uicc_fs_do_st cur_do_prim;
@@ -133,7 +228,7 @@ uicc_ret_et uicc_fs_select_file_dfname(uicc_st *const uicc_state,
  * @return Return code.
  */
 uicc_ret_et uicc_fs_select_file_fid(uicc_st *const uicc_state,
-                                    uicc_fs_fid_kt const fid);
+                                    uicc_fs_id_kt const fid);
 /**
  * @brief Select a file by a path string.
  * @param uicc_state
@@ -160,7 +255,7 @@ uicc_ret_et uicc_fs_select_do_tag(uicc_st *const uicc_state,
  * @return Return code.
  */
 uicc_ret_et uicc_fs_select_record_id(uicc_st *const uicc_state,
-                                     uicc_fs_record_id_kt id);
+                                     uicc_fs_rcrd_id_kt id);
 /**
  * @brief Select a record by its record number i.e. index of the record in the
  * file.
@@ -169,7 +264,7 @@ uicc_ret_et uicc_fs_select_record_id(uicc_st *const uicc_state,
  * @return Return code.
  */
 uicc_ret_et uicc_fs_select_record_idx(uicc_st *const uicc_state,
-                                      uicc_fs_record_idx_kt idx);
+                                      uicc_fs_rcrd_idx_kt idx);
 /**
  * @brief Select data with an index in a transparent buffer.
  * @param uicc_state

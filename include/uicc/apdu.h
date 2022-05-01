@@ -129,13 +129,14 @@ typedef struct uicc_apdu_res_s
     uicc_apdu_data_st data;
 } uicc_apdu_res_st;
 
-typedef uicc_ret_et uicc_apdu_handler_ft(uicc_st *const uicc_state,
-                                         uicc_apdu_cmd_st const *const cmd,
-                                         uicc_apdu_res_st *const res);
+/* APDU handler. */
+typedef uicc_ret_et uicc_apdu_h_ft(uicc_st *const uicc_state,
+                                   uicc_apdu_cmd_st const *const cmd,
+                                   uicc_apdu_res_st *const res);
 /**
  * Store pointers to handlers for every instruction in the interindustry class.
  */
-extern uicc_apdu_handler_ft *const uicc_apdu_h[0xFF + 1U];
+extern uicc_apdu_h_ft *const uicc_apdu_h[0xFF + 1U];
 
 /**
  * @brief All APDUs in the proprietary class require non-interindusry
@@ -148,7 +149,7 @@ extern uicc_apdu_handler_ft *const uicc_apdu_h[0xFF + 1U];
  * @note Sorry for the long name...
  */
 uicc_ret_et uicc_apdu_handle_pro_register(uicc_st *const uicc_state,
-                                          uicc_apdu_handler_ft *const handler);
+                                          uicc_apdu_h_ft *const handler);
 
 /**
  * @brief Handle all APDUs.
@@ -157,6 +158,7 @@ uicc_ret_et uicc_apdu_handle_pro_register(uicc_st *const uicc_state,
  * @param res Response to the command.
  * @return Return code.
  */
+uicc_apdu_h_ft uicc_apdu_handle;
 uicc_ret_et uicc_apdu_handle(uicc_st *const uicc_state,
                              uicc_apdu_cmd_st const *const cmd,
                              uicc_apdu_res_st *const res);
@@ -172,7 +174,7 @@ uicc_apdu_cla_st uicc_apdu_cmd_cla_parse(uint8_t const cla_raw);
  * @brief Given a buffer containing a raw interindustry APDU message, parse and
  * validate it into a more useful representation.
  * @param buf_raw Buffer containing the raw APDU message.
- * @param buf_raw_len Length of the buffer containing the raw APDU message.
+ * @param buf_raw_len Length of the raw APDU message.
  * @param apdu_cmd Where the parsed APDU will be written.
  * @return Return code.
  */
@@ -184,7 +186,7 @@ uicc_ret_et uicc_apdu_cmd_parse(uint8_t const *const buf_raw,
  * @brief Produce a response given a response structure. This also validates the
  * contents of the res struct.
  * @param buf_raw Where to write the raw response.
- * @param buf_raw_len Should contain the maximum length of the raw buffer. This
+ * @param buf_raw_len Should contain the allocated size of the raw buffer. This
  * will receive the final length of the written response on success.
  * @param cmd The command for which we are creating the response.
  * @param res The response struct.

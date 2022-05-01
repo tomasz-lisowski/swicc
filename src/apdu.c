@@ -20,7 +20,7 @@ static uicc_ret_et apdu_h_unk(__attribute__((unused)) uicc_st *const uicc_state,
 }
 
 uicc_ret_et uicc_apdu_handle_pro_register(uicc_st *const uicc_state,
-                                          uicc_apdu_handler_ft *const handler)
+                                          uicc_apdu_h_ft *const handler)
 {
     uicc_state->internal.handle_pro = handler;
     return UICC_RET_SUCCESS;
@@ -246,7 +246,7 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
     return UICC_RET_SUCCESS;
 }
 
-uicc_apdu_handler_ft *const uicc_apdu_h[0xFF + 1U] = {
+uicc_apdu_h_ft *const uicc_apdu_h[0xFF + 1U] = {
     [0x00] = apdu_h_unk, [0x01] = apdu_h_unk, [0x02] = apdu_h_unk,
     [0x03] = apdu_h_unk, [0x04] = apdu_h_unk, [0x05] = apdu_h_unk,
     [0x06] = apdu_h_unk, [0x07] = apdu_h_unk, [0x08] = apdu_h_unk,

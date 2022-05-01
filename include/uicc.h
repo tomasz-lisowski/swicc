@@ -2,8 +2,8 @@
 
 #include "uicc/apdu.h"
 #include "uicc/atr.h"
+#include "uicc/dato.h"
 #include "uicc/dbg.h"
-#include "uicc/do.h"
 #include "uicc/fs.h"
 #include "uicc/fsm.h"
 #include "uicc/io.h"
@@ -50,6 +50,6 @@ typedef struct uicc_s
         uicc_fsm_state_et fsm_state;
         uicc_tp_st tp;
         uicc_fs_st fs;
-        uicc_apdu_handler_ft *handle_pro; /* For all proprietary classes. */
+        uicc_apdu_h_ft *handle_pro; /* For all proprietary classes. */
     } internal;
 } uicc_st;

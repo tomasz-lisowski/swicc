@@ -13,17 +13,17 @@
  * @return Return code.
  */
 __attribute__((unused)) static uicc_ret_et bertlv_parse(
-    uicc_bertlv_st *const bertlv_parsed, uint8_t *const bertlv_buf,
+    uicc_dato_bertlv_st *const bertlv_parsed, uint8_t *const bertlv_buf,
     uint32_t const bertlv_buf_len)
 {
     return UICC_RET_DO_BERTLV_INVALID;
 }
 
-uicc_ret_et uicc_do_bertlv_init(uicc_bertlv_parser_st *const parser,
-                                uint8_t *const bertlv_buf,
-                                uint32_t const bertlv_buf_len)
+uicc_ret_et uicc_dato_bertlv_init(uicc_dato_bertlv_parser_st *const parser,
+                                  uint8_t *const bertlv_buf,
+                                  uint32_t const bertlv_buf_len)
 {
-    memset(parser, 0U, sizeof(uicc_bertlv_parser_st));
+    memset(parser, 0U, sizeof(uicc_dato_bertlv_parser_st));
     parser->offset = 0U;
     parser->bertlv_buf = bertlv_buf;
     parser->bertlv_buf_len = bertlv_buf_len;
@@ -31,20 +31,20 @@ uicc_ret_et uicc_do_bertlv_init(uicc_bertlv_parser_st *const parser,
     return UICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_do_bertlv_cur(uicc_bertlv_parser_st *const parser,
-                               uicc_bertlv_st *const bertlv_cur)
+uicc_ret_et uicc_dato_bertlv_cur(uicc_dato_bertlv_parser_st *const parser,
+                                 uicc_dato_bertlv_st *const bertlv_cur)
 {
     return UICC_RET_UNKNOWN;
 }
 
-uicc_ret_et uicc_do_bertlv_next(uicc_bertlv_parser_st *const parser,
-                                uicc_bertlv_st *const bertlv_next)
+uicc_ret_et uicc_dato_bertlv_next(uicc_dato_bertlv_parser_st *const parser,
+                                  uicc_dato_bertlv_st *const bertlv_next)
 {
     return UICC_RET_UNKNOWN;
 }
 
-uicc_ret_et uicc_do_bertlv_find(uicc_bertlv_parser_st *const parser,
-                                uicc_bertlv_st *const bertlv_found)
+uicc_ret_et uicc_dato_bertlv_find(uicc_dato_bertlv_parser_st *const parser,
+                                  uicc_dato_bertlv_st *const bertlv_found)
 {
     return UICC_RET_UNKNOWN;
 }

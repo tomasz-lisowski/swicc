@@ -15,7 +15,9 @@ typedef enum uicc_ret_e
 {
     UICC_RET_UNKNOWN = 0,
     UICC_RET_SUCCESS =
-        1, /* In principle =1, allows for use as 'if' condition. */
+        1,          /* In principle =1, allows for use as 'if' condition. */
+    UICC_RET_ERROR, /* Unspecified error (non-critical). */
+
     UICC_RET_APDU_HDR_TOO_SHORT,
     UICC_RET_APDU_UNHANDLED,
     UICC_RET_APDU_DATA_WAIT, /* There will be (more) data coming for the current
@@ -30,10 +32,9 @@ typedef enum uicc_ret_e
     UICC_RET_PPS_INVALID, /* E.g. the check byte is incorrect etc... */
     UICC_RET_PPS_FAILED,  /* Request is handled but params are not accepted */
 
-    UICC_RET_ATR_INVALID, /* E.g. the ATR might not contain madatory fields or
-                             is malformed. */
-    UICC_RET_FS_FAILURE,  /* Unspecified FS crticial error. */
-    UICC_RET_FS_FILE_NOT_FOUND, /* E.g. SELECT with FID was done but a file with
+    UICC_RET_ATR_INVALID,  /* E.g. the ATR might not contain madatory fields or
+                              is malformed. */
+    UICC_RET_FS_NOT_FOUND, /* E.g. SELECT with FID was done but a file with
                             the given FID does not exist. */
 
     UICC_RET_DO_BERTLV_NOT_FOUND, /* E.g. tried to find a BER-TLV by tag but it
@@ -41,6 +42,7 @@ typedef enum uicc_ret_e
     UICC_RET_DO_BERTLV_INVALID,   /* E.g. tried to parse a BER-TLV but it turned
                                      out to be incorrectly encoded thus invalid.
                                    */
+    UICC_RET_PARAM_BAD, /* Generic error to indicate the parameter was bad. */
 } uicc_ret_et;
 
 /**
@@ -64,10 +66,25 @@ void uicc_etu(uint32_t *const etu, uint16_t const fi, uint8_t const di,
  * @brief Compute check byte for a buffer. This means the result of XOR'ing all
  * bytes together. ISO 7816-3:2006 p.18 sec.8.2.5.
  * @param buf_raw Buffer.
- * @param buf_raw_len Length of the buffer.
+ * @param buf_raw_len Length of the data in the buffer.
  * @return XOR of all bytes in the buffer.
  */
 uint8_t uicc_tck(uint8_t const *const buf_raw, uint16_t const buf_raw_len);
+
+/**
+ * @brief Converts a string of hex nibbles (encoded as ASCII), into a byte
+ * array.
+ * @param hexstr
+ * @param hexstr_len
+ * @param bytearr Where to write the byte array.
+ * @param bytearr_len Must hold the allocated size of the byte array buffer. On
+ * success, will receive the number of bytes written to the byte array buffer.
+ * @return Return code.
+ */
+uicc_ret_et uicc_hexstr_bytearr(char const *const hexstr,
+                                uint32_t const hexstr_len,
+                                uint8_t *const bytearr,
+                                uint32_t *const bytearr_len);
 
 /**
  * @brief Perform a hard reset of the UICC state.

@@ -19,7 +19,7 @@ MAIN_AR_FLAGS:=-rcs
 
 all: all-lib main
 all-fast: main
-all-dbg: MAIN_CC_FLAGS+=-g -DDEBUG
+all-dbg: MAIN_CC_FLAGS+=-g -DDEBUG -fsanitize=address
 all-dbg: main
 all-lib: cjson
 
