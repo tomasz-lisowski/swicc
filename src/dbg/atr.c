@@ -109,10 +109,10 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         /* Determine which interface bytes are absent/present in next chunk. */
         if (structural_present)
         {
+            /* Safe cast since this is at most 3. */
             uint8_t const td_offset =
                 (uint8_t)(chunk_prev.y[0U] + chunk_prev.y[1U] +
-                          chunk_prev.y[2U]); /* NOTE: Safe cast since this is at
-                                                most 3. */
+                          chunk_prev.y[2U]);
             uint8_t const y = buf_atr[buf_atr_idx + td_offset] >> 4U;
             uint8_t const k_or_t = buf_atr[buf_atr_idx + td_offset] & 0x0F;
             uint8_t y_mask = 0b0001;
@@ -121,8 +121,8 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
             {
                 /* Read the Y indicator for next chunk. */
                 chunk.y[y_idx] = (y & y_mask) > 0U;
-                y_mask = (uint8_t)(y_mask << 1U); /* NOTE: Safe cast because we
-                                                     loop <7 times. */
+                /* Safe cast because we loop <7 times. */
+                y_mask = (uint8_t)(y_mask << 1U);
             }
 
             /* Save K/T from the structural byte. */
@@ -164,9 +164,8 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         if (chunk_idx == 0U)
         {
             /* Skip over T0 once it's parsed. */
-            chunk_size =
-                (uint8_t)(chunk_size + 1U); /* NOTE: Safe cast since chunk size
-                                               is never larger than 4. */
+            /* Safe cast since chunk size is never larger than 4. */
+            chunk_size = (uint8_t)(chunk_size + 1U);
         }
         else
         {
@@ -192,9 +191,8 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
                         return UICC_RET_BUFFER_TOO_SHORT;
                     }
                     bytes_written += ret;
-                    chunk_size =
-                        (uint8_t)(chunk_size + 1U); /* NOTE: Safe cast since
-                                      chunk size is never larger than 4. */
+                    /* Safe cast since chunk size is never larger than 4. */
+                    chunk_size = (uint8_t)(chunk_size + 1U);
                 }
                 else
                 {
@@ -314,7 +312,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
     bytes_written += ret;
 
     *buf_str_len =
-        (uint16_t)bytes_written; /* NOTE: Safe cast due to args of snprintf. */
+        (uint16_t)bytes_written; /* Safe cast due to args of snprintf. */
     return UICC_RET_SUCCESS;
 #else
     return UICC_RET_SUCCESS;

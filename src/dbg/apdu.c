@@ -373,8 +373,8 @@ uicc_ret_et uicc_dbg_apdu_cmd_str(char *const buf_str,
     }
     else
     {
-        *buf_str_len = (uint16_t)
-            bytes_written; /* NOTE: Safe cast due to args of snprintf */
+        *buf_str_len =
+            (uint16_t)bytes_written; /* Safe cast due to args of snprintf */
         return UICC_RET_SUCCESS;
     }
 #else

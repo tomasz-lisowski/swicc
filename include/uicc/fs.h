@@ -4,7 +4,10 @@
 #pragma once
 
 #define UICC_FS_MAGIC_LEN 8U
-#define UICC_FS_MAGIC 0x5346AC43434955AC
+#define UICC_FS_MAGIC                                                          \
+    {                                                                          \
+        0xAC, 0x55, 0x49, 0x43, 0x43, 0xAC, 0x46, 0x53                         \
+    }
 
 #define UICC_FS_NAME_LEN_MAX 16U
 
@@ -39,11 +42,6 @@ typedef enum uicc_fs_lcs_e
     UICC_FS_LCS_TERM,         /* Termination */
 } uicc_fs_lcs_et;
 
-typedef uint64_t uicc_fs_magic_kt;
-static_assert(sizeof(uicc_fs_magic_kt) == UICC_FS_MAGIC_LEN,
-              "UICC FS file magic data type size is not equal to the "
-              "magic length");
-
 typedef uint16_t uicc_fs_id_kt;      /* ID like FID. */
 typedef uint8_t uicc_fs_sid_kt;      /* Short ID like SFI. */
 typedef uint16_t uicc_fs_rcrd_id_kt; /* Record 'number' or ID. */
@@ -52,9 +50,38 @@ typedef uint8_t uicc_fs_rcrd_idx_kt; /* Record index. */
 /* The in-memory struct storing a UICC FS disk. */
 typedef struct uicc_fs_disk_s
 {
-    uint8_t *buf;
-    uint32_t len;  /* Number of bytes in the buf that are occupied. */
+    uint8_t lutsid_count; /* SIDs are unique in a tree so can have >1 LUT. */
+    uint8_t *buf;  /* This buffer holds the whole disk (including LUTs). */
     uint32_t size; /* The allocated size of the buffer. */
+
+    /* Forest of trees containing files. */
+    struct
+    {
+        /* Implicitly root begins at byte 0 of the index. */
+        uint32_t len; /* Number of bytes in the buf that are occupied. */
+    } root;
+
+    /**
+     * Lookup table for IDs.
+     * XXX: The pointers must point to some portion of the buffer.
+     */
+    struct
+    {
+        uint32_t count;
+        uicc_fs_id_kt *id;
+        uint32_t *offset;
+    } lutid;
+
+    /**
+     * Lookup table for SIDs.
+     * XXX: The pointers must point to some portion of the buffer.
+     */
+    struct
+    {
+        uint32_t count;
+        uicc_fs_sid_kt *sid;
+        uint32_t *offset;
+    } lutsid[];
 } uicc_fs_disk_st;
 
 /**
@@ -84,7 +111,6 @@ typedef struct uicc_fs_file_hdr_s
     uicc_fs_item_hdr_st item;
     uicc_fs_id_kt id;
     uicc_fs_sid_kt sid;
-    uint8_t name_len;
     char name[UICC_FS_NAME_LEN_MAX + 1U]; /* +1U for null-terminator */
 } uicc_fs_file_hdr_st;
 typedef struct uicc_fs_file_hdr_raw_s
@@ -273,3 +299,25 @@ uicc_ret_et uicc_fs_select_record_idx(uicc_st *const uicc_state,
  */
 uicc_ret_et uicc_fs_select_data_offset(uicc_st *const uicc_state,
                                        uint32_t offset);
+
+/**
+ * @brief Parse an item header.
+ * @param item_hdr_raw Item header to parse.
+ * @param item_hdr Where to store the parsed item header.
+ * @return Return code.
+ * @note The 'offset' field of the parsed item will not be populated.
+ */
+uicc_ret_et uicc_fs_item_hdr_prs(
+    uicc_fs_item_hdr_raw_st const *const item_hdr_raw,
+    uicc_fs_item_hdr_st *const item_hdr);
+
+/**
+ * @brief Parse a file header.
+ * @param file_hdr_raw File header to parse.
+ * @param file_hdr Where to store the parsed file header.
+ * @return Return code.
+ * @note The item portion of the header will not be parsed.
+ */
+uicc_ret_et uicc_fs_file_hdr_prs(
+    uicc_fs_file_hdr_raw_st const *const file_hdr_raw,
+    uicc_fs_file_hdr_st *const file_hdr);
