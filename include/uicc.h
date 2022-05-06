@@ -5,6 +5,7 @@
 #include "uicc/dato.h"
 #include "uicc/dbg.h"
 #include "uicc/fs.h"
+#include "uicc/fsjson.h"
 #include "uicc/fsm.h"
 #include "uicc/io.h"
 #include "uicc/pps.h"

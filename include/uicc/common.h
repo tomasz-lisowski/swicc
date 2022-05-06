@@ -94,3 +94,12 @@ uicc_ret_et uicc_hexstr_bytearr(char const *const hexstr,
  * the deactivation of a UICC.
  */
 uicc_ret_et uicc_reset(uicc_st *const uicc_state);
+
+/**
+ * @brief Perform cleanup for a UICC that is being destroyed.
+ * @param uicc_state
+ * @return Return code.
+ * @note After this succeeds, operations involving the UICC state will become
+ * undefined.
+ */
+uicc_ret_et uicc_terminate(uicc_st *const uicc_state);

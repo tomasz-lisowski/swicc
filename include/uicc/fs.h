@@ -8,8 +8,14 @@
     {                                                                          \
         0xAC, 0x55, 0x49, 0x43, 0x43, 0xAC, 0x46, 0x53                         \
     }
+static_assert(sizeof((uint8_t[])UICC_FS_MAGIC) == UICC_FS_MAGIC_LEN,
+              "Magic length macro not equal to the magic array length");
 
 #define UICC_FS_NAME_LEN_MAX 16U
+#define UICC_FS_DEPTH_MAX 3U
+
+#define UICC_FS_ID_MISSING 0U
+#define UICC_FS_SID_MISSING 0U
 
 typedef enum uicc_fs_item_type_e
 {
@@ -47,53 +53,51 @@ typedef uint8_t uicc_fs_sid_kt;      /* Short ID like SFI. */
 typedef uint16_t uicc_fs_rcrd_id_kt; /* Record 'number' or ID. */
 typedef uint8_t uicc_fs_rcrd_idx_kt; /* Record index. */
 
+/* Representation of a LUT. */
+typedef struct uicc_fs_lut_s
+{
+    uint8_t *buf1;
+    uint8_t *buf2;
+
+    uint32_t size_item1; /* Size of item in buffer 1. */
+    uint32_t size_item2; /* Size of item in buffer 2. */
+
+    /* Both buffers will be resized to contain the same amount of elements. */
+    uint32_t count_max; /* Allocated size can hold this many items. */
+    uint32_t count;     /* Number of items in the buffer. */
+} uicc_fs_lut_st;
+
+/* Representation of a tree in the root (forest). */
+typedef struct uicc_fs_tree_s uicc_fs_tree_st;
+struct uicc_fs_tree_s
+{
+    /**
+     * The root-level trees like MF and ADFs are attached to a single
+     * linked-list which forms the forest.
+     */
+    uicc_fs_tree_st *next;
+    uint8_t *buf;  /* This buffer holds the whole disk (including LUTs). */
+    uint32_t size; /* Allocated size. */
+    uint32_t len;  /* Occupied size. */
+    uicc_fs_lut_st lutsid;
+};
+
 /* The in-memory struct storing a UICC FS disk. */
 typedef struct uicc_fs_disk_s
 {
-    uint8_t lutsid_count; /* SIDs are unique in a tree so can have >1 LUT. */
-    uint8_t *buf;  /* This buffer holds the whole disk (including LUTs). */
-    uint32_t size; /* The allocated size of the buffer. */
-
-    /* Forest of trees containing files. */
-    struct
-    {
-        /* Implicitly root begins at byte 0 of the index. */
-        uint32_t len; /* Number of bytes in the buf that are occupied. */
-    } root;
-
-    /**
-     * Lookup table for IDs.
-     * XXX: The pointers must point to some portion of the buffer.
-     */
-    struct
-    {
-        uint32_t count;
-        uicc_fs_id_kt *id;
-        uint32_t *offset;
-    } lutid;
-
-    /**
-     * Lookup table for SIDs.
-     * XXX: The pointers must point to some portion of the buffer.
-     */
-    struct
-    {
-        uint32_t count;
-        uicc_fs_sid_kt *sid;
-        uint32_t *offset;
-    } lutsid[];
+    uicc_fs_tree_st *root;
+    uicc_fs_lut_st lutid; /* There is exactly one LUT for all IDs. */
 } uicc_fs_disk_st;
 
 /**
  * A represenatation of a header of any item in the UICC FS.
- * NOTE: This is the parsed representation.
  */
 typedef struct uicc_fs_item_hdr_s
 {
-    uicc_fs_item_type_et type;
-    uint32_t offset_start;
     uint32_t size;
     uicc_fs_lcs_et lcs;
+    uicc_fs_item_type_et type;
+    uint32_t offset_trel;
 } uicc_fs_item_hdr_st;
 typedef struct uicc_fs_item_hdr_raw_s
 {
@@ -104,7 +108,6 @@ typedef struct uicc_fs_item_hdr_raw_s
 
 /**
  * Common header for all files (MF, EF, ADF, DF).
- * NOTE: This is the parsed representation.
  */
 typedef struct uicc_fs_file_hdr_s
 {
@@ -123,7 +126,6 @@ typedef struct uicc_fs_file_hdr_raw_s
 
 /**
  * Header of a linear fixed EF.
- * NOTE: This is the parsed representation.
  */
 typedef struct uicc_fs_ef_linearfixed_hdr_s
 {
@@ -135,6 +137,7 @@ typedef struct uicc_fs_ef_linearfixed_hdr_raw_s
     uicc_fs_file_hdr_raw_st file;
     uint8_t rcrd_size;
 } __attribute__((packed)) uicc_fs_ef_linearfixed_hdr_raw_st;
+
 /**
  * Header of a cyclic EF is the same as for a linear fixed EF.
  */
@@ -144,28 +147,28 @@ typedef uicc_fs_ef_linearfixed_hdr_raw_st uicc_fs_ef_cyclic_hdr_raw_st;
 /* Describes a record of an EF. */
 typedef struct uicc_fs_rcrd_s
 {
-    uint32_t parent_offset_start;
+    uint32_t size;
+    uint32_t parent_offset_trel;
     uicc_fs_rcrd_id_kt id;
     uicc_fs_rcrd_idx_kt idx;
-    uint32_t offset_start;
-    uint32_t size;
+    uint32_t offset_prel_start;
 } uicc_fs_rcrd_st;
 
 /* Describes a transparent buffer. */
 typedef struct uicc_fs_data_s
 {
-    uint32_t parent_offset;
-    uint32_t offset_start;
-    uint32_t offset_select;
     uint32_t size;
+    uint32_t parent_offset_trel;
+    uint32_t offset_prel_start;
+    uint32_t offset_prel_select;
 } uicc_fs_data_st;
 
 /* Describes a data object or a part of one. */
 typedef struct uicc_fs_do_s
 {
-    uint32_t parent_offset;
-    uint32_t offset_start;
     uint32_t size;
+    uint32_t parent_offset_trel;
+    uint32_t offset_ptrel;
 } uicc_fs_do_st;
 
 /**
@@ -203,16 +206,6 @@ typedef struct uicc_fs_va_s
 uicc_ret_et uicc_fs_reset(uicc_st *const uicc_state);
 
 /**
- * @brief Creates a UICC FS (in-memory) from a JSON definition of the file
- * system.
- * @param uicc_state
- * @param disk_json_path Path to the JSON file describing the disk.
- * @return Return code.
- */
-uicc_ret_et uicc_fs_disk_create(uicc_st *const uicc_state,
-                                char const *const disk_json_path);
-
-/**
  * @brief Load a disk file (into memory) for use by this FS module.
  * @param uicc_state
  * @param disk_path Path to the disk file.
@@ -220,22 +213,78 @@ uicc_ret_et uicc_fs_disk_create(uicc_st *const uicc_state,
  */
 uicc_ret_et uicc_fs_disk_load(uicc_st *const uicc_state,
                               char const *const disk_path);
-/**
- * @brief Save the in-memory disk to a specified file for persistence.
- * @param uicc_state
- * @param disk_path Path where to save the disk file.
- * @return Return code.
- */
-uicc_ret_et uicc_fs_disk_save(uicc_st *const uicc_state,
-                              char const *const disk_path);
 
 /**
  * @brief Unload the in-memory disk and frees any memory used for storing the
  * FS.
  * @param uicc_state
+ */
+void uicc_fs_disk_unload(uicc_st *const uicc_state);
+
+/**
+ * @brief Dealloc all disk buffers that hold forest data.
+ * @param disk Disk for which to empty the forest/root.
+ */
+void uicc_fs_disk_root_empty(uicc_fs_disk_st *const disk);
+
+/**
+ * @brief Remove the SID LUT from a given tree.
+ * @param tree The tree in which to empty the SID LUT.
+ */
+void uicc_fs_disk_lutsid_empty(uicc_fs_tree_st *const tree);
+
+/**
+ * @brief Dealloc all disk buffers that hold ID LUT data.
+ * @param disk Disk for which to empty the ID LUT.
+ */
+void uicc_fs_disk_lutid_empty(uicc_fs_disk_st *const disk);
+
+/**
+ * @brief Save the disk as a UICC FS file to a specified file.
+ * @param disk
+ * @param disk_path Path where to save the disk file.
  * @return Return code.
  */
-uicc_ret_et uicc_fs_disk_unload(uicc_st *const uicc_state);
+uicc_ret_et uicc_fs_disk_save(uicc_fs_disk_st *const disk,
+                              char const *const disk_path);
+
+/**
+ * @brief Parse an item header.
+ * @param item_hdr_raw Item header to parse.
+ * @param item_hdr Where to store the parsed item header.
+ * @return Return code.
+ * @note The offset field of the parsed item will not be populated.
+ */
+uicc_ret_et uicc_fs_item_hdr_prs(
+    uicc_fs_item_hdr_raw_st const *const item_hdr_raw,
+    uicc_fs_item_hdr_st *const item_hdr);
+
+/**
+ * @brief Parse a file header.
+ * @param file_hdr_raw File header to parse.
+ * @param file_hdr Where to store the parsed file header.
+ * @return Return code.
+ * @note The item portion of the header will not be parsed.
+ */
+uicc_ret_et uicc_fs_file_hdr_prs(
+    uicc_fs_file_hdr_raw_st const *const file_hdr_raw,
+    uicc_fs_file_hdr_st *const file_hdr);
+
+/**
+ * @brief Create the LUT for IDs on the disk.
+ * @param disk
+ * @return Return code.
+ */
+uicc_ret_et uicc_fs_lutid_rebuild(uicc_fs_disk_st *const disk);
+
+/**
+ * @brief Create a LUT for SIDs for a tree.
+ * @param disk
+ * @param tree The tree for which to recreate the SID LUT.
+ * @return Return code.
+ */
+uicc_ret_et uicc_fs_lutsid_rebuild(uicc_fs_disk_st *const disk,
+                                   uicc_fs_tree_st *const tree);
 
 /**
  * @brief Select a file by DF name.
@@ -247,6 +296,7 @@ uicc_ret_et uicc_fs_disk_unload(uicc_st *const uicc_state);
 uicc_ret_et uicc_fs_select_file_dfname(uicc_st *const uicc_state,
                                        char const *const df_name,
                                        uint32_t const df_name_len);
+
 /**
  * @brief Select a file by FID (file identifier).
  * @param uicc_state
@@ -294,30 +344,8 @@ uicc_ret_et uicc_fs_select_record_idx(uicc_st *const uicc_state,
 /**
  * @brief Select data with an index in a transparent buffer.
  * @param uicc_state
- * @param offset Offset in the transparent buffer.
+ * @param offset_prel Parent-relative offset in the transparent buffer.
  * @return Return code.
  */
 uicc_ret_et uicc_fs_select_data_offset(uicc_st *const uicc_state,
-                                       uint32_t offset);
-
-/**
- * @brief Parse an item header.
- * @param item_hdr_raw Item header to parse.
- * @param item_hdr Where to store the parsed item header.
- * @return Return code.
- * @note The 'offset' field of the parsed item will not be populated.
- */
-uicc_ret_et uicc_fs_item_hdr_prs(
-    uicc_fs_item_hdr_raw_st const *const item_hdr_raw,
-    uicc_fs_item_hdr_st *const item_hdr);
-
-/**
- * @brief Parse a file header.
- * @param file_hdr_raw File header to parse.
- * @param file_hdr Where to store the parsed file header.
- * @return Return code.
- * @note The item portion of the header will not be parsed.
- */
-uicc_ret_et uicc_fs_file_hdr_prs(
-    uicc_fs_file_hdr_raw_st const *const file_hdr_raw,
-    uicc_fs_file_hdr_st *const file_hdr);
+                                       uint32_t offset_prel);

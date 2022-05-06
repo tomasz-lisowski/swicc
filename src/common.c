@@ -1,5 +1,7 @@
 #include "uicc.h"
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 void uicc_etu(uint32_t *const etu, uint16_t const fi, uint8_t const di,
               uint32_t const fmax)
@@ -69,7 +71,7 @@ uicc_ret_et uicc_hexstr_bytearr(char const *const hexstr,
 
 uicc_ret_et uicc_reset(uicc_st *const uicc_state)
 {
-    uicc_ret_et ret = UICC_RET_UNKNOWN;
+    uicc_ret_et ret = UICC_RET_ERROR;
     ret = uicc_fs_reset(uicc_state);
     if (ret != UICC_RET_SUCCESS)
     {
@@ -83,4 +85,16 @@ uicc_ret_et uicc_reset(uicc_st *const uicc_state)
              uicc_io_di_arr[UICC_TP_CONF_DEFAULT],
              uicc_io_fmax_arr[UICC_TP_CONF_DEFAULT]);
     return UICC_RET_SUCCESS;
+}
+
+uicc_ret_et uicc_terminate(uicc_st *const uicc_state)
+{
+    uicc_ret_et ret = uicc_reset(uicc_state);
+    if (ret != UICC_RET_SUCCESS)
+    {
+        return ret;
+    }
+    uicc_fs_disk_unload(uicc_state);
+    ret = UICC_RET_SUCCESS;
+    return ret;
 }
