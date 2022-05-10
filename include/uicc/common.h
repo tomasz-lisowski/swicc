@@ -15,8 +15,9 @@ typedef enum uicc_ret_e
 {
     UICC_RET_UNKNOWN = 0,
     UICC_RET_SUCCESS =
-        1,          /* In principle =1, allows for use as 'if' condition. */
-    UICC_RET_ERROR, /* Unspecified error (non-critical). */
+        1,              /* In principle =1, allows for use as 'if' condition. */
+    UICC_RET_ERROR,     /* Unspecified error (non-critical). */
+    UICC_RET_PARAM_BAD, /* Generic error to indicate the parameter was bad. */
 
     UICC_RET_APDU_HDR_TOO_SHORT,
     UICC_RET_APDU_UNHANDLED,
@@ -37,12 +38,7 @@ typedef enum uicc_ret_e
     UICC_RET_FS_NOT_FOUND, /* E.g. SELECT with FID was done but a file with
                             the given FID does not exist. */
 
-    UICC_RET_DO_BERTLV_NOT_FOUND, /* E.g. tried to find a BER-TLV by tag but it
-                             was not found in a given DO. */
-    UICC_RET_DO_BERTLV_INVALID,   /* E.g. tried to parse a BER-TLV but it turned
-                                     out to be incorrectly encoded thus invalid.
-                                   */
-    UICC_RET_PARAM_BAD, /* Generic error to indicate the parameter was bad. */
+    UICC_RET_DATO_END, /* Reached end of buffer/data. */
 } uicc_ret_et;
 
 /**

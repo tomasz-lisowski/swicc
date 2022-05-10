@@ -6,6 +6,7 @@ static char const *const uicc_dbg_table_str_ret[] = {
     [UICC_RET_UNKNOWN] = "unknown",
     [UICC_RET_SUCCESS] = "success",
     [UICC_RET_ERROR] = "unspecified error",
+    [UICC_RET_PARAM_BAD] = "bad parameter",
 
     [UICC_RET_APDU_HDR_TOO_SHORT] = "APDU header is too short",
     [UICC_RET_APDU_UNHANDLED] = "APDU unhandled",
@@ -24,9 +25,7 @@ static char const *const uicc_dbg_table_str_ret[] = {
     [UICC_RET_ATR_INVALID] = "invalid ATR",
     [UICC_RET_FS_NOT_FOUND] = "not found in FS",
 
-    [UICC_RET_DO_BERTLV_NOT_FOUND] = "BER-TLV not found",
-    [UICC_RET_DO_BERTLV_INVALID] = "BER-TLV invalid",
-    [UICC_RET_PARAM_BAD] = "bad parameter",
+    [UICC_RET_DATO_END] = "DO end of data",
 };
 #endif
 

@@ -233,8 +233,10 @@ static uicc_ret_et fsm_handle_s_cmd_wait(uicc_st *const uicc_state)
                         }
                         else
                         {
-                            /* The command has been handled from just the header
-                             * (or rejected early). */
+                            /**
+                             * The command has been handled from just the header
+                             * (or rejected early).
+                             */
                             uicc_state->internal.fsm_state =
                                 UICC_FSM_STATE_CMD_WAIT;
                         }
