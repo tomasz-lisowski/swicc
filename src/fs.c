@@ -1,4 +1,5 @@
 #include "uicc.h"
+#include <byteswap.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,9 +20,9 @@
  * valid on success.
  * @return Return code.
  */
-__attribute__((unused)) static uicc_ret_et disk_root_tree_find(
-    uicc_fs_disk_st *const disk, uint8_t const tree_idx,
-    uicc_fs_tree_st **const tree)
+static uicc_ret_et disk_root_tree_find(uicc_fs_disk_st *const disk,
+                                       uint8_t const tree_idx,
+                                       uicc_fs_tree_st **const tree)
 {
     uint8_t tree_idx_cur = 0U;
     uicc_fs_tree_st *tree_tmp = disk->root;
@@ -239,7 +240,8 @@ static uicc_ret_et fs_tree_file_foreach(uicc_fs_tree_st *const tree,
 uicc_ret_et uicc_fs_reset(uicc_st *const uicc_state)
 {
     memset(&uicc_state->internal.fs.va, 0U, sizeof(uicc_fs_va_st));
-    return UICC_RET_SUCCESS;
+    /* Select MF by default. */
+    return uicc_fs_select_file_id(uicc_state, bswap_16(0x3F00));
 }
 
 uicc_ret_et uicc_fs_disk_load(uicc_st *const uicc_state,
@@ -280,6 +282,7 @@ uicc_ret_et uicc_fs_disk_load(uicc_st *const uicc_state,
                             uicc_fs_tree_st *tree = NULL;
                             uicc_ret_et ret_item = UICC_RET_SUCCESS;
                             uint32_t data_idx = UICC_FS_MAGIC_LEN;
+                            uint8_t tree_idx = 0U;
                             /**
                              * Assume the file length matches the disk length
                              * (no extra bytes).
@@ -325,7 +328,15 @@ uicc_ret_et uicc_fs_disk_load(uicc_st *const uicc_state,
                                 {
                                     break;
                                 }
-                                if (item_hdr.type == UICC_FS_ITEM_TYPE_INVALID)
+                                /**
+                                 * Make sure all trees are valid and the first
+                                 * one is the MF.
+                                 */
+                                if (item_hdr.type ==
+                                        UICC_FS_ITEM_TYPE_INVALID ||
+                                    (tree_idx == 0 &&
+                                     item_hdr.type !=
+                                         UICC_FS_ITEM_TYPE_FILE_MF))
                                 {
                                     ret_item = UICC_RET_ERROR;
                                     break;
@@ -364,6 +375,9 @@ uicc_ret_et uicc_fs_disk_load(uicc_st *const uicc_state,
 
                                 /* Keep track how much of the file was read. */
                                 data_idx += tree->len;
+
+                                /* Keep track of the number of trees. */
+                                tree_idx += 1U;
                             }
                             /**
                              * By default the return code is 'success' so if
@@ -406,6 +420,14 @@ uicc_ret_et uicc_fs_disk_load(uicc_st *const uicc_state,
         {
             ret = uicc_fs_lutid_rebuild(disk);
         }
+        if (ret == UICC_RET_SUCCESS)
+        {
+            /**
+             * Reset the file system after everything has been successfully
+             * loaded and LUTs have been created.
+             */
+            ret = uicc_fs_reset(uicc_state);
+        }
     }
     if (ret != UICC_RET_SUCCESS)
     {
@@ -416,11 +438,17 @@ uicc_ret_et uicc_fs_disk_load(uicc_st *const uicc_state,
 
 void uicc_fs_disk_unload(uicc_st *const uicc_state)
 {
-    /* This also frees the SID LUT of all trees. */
-    uicc_fs_disk_root_empty(&uicc_state->internal.fs.disk);
-
-    uicc_fs_disk_lutid_empty(&uicc_state->internal.fs.disk);
+    uicc_fs_disk_free(&uicc_state->internal.fs.disk);
     memset(&uicc_state->internal.fs, 0U, sizeof(uicc_state->internal.fs));
+}
+
+void uicc_fs_disk_free(uicc_fs_disk_st *const disk)
+{
+    /* This also frees the SID LUT of all trees. */
+    uicc_fs_disk_root_empty(disk);
+
+    uicc_fs_disk_lutid_empty(disk);
+    memset(disk, 0U, sizeof(*disk));
 }
 
 void uicc_fs_disk_root_empty(uicc_fs_disk_st *const disk)
@@ -518,6 +546,7 @@ uicc_ret_et uicc_fs_item_hdr_prs(
     };
     item_hdr->lcs = item_hdr_raw->lcs;
     item_hdr->size = item_hdr_raw->size;
+    item_hdr->offset_prel = item_hdr_raw->offset_prel;
     return UICC_RET_SUCCESS;
 }
 
@@ -571,7 +600,7 @@ uicc_ret_et uicc_fs_lutid_rebuild(uicc_fs_disk_st *const disk)
     uicc_fs_disk_lutid_empty(disk);
     disk->lutid.size_item1 = sizeof(uicc_fs_id_kt);
     disk->lutid.size_item2 =
-        sizeof(uint8_t) + sizeof(uint32_t); /* Tree index + Offset */
+        sizeof(uint32_t) + sizeof(uint8_t); /* Offset + tree index */
     disk->lutid.count_max = LUT_COUNT_START;
     disk->lutid.count = 0U;
     disk->lutid.buf1 = malloc(disk->lutid.count_max * disk->lutid.size_item1);
@@ -655,15 +684,102 @@ uicc_ret_et uicc_fs_select_file_dfname(uicc_st *const uicc_state,
     return UICC_RET_UNKNOWN;
 }
 
-uicc_ret_et uicc_fs_select_file_fid(uicc_st *const uicc_state,
-                                    uicc_fs_id_kt const fid)
+uicc_ret_et uicc_fs_select_file_id(uicc_st *const uicc_state,
+                                   uicc_fs_id_kt const fid)
 {
-    return UICC_RET_UNKNOWN;
+    uicc_fs_lut_st *const lutid = &uicc_state->internal.fs.disk.lutid;
+
+    /* Make sure the ID LUT is as expected. */
+    if (lutid->buf1 == NULL || lutid->size_item1 != sizeof(uicc_fs_id_kt) ||
+        lutid->size_item2 != sizeof(uint32_t) + sizeof(uint8_t))
+    {
+        return UICC_RET_ERROR;
+    }
+
+    /* Find the file by ID. */
+    uint32_t entry_idx = 0U;
+    while (entry_idx < lutid->count)
+    {
+        if (memcmp(&lutid->buf1[lutid->size_item1 * entry_idx], &fid,
+                   lutid->size_item1) == 0)
+        {
+            break;
+        }
+        entry_idx += 1U;
+    }
+    if (entry_idx >= lutid->count)
+    {
+        return UICC_RET_FS_NOT_FOUND;
+    }
+    else
+    {
+        uint32_t const offset =
+            *(uint32_t *)&lutid->buf2[(lutid->size_item2 * entry_idx) + 0U];
+        uint8_t const tree_idx =
+            lutid->buf2[(lutid->size_item2 * entry_idx) + sizeof(uint32_t)];
+        uicc_fs_tree_st *tree;
+        if (disk_root_tree_find(&uicc_state->internal.fs.disk, tree_idx,
+                                &tree) != UICC_RET_SUCCESS ||
+            tree->len <= offset)
+        {
+            return UICC_RET_ERROR;
+        }
+        uicc_fs_file_hdr_st file;
+        uicc_fs_file_hdr_raw_st *const file_raw =
+            (uicc_fs_file_hdr_raw_st *)&tree->buf[offset];
+        if (uicc_fs_item_hdr_prs(&file_raw->item, &file.item) !=
+            UICC_RET_SUCCESS)
+        {
+            return UICC_RET_ERROR;
+        }
+        file.item.offset_trel = offset;
+
+        /**
+         * Rules for modifying the VA are described in ISO 7816-4:2020 p.22
+         * sec.7.2.2.
+         */
+
+        switch (file.item.type)
+        {
+        case UICC_FS_ITEM_TYPE_FILE_MF:
+        case UICC_FS_ITEM_TYPE_FILE_ADF:
+        case UICC_FS_ITEM_TYPE_FILE_DF:
+            memset(&uicc_state->internal.fs.va, 0U,
+                   sizeof(uicc_state->internal.fs.va));
+            uicc_state->internal.fs.va.cur_df = file;
+            break;
+        case UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
+        case UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
+        case UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC: {
+            uicc_fs_file_hdr_st file_parent;
+            uicc_fs_file_hdr_raw_st *const file_parent_raw =
+                (uicc_fs_file_hdr_raw_st *)&tree
+                    ->buf[file.item.offset_trel - file.item.offset_prel];
+            if (uicc_fs_item_hdr_prs(&file_parent_raw->item,
+                                     &file_parent.item) != UICC_RET_SUCCESS ||
+                !(file_parent.item.type == UICC_FS_ITEM_TYPE_FILE_MF ||
+                  file_parent.item.type == UICC_FS_ITEM_TYPE_FILE_ADF ||
+                  file_parent.item.type == UICC_FS_ITEM_TYPE_FILE_DF))
+            {
+                /* Parent must be a folder. */
+                return UICC_RET_ERROR;
+            }
+            memset(&uicc_state->internal.fs.va, 0U,
+                   sizeof(uicc_state->internal.fs.va));
+            uicc_state->internal.fs.va.cur_df = file_parent;
+            uicc_state->internal.fs.va.cur_ef = file;
+            break;
+        }
+        default:
+            return UICC_RET_ERROR;
+        }
+        uicc_state->internal.fs.va.cur_adf = tree;
+        return UICC_RET_SUCCESS;
+    }
 }
 
 uicc_ret_et uicc_fs_select_file_path(uicc_st *const uicc_state,
-                                     char const *const path,
-                                     uint32_t const path_len)
+                                     uicc_fs_path_st const path)
 {
     return UICC_RET_UNKNOWN;
 }

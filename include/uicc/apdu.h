@@ -64,8 +64,10 @@ typedef enum uicc_apdu_sw1_e
     UICC_APDU_SW1_PROC_NULL, /* Request no action on data transfer */
     UICC_APDU_SW1_PROC_ACK,  /* Acknowledgement leading to transfer of rest of
                                 data. */
-    /* The case where procedure byte is a regular SW1 is handled like the other
-     * SW1 values. */
+    /**
+     * The case where procedure byte is a regular SW1 is handled like the other
+     * SW1 values.
+     */
 } uicc_apdu_sw1_et;
 
 /**
@@ -115,6 +117,7 @@ typedef struct uicc_apdu_data_s
 typedef struct uicc_apdu_cmd_s
 {
     uicc_apdu_cmd_hdr_st *hdr;
+    uint8_t *p3;
     uicc_apdu_data_st *data;
 } uicc_apdu_cmd_st;
 
@@ -128,40 +131,6 @@ typedef struct uicc_apdu_res_s
     uint8_t sw2;
     uicc_apdu_data_st data;
 } uicc_apdu_res_st;
-
-/* APDU handler. */
-typedef uicc_ret_et uicc_apdu_h_ft(uicc_st *const uicc_state,
-                                   uicc_apdu_cmd_st const *const cmd,
-                                   uicc_apdu_res_st *const res);
-/**
- * Store pointers to handlers for every instruction in the interindustry class.
- */
-extern uicc_apdu_h_ft *const uicc_apdu_h[0xFF + 1U];
-
-/**
- * @brief All APDUs in the proprietary class require non-interindusry
- * implementations for handlers. The handler passed to this function is the
- * function that will get these proprietary messages and is expected to handle
- * them.
- * @param uicc_state
- * @param handler Handler for all proprietary messages.
- * @return Return code.
- * @note Sorry for the long name...
- */
-uicc_ret_et uicc_apdu_handle_pro_register(uicc_st *const uicc_state,
-                                          uicc_apdu_h_ft *const handler);
-
-/**
- * @brief Handle all APDUs.
- * @param uicc_state
- * @param cmd Command to handle.
- * @param res Response to the command.
- * @return Return code.
- */
-uicc_apdu_h_ft uicc_apdu_handle;
-uicc_ret_et uicc_apdu_handle(uicc_st *const uicc_state,
-                             uicc_apdu_cmd_st const *const cmd,
-                             uicc_apdu_res_st *const res);
 
 /**
  * @brief Parse the raw CLA byte.

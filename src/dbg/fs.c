@@ -16,7 +16,6 @@ static char const *const item_type_str[] = {
     [UICC_FS_ITEM_TYPE_HEX] = "HEX",
     [UICC_FS_ITEM_TYPE_ASCII] = "ASCII",
 };
-#endif
 
 static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
                                uicc_fs_tree_st *const tree,
@@ -231,8 +230,10 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
 
     /* Safe cast since unused length is never greater than the buffer size. */
     *buf_str_len = (uint16_t)(buf_size - buf_unused_len);
+
     return ret;
 }
+#endif
 
 uicc_ret_et uicc_dbg_fs_str(char *const buf_str, uint16_t *const buf_str_len,
                             uicc_fs_disk_st const *const disk)

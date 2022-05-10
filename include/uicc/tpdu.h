@@ -9,12 +9,11 @@
 /**
  * An internal format of the TPDU command which is the result of parsing a raw
  * TPDU command.
- * NOTE: P3 is byte 0 of data to allow for APDU struct to be created by
- * obtaining references to parts of the TPDU struct.
  */
 typedef struct uicc_tpdu_cmd_s
 {
     uicc_apdu_cmd_hdr_st hdr;
+    uint8_t p3;
     uicc_apdu_data_st data;
 } uicc_tpdu_cmd_st;
 

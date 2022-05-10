@@ -1,6 +1,7 @@
 #pragma once
 
 #include "uicc/apdu.h"
+#include "uicc/apduh.h"
 #include "uicc/atr.h"
 #include "uicc/dato.h"
 #include "uicc/dbg.h"
@@ -45,12 +46,16 @@ typedef struct uicc_s
     uint16_t buf_tx_len;
     struct uicc_internal_s
     {
-        uicc_apdu_cmd_hdr_st
-            apdu_cmd_hdr_cur; /* Store the header of the actively handled APDU
-                                 command. */
+        /* Store the header of the actively handled APDU command. */
+        struct
+        {
+            uicc_apdu_cmd_hdr_st hdr;
+            uint8_t p3;
+        } apdu_cur;
+
         uicc_fsm_state_et fsm_state;
         uicc_tp_st tp;
         uicc_fs_st fs;
-        uicc_apdu_h_ft *handle_pro; /* For all proprietary classes. */
+        uicc_apduh_ft *apduh_pro; /* For all proprietary classes. */
     } internal;
 } uicc_st;

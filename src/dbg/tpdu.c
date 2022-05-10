@@ -16,9 +16,10 @@ uicc_ret_et uicc_dbg_tpdu_cmd_str(char *const buf_str,
         "(TPDU"
         "\n  (CLA (CHAIN '%s') (SM '%s') (INFO '%s') (LCHAN %u))"
         "\n  (INS OP '%s')"
-        "\n  (P1 0x%x)"
-        "\n  (P2 0x%x)"
-        "\n  (P3 0x%x))",
+        "\n  (P1 0x%02X)"
+        "\n  (P2 0x%02X)"
+        "\n  (P3 0x%02X))"
+        "\n  (Data Len %u))",
         // clang-format on
         uicc_dbg_apdu_cla_ccc_str(tpdu_cmd->hdr.cla),
         uicc_dbg_apdu_cla_sm_str(tpdu_cmd->hdr.cla),
@@ -26,7 +27,7 @@ uicc_ret_et uicc_dbg_tpdu_cmd_str(char *const buf_str,
         tpdu_cmd->hdr.cla.type == UICC_APDU_CLA_TYPE_INTERINDUSTRY
             ? uicc_dbg_apdu_ins_str(tpdu_cmd->hdr.ins)
             : "???",
-        tpdu_cmd->hdr.p1, tpdu_cmd->hdr.p2, tpdu_cmd->data.b[0U]);
+        tpdu_cmd->hdr.p1, tpdu_cmd->hdr.p2, tpdu_cmd->p3, tpdu_cmd->data.len);
     if (bytes_written < 0)
     {
         return UICC_RET_BUFFER_TOO_SHORT;

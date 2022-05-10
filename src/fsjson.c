@@ -16,6 +16,7 @@
  * of item (encoded as a JSON object).
  */
 typedef uicc_ret_et jsitem_prs_ft(cJSON const *const item_json,
+                                  uint32_t const offset_prel,
                                   uint8_t *const buf, uint32_t *const buf_len);
 /**
  * Declare early to avoid having to provide delcarations for all the individual
@@ -28,10 +29,13 @@ static jsitem_prs_ft *const jsitem_prs[];
  * file header and populate the raw header struct.
  * @param item_json
  * @param file_hdr_raw
+ * @param offset_prel Offset from the first byte of the parent to the first byte
+ * of the file header.
  * @return Return code.
  */
 static uicc_ret_et jsitem_prs_file_hdr(
-    cJSON const *const item_json, uicc_fs_file_hdr_raw_st *const file_hdr_raw)
+    cJSON const *const item_json, uicc_fs_file_hdr_raw_st *const file_hdr_raw,
+    uint32_t const offset_prel)
 {
     uicc_ret_et ret = UICC_RET_ERROR;
     cJSON *const name_obj = cJSON_GetObjectItemCaseSensitive(item_json, "name");
@@ -113,6 +117,7 @@ static uicc_ret_et jsitem_prs_file_hdr(
 
             if (ret_id == UICC_RET_SUCCESS && ret_sid == UICC_RET_SUCCESS)
             {
+                file_hdr_raw->item.offset_prel = offset_prel;
                 ret = UICC_RET_SUCCESS;
             }
         }
@@ -192,6 +197,7 @@ static uicc_ret_et jsitem_prs_type_str(char const *const type_str,
  */
 static jsitem_prs_ft jsitem_prs_demux;
 static uicc_ret_et jsitem_prs_demux(cJSON const *const item_json,
+                                    uint32_t const offset_prel,
                                     uint8_t *const buf, uint32_t *const buf_len)
 {
     uicc_ret_et ret = UICC_RET_ERROR;
@@ -207,7 +213,7 @@ static uicc_ret_et jsitem_prs_demux(cJSON const *const item_json,
                                       &type);
             if (ret == UICC_RET_SUCCESS && type != UICC_FS_ITEM_TYPE_INVALID)
             {
-                ret = jsitem_prs[type](item_json, buf, buf_len);
+                ret = jsitem_prs[type](item_json, offset_prel, buf, buf_len);
                 /* Basically returns the return code of prs. */
             }
         }
@@ -226,6 +232,7 @@ static uicc_ret_et jsitem_prs_demux(cJSON const *const item_json,
  */
 static jsitem_prs_ft jsitem_prs_file_folder;
 static uicc_ret_et jsitem_prs_file_folder(cJSON const *const item_json,
+                                          uint32_t const offset_prel,
                                           uint8_t *const buf,
                                           uint32_t *const buf_len)
 {
@@ -241,7 +248,9 @@ static uicc_ret_et jsitem_prs_file_folder(cJSON const *const item_json,
         cJSON_ArrayForEach(item, contents_obj)
         {
             uint32_t item_size = *buf_len - items_len;
-            ret_item = jsitem_prs_demux(item, &buf[items_len], &item_size);
+            ret_item = jsitem_prs_demux(
+                item, sizeof(uicc_fs_file_hdr_raw_st) + items_len,
+                &buf[items_len], &item_size);
             if (ret_item != UICC_RET_SUCCESS)
             {
                 break;
@@ -272,12 +281,13 @@ static uicc_ret_et jsitem_prs_file_folder(cJSON const *const item_json,
 }
 
 static uicc_ret_et jsitem_prs_file_mf(cJSON const *const item_json,
+                                      uint32_t const offset_prel,
                                       uint8_t *const buf,
                                       uint32_t *const buf_len)
 {
     uicc_fs_file_hdr_raw_st *hdr_raw;
-    uicc_ret_et ret =
-        jsitem_prs[UICC_FS_ITEM_TYPE_FILE_DF](item_json, buf, buf_len);
+    uicc_ret_et ret = jsitem_prs[UICC_FS_ITEM_TYPE_FILE_DF](
+        item_json, offset_prel, buf, buf_len);
     if (ret == UICC_RET_SUCCESS)
     {
         if (*buf_len >= sizeof(*hdr_raw))
@@ -294,12 +304,13 @@ static uicc_ret_et jsitem_prs_file_mf(cJSON const *const item_json,
     return ret;
 }
 static uicc_ret_et jsitem_prs_file_adf(cJSON const *const item_json,
+                                       uint32_t const offset_prel,
                                        uint8_t *const buf,
                                        uint32_t *const buf_len)
 {
     uicc_fs_file_hdr_raw_st *hdr_raw;
-    uicc_ret_et ret =
-        jsitem_prs[UICC_FS_ITEM_TYPE_FILE_DF](item_json, buf, buf_len);
+    uicc_ret_et ret = jsitem_prs[UICC_FS_ITEM_TYPE_FILE_DF](
+        item_json, offset_prel, buf, buf_len);
     if (ret == UICC_RET_SUCCESS)
     {
         if (*buf_len > sizeof(*hdr_raw))
@@ -316,6 +327,7 @@ static uicc_ret_et jsitem_prs_file_adf(cJSON const *const item_json,
     return ret;
 }
 static uicc_ret_et jsitem_prs_file_df(cJSON const *const item_json,
+                                      uint32_t const offset_prel,
                                       uint8_t *const buf,
                                       uint32_t *const buf_len)
 {
@@ -323,15 +335,15 @@ static uicc_ret_et jsitem_prs_file_df(cJSON const *const item_json,
     uicc_fs_file_hdr_raw_st hdr_raw;
     if (item_json != NULL && cJSON_IsObject(item_json) == true)
     {
-        ret = jsitem_prs_file_hdr(item_json, &hdr_raw);
+        ret = jsitem_prs_file_hdr(item_json, &hdr_raw, offset_prel);
         if (ret == UICC_RET_SUCCESS)
         {
             if (*buf_len >= sizeof(hdr_raw))
             {
                 /* Safe because buffer length is greater than header length. */
                 uint32_t items_len = (uint32_t)(*buf_len - sizeof(hdr_raw));
-                ret = jsitem_prs_file_folder(item_json, &buf[sizeof(hdr_raw)],
-                                             &items_len);
+                ret = jsitem_prs_file_folder(item_json, sizeof(hdr_raw),
+                                             &buf[sizeof(hdr_raw)], &items_len);
                 if (ret == UICC_RET_SUCCESS)
                 {
                     if (*buf_len >= sizeof(hdr_raw) + items_len)
@@ -365,6 +377,7 @@ static uicc_ret_et jsitem_prs_file_df(cJSON const *const item_json,
     return ret;
 }
 static uicc_ret_et jsitem_prs_file_ef_transparent(cJSON const *const item_json,
+                                                  uint32_t const offset_prel,
                                                   uint8_t *const buf,
                                                   uint32_t *const buf_len)
 {
@@ -372,7 +385,7 @@ static uicc_ret_et jsitem_prs_file_ef_transparent(cJSON const *const item_json,
     uicc_fs_file_hdr_raw_st hdr_raw;
     if (item_json != NULL && cJSON_IsObject(item_json) == true)
     {
-        ret = jsitem_prs_file_hdr(item_json, &hdr_raw);
+        ret = jsitem_prs_file_hdr(item_json, &hdr_raw, offset_prel);
         if (ret == UICC_RET_SUCCESS)
         {
             if (*buf_len >= sizeof(hdr_raw))
@@ -392,8 +405,9 @@ static uicc_ret_et jsitem_prs_file_ef_transparent(cJSON const *const item_json,
                      * will become a byte array and will be interpreted as one
                      * by the FS anyways.
                      */
-                    ret_data = jsitem_prs_demux(
-                        contents_obj, &buf[sizeof(hdr_raw)], &contents_len);
+                    ret_data =
+                        jsitem_prs_demux(contents_obj, sizeof(hdr_raw),
+                                         &buf[sizeof(hdr_raw)], &contents_len);
                     if (ret_data == UICC_RET_SUCCESS)
                     {
                         if (*buf_len >= sizeof(hdr_raw) + contents_len)
@@ -437,6 +451,7 @@ static uicc_ret_et jsitem_prs_file_ef_transparent(cJSON const *const item_json,
     return ret;
 }
 static uicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
+                                                  uint32_t const offset_prel,
                                                   uint8_t *const buf,
                                                   uint32_t *const buf_len)
 {
@@ -444,7 +459,7 @@ static uicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
     uicc_fs_ef_linearfixed_hdr_raw_st hdr_raw;
     if (item_json != NULL && cJSON_IsObject(item_json) == true)
     {
-        ret = jsitem_prs_file_hdr(item_json, &hdr_raw.file);
+        ret = jsitem_prs_file_hdr(item_json, &hdr_raw.file, offset_prel);
         if (ret == UICC_RET_SUCCESS)
         {
             if (*buf_len >= sizeof(hdr_raw))
@@ -483,7 +498,8 @@ static uicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
                             memset(&buf[sizeof(hdr_raw) + contents_len], 0xFF,
                                    hdr_raw.rcrd_size);
                             ret_item = jsitem_prs_demux(
-                                item, &buf[sizeof(hdr_raw) + contents_len],
+                                item, sizeof(hdr_raw),
+                                &buf[sizeof(hdr_raw) + contents_len],
                                 &item_size);
                             if (ret_item != UICC_RET_SUCCESS ||
                                 item_size > hdr_raw.rcrd_size)
@@ -531,13 +547,15 @@ static uicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
     return ret;
 }
 static uicc_ret_et jsitem_prs_file_ef_cyclic(cJSON const *const item_json,
+                                             uint32_t const offset_prel,
                                              uint8_t *const buf,
                                              uint32_t *const buf_len)
 {
-    return jsitem_prs[UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED](item_json, buf,
-                                                             buf_len);
+    return jsitem_prs[UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED](
+        item_json, offset_prel, buf, buf_len);
 }
 static uicc_ret_et jsitem_prs_item_dato_bertlv(cJSON const *const item_json,
+                                               uint32_t const offset_prel,
                                                uint8_t *const buf,
                                                uint32_t *const buf_len)
 {
@@ -548,6 +566,7 @@ static uicc_ret_et jsitem_prs_item_dato_bertlv(cJSON const *const item_json,
     return UICC_RET_SUCCESS;
 }
 static uicc_ret_et jsitem_prs_item_hex(cJSON const *const item_json,
+                                       uint32_t const offset_prel,
                                        uint8_t *const buf,
                                        uint32_t *const buf_len)
 {
@@ -585,6 +604,7 @@ static uicc_ret_et jsitem_prs_item_hex(cJSON const *const item_json,
     return ret;
 }
 static uicc_ret_et jsitem_prs_item_ascii(cJSON const *const item_json,
+                                         uint32_t const offset_prel,
                                          uint8_t *const buf,
                                          uint32_t *const buf_len)
 {
@@ -697,7 +717,7 @@ static uicc_ret_et disk_json_prs(uicc_fs_disk_st *const disk,
             do
             {
                 item_size = tree->size - tree->len;
-                ret = jsitem_prs_demux(tree_obj, &tree->buf[tree->len],
+                ret = jsitem_prs_demux(tree_obj, 0U, &tree->buf[tree->len],
                                        &item_size);
                 if (ret == UICC_RET_BUFFER_TOO_SHORT)
                 {

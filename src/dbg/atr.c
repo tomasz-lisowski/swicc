@@ -183,7 +183,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
                     ret = snprintf(buf_str + bytes_written,
                                    *buf_str_len - (uint32_t)bytes_written,
                                    // clang-format off
-                                   "\n    (T%c%u 0x%02x)",
+                                   "\n    (T%c%u 0x%02X)",
                                    // clang-format on
                                    'A' + y_idx, chunk_idx, chunk.tabcd[y_idx]);
                     if (ret < 0)

@@ -48,6 +48,12 @@ typedef enum uicc_fs_lcs_e
     UICC_FS_LCS_TERM,         /* Termination */
 } uicc_fs_lcs_et;
 
+typedef enum uicc_fs_path_type_e
+{
+    UICC_FS_PATH_TYPE_MF, /* Relative to the MF. */
+    UICC_FS_PATH_TYPE_DF, /* Relative to the current DF. */
+} uicc_fs_path_type_et;
+
 typedef uint16_t uicc_fs_id_kt;      /* ID like FID. */
 typedef uint8_t uicc_fs_sid_kt;      /* Short ID like SFI. */
 typedef uint16_t uicc_fs_rcrd_id_kt; /* Record 'number' or ID. */
@@ -97,13 +103,22 @@ typedef struct uicc_fs_item_hdr_s
     uint32_t size;
     uicc_fs_lcs_et lcs;
     uicc_fs_item_type_et type;
+
+    /* Offset from top of the tree to the header of this item. */
     uint32_t offset_trel;
+
+    /**
+     * Offset from the start of the header of the parent to this item. A 0 means
+     * the item has no parent.
+     */
+    uint32_t offset_prel;
 } uicc_fs_item_hdr_st;
 typedef struct uicc_fs_item_hdr_raw_s
 {
     uint32_t size;
     uint8_t lcs;
     uint8_t type;
+    uint32_t offset_prel;
 } __attribute__((packed)) uicc_fs_item_hdr_raw_st;
 
 /**
@@ -149,9 +164,9 @@ typedef struct uicc_fs_rcrd_s
 {
     uint32_t size;
     uint32_t parent_offset_trel;
+    uint32_t offset_prel_start;
     uicc_fs_rcrd_id_kt id;
     uicc_fs_rcrd_idx_kt idx;
-    uint32_t offset_prel_start;
 } uicc_fs_rcrd_st;
 
 /* Describes a transparent buffer. */
@@ -168,19 +183,25 @@ typedef struct uicc_fs_do_s
 {
     uint32_t size;
     uint32_t parent_offset_trel;
-    uint32_t offset_ptrel;
+    uint32_t offset_prel_start;
 } uicc_fs_do_st;
+
+typedef struct uicc_fs_path_s
+{
+    uicc_fs_path_type_et type;
+    uint8_t *b;
+    uint32_t len;
+} uicc_fs_path_st;
 
 /**
  * For a logical channel, a validity area (VA) summarizes the result
- * of all successful file selections.
- * ISO 7816-4:2020 p.22 sec.7.2.1.
+ * of all successful file selections. ISO 7816-4:2020 p.22 sec.7.2.1.
  */
 typedef struct uicc_fs_va_s
 {
-    uicc_fs_item_hdr_st cur_adf;
-    uicc_fs_item_hdr_st cur_df;
-    uicc_fs_item_hdr_st cur_ef;
+    uicc_fs_tree_st *cur_adf;
+    uicc_fs_file_hdr_st cur_df;
+    uicc_fs_file_hdr_st cur_ef;
     /**
      * 'curFile' described in ISO 7816-4:2020 p.22 sec.7.2.1 is
      * skipped because it will be computed using 'cur_df' and
@@ -216,10 +237,16 @@ uicc_ret_et uicc_fs_disk_load(uicc_st *const uicc_state,
 
 /**
  * @brief Unload the in-memory disk and frees any memory used for storing the
- * FS.
+ * FS. Also ensure the validity area is reset properly.
  * @param uicc_state
  */
 void uicc_fs_disk_unload(uicc_st *const uicc_state);
+
+/**
+ * @brief Free a disk struct.
+ * @param disk
+ */
+void uicc_fs_disk_free(uicc_fs_disk_st *const disk);
 
 /**
  * @brief Dealloc all disk buffers that hold forest data.
@@ -253,7 +280,8 @@ uicc_ret_et uicc_fs_disk_save(uicc_fs_disk_st *const disk,
  * @param item_hdr_raw Item header to parse.
  * @param item_hdr Where to store the parsed item header.
  * @return Return code.
- * @note The offset field of the parsed item will not be populated.
+ * @note The tree offset field of the parsed item will not be populated. The
+ * offset to the parent will be parsed.
  */
 uicc_ret_et uicc_fs_item_hdr_prs(
     uicc_fs_item_hdr_raw_st const *const item_hdr_raw,
@@ -298,23 +326,24 @@ uicc_ret_et uicc_fs_select_file_dfname(uicc_st *const uicc_state,
                                        uint32_t const df_name_len);
 
 /**
- * @brief Select a file by FID (file identifier).
+ * @brief Select a file by file ID (file identifier).
  * @param uicc_state
  * @param fid File identifier.
  * @return Return code.
  */
-uicc_ret_et uicc_fs_select_file_fid(uicc_st *const uicc_state,
-                                    uicc_fs_id_kt const fid);
+uicc_ret_et uicc_fs_select_file_id(uicc_st *const uicc_state,
+                                   uicc_fs_id_kt const fid);
+
 /**
- * @brief Select a file by a path string.
+ * @brief Select a file using a path.
  * @param uicc_state
- * @param path Buffer which must be a concatenation of FIDs.
+ * @param path Buffer which must be a concatenation of file IDs.
  * @param path_len Length of the path in bytes.
  * @return Return code.
  */
 uicc_ret_et uicc_fs_select_file_path(uicc_st *const uicc_state,
-                                     char const *const path,
-                                     uint32_t const path_len);
+                                     uicc_fs_path_st const path);
+
 /**
  * @brief Select a DO by tag. This works because a given tag occurs exactly once
  * in a file.
@@ -324,6 +353,7 @@ uicc_ret_et uicc_fs_select_file_path(uicc_st *const uicc_state,
  */
 uicc_ret_et uicc_fs_select_do_tag(uicc_st *const uicc_state,
                                   uint16_t const tag);
+
 /**
  * @brief Select a record by its unique identifier.
  * @param uicc_state
@@ -332,6 +362,7 @@ uicc_ret_et uicc_fs_select_do_tag(uicc_st *const uicc_state,
  */
 uicc_ret_et uicc_fs_select_record_id(uicc_st *const uicc_state,
                                      uicc_fs_rcrd_id_kt id);
+
 /**
  * @brief Select a record by its record number i.e. index of the record in the
  * file.
@@ -341,6 +372,7 @@ uicc_ret_et uicc_fs_select_record_id(uicc_st *const uicc_state,
  */
 uicc_ret_et uicc_fs_select_record_idx(uicc_st *const uicc_state,
                                       uicc_fs_rcrd_idx_kt idx);
+
 /**
  * @brief Select data with an index in a transparent buffer.
  * @param uicc_state
