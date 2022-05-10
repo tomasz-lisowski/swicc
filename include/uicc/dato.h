@@ -130,10 +130,12 @@ uicc_ret_et uicc_dato_bertlv_dec_next(uicc_dato_bertlv_dec_st *const decoder);
 /**
  * @brief Initialize a BRT-TLV encoder in preparation for encoding a BER-TLV DO.
  * @param encoder
- * @param buf Buffer that will receive the encoded BER-TLV string.
+ * @param buf Buffer that will receive the encoded BER-TLV string. If this is
+ * NULL, the encoding will be considered a dry-run which is useful for getting
+ * the total length of the encoded BER-TLV DO.
  * @param buf_size Size of the provided buffer.
  * @note Encoding is done backwards i.e. from data of the last DO to the header
- * of the first DO.
+ * of the first DO. This can be anything when the buffer is NULL.
  */
 void uicc_dato_bertlv_enc_init(uicc_dato_bertlv_enc_st *const encoder,
                                uint8_t *const buf, uint32_t const buf_size);

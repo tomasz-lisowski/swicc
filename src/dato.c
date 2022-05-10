@@ -1,7 +1,14 @@
 #include "uicc.h"
-#include <byteswap.h>
 #include <string.h>
 
+/**
+ * @brief Parse a BER-TLV-encoded tag.
+ * @param bertlv_tag_prsd Where parsed tag data will be written.
+ * @param tag_len Length of the tag will be written here.
+ * @param tag_buf Where the raw tag is located.
+ * @param tag_buf_size Size of the tag buffer.
+ * @return Return code.
+ */
 static uicc_ret_et bertlv_hdr_tag_prs(
     uicc_dato_bertlv_tag_st *const bertlv_tag_prsd, uint32_t *const tag_len,
     uint8_t const *const tag_buf, uint32_t const tag_buf_size)
@@ -159,15 +166,19 @@ static uicc_ret_et bertlv_hdr_prs(uicc_dato_bertlv_st *const bertlv_prsd,
  * @brief Convert the internal representation of a BER-TLV into the serialized
  * format. This populates the given buffer back from the end towards the front.
  * @param bertlv_deprs The BER-TLV to deparse.
- * @param buf Where to write the BER-TLV in the serialized format.
+ * @param buf Where to write the BER-TLV in the serialized format. If this is
+ * NULL, the length will still be computed but the encoded data will not be
+ * written anywhere.
  * @param len Must contain the maximum buffer length. It receives the actual
- * length written to the buffer.
+ * length written to the buffer. Can be anything when buffer is NULL.
  * @return Return code.
  */
 static uicc_ret_et bertlv_hdr_deprs(
     uicc_dato_bertlv_st const *const bertlv_deprs, uint8_t *const buf,
     uint32_t *const len)
 {
+    bool const dry_run = buf == NULL;
+
     /* The provided BER-TLV is invalid. */
     if (bertlv_deprs->len.form == UICC_DATO_BERTLV_LEN_FORM_INVALID ||
         bertlv_deprs->tag.cla == UICC_DATO_BERTLV_TAG_CLA_INVALID)
@@ -231,13 +242,20 @@ static uicc_ret_et bertlv_hdr_deprs(
             len_raw[0U] = (uint8_t)(0b10000000 | (len_len - 1U));
         }
 
-        /* Check if the length fits in the buffer. */
-        if (len_len > buf_len - *len)
+        if (!dry_run)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            /* Check if the length fits in the buffer. */
+            if (len_len > buf_len - *len)
+            {
+                return UICC_RET_BUFFER_TOO_SHORT;
+            }
         }
+
         *len += len_len;
-        memcpy(&buf[buf_len - *len], len_raw, len_len);
+        if (!dry_run)
+        {
+            memcpy(&buf[buf_len - *len], len_raw, len_len);
+        }
     }
 
     uint8_t tag_raw[UICC_DATO_BERTLV_TAG_LEN_MAX] = {0};
@@ -309,14 +327,20 @@ static uicc_ret_et bertlv_hdr_deprs(
             tag_len = 1U;
         }
 
-        /* Check if the tag fits in the buffer. */
-        if (tag_len > buf_len - *len)
+        if (!dry_run)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            /* Check if the tag fits in the buffer. */
+            if (tag_len > buf_len - *len)
+            {
+                return UICC_RET_BUFFER_TOO_SHORT;
+            }
         }
 
         *len += tag_len;
-        memcpy(&buf[buf_len - *len], tag_raw, tag_len);
+        if (!dry_run)
+        {
+            memcpy(&buf[buf_len - *len], tag_raw, tag_len);
+        }
     }
 
     return UICC_RET_SUCCESS;
@@ -379,9 +403,17 @@ uicc_ret_et uicc_dato_bertlv_dec_next(uicc_dato_bertlv_dec_st *const decoder)
 void uicc_dato_bertlv_enc_init(uicc_dato_bertlv_enc_st *const encoder,
                                uint8_t *const buf, uint32_t const buf_size)
 {
+    bool const dry_run = buf == NULL;
     memset(encoder, 0U, sizeof(*encoder));
     encoder->buf = buf;
-    encoder->size = buf_size;
+    if (dry_run)
+    {
+        encoder->size = UINT32_MAX;
+    }
+    else
+    {
+        encoder->size = buf_size;
+    }
     encoder->len = 0U;
     encoder->offset = encoder->size;
     encoder->len_val = 0U;
@@ -452,6 +484,8 @@ uicc_ret_et uicc_dato_bertlv_enc_data(uicc_dato_bertlv_enc_st *const encoder,
                                       uint8_t const *const data,
                                       uint32_t const data_len)
 {
+    bool const dry_run = encoder->buf == NULL;
+
     /* Cast to force a signed comparison. */
     if (encoder->offset - (int64_t)data_len < 0)
     {
@@ -461,6 +495,9 @@ uicc_ret_et uicc_dato_bertlv_enc_data(uicc_dato_bertlv_enc_st *const encoder,
     encoder->offset -= data_len;
     encoder->len_val += data_len;
     encoder->len += data_len;
-    memcpy(&encoder->buf[encoder->offset], data, data_len);
+    if (!dry_run)
+    {
+        memcpy(&encoder->buf[encoder->offset], data, data_len);
+    }
     return UICC_RET_SUCCESS;
 }
