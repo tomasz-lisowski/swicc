@@ -348,7 +348,7 @@ static uicc_ret_et jsitem_prs_file_df(cJSON const *const item_json,
                 {
                     if (*buf_len >= sizeof(hdr_raw) + items_len)
                     {
-                        hdr_raw.item.lcs = 0U;
+                        hdr_raw.item.lcs = UICC_FS_LCS_OPER_ACTIV;
                         hdr_raw.item.type = UICC_FS_ITEM_TYPE_FILE_DF;
                         /**
                          * Safe cast thanks to the size check that ensures no
@@ -430,7 +430,7 @@ static uicc_ret_et jsitem_prs_file_ef_transparent(cJSON const *const item_json,
                 if (ret_data == UICC_RET_SUCCESS)
                 {
                     hdr_raw.item.type = UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT;
-                    hdr_raw.item.lcs = 0U;
+                    hdr_raw.item.lcs = UICC_FS_LCS_OPER_ACTIV;
                     /**
                      * Safe cast because both values will be positive. Not sure
                      * about overflow of uint32_t.
@@ -527,7 +527,7 @@ static uicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
                         {
                             hdr_raw.file.item.type =
                                 UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED;
-                            hdr_raw.file.item.lcs = 0U;
+                            hdr_raw.file.item.lcs = UICC_FS_LCS_OPER_ACTIV;
                             /* Safe cast due to check on buffer length. */
                             hdr_raw.file.item.size =
                                 (uint32_t)(sizeof(hdr_raw) + contents_len);

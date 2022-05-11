@@ -48,6 +48,13 @@ typedef enum uicc_ret_e
 typedef struct uicc_s uicc_st;
 
 /**
+ * Need it here to declaring it.
+ * XXX: It's important this is updated or removed if it's no longer needed or if
+ * the struct changed definition.
+ */
+typedef struct uicc_fs_file_hdr_s uicc_fs_file_hdr_st;
+
+/**
  * @brief Compute the elementary time unit (ETU) as described in ISO 7816-3:2006
  * p.13 sec.7.1.
  * @param etu Where the computed ETU will be written.
@@ -99,3 +106,34 @@ uicc_ret_et uicc_reset(uicc_st *const uicc_state);
  * undefined.
  */
 uicc_ret_et uicc_terminate(uicc_st *const uicc_state);
+
+/**
+ * @brief Create an LCS byte for a file.
+ * @param file
+ * @param lcs
+ * @return Return code.
+ * @note Done according to ISO 7816-4:2020 p.31 sec.7.4.10 table.15.
+ */
+uicc_ret_et uicc_file_lcs(uicc_fs_file_hdr_st const *const file,
+                          uint8_t *const lcs);
+
+/**
+ * @brief Create a file descriptor byte for a file.
+ * @param file
+ * @param file_descr
+ * @return Return code.
+ * @note Done according to ISO 7816-4:2020 p.29 sec.7.4.5 table.12.
+ */
+uicc_ret_et uicc_file_descr(uicc_fs_file_hdr_st const *const file,
+                            uint8_t *const file_descr);
+
+/**
+ * @brief Create a data coding byte for a file.
+ * @param file
+ * @param data_coding
+ * @return Return code.
+ * @note Done according to second software function table described in ISO
+ * 7816-4:2020 p.123 sec.12.2.2.9 table.126.
+ */
+uicc_ret_et uicc_file_data_coding(uicc_fs_file_hdr_st const *const file,
+                                  uint8_t *const data_coding);

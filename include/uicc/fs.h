@@ -40,9 +40,9 @@ typedef enum uicc_fs_item_type_e
  */
 typedef enum uicc_fs_lcs_e
 {
-    UICC_FS_LCS_NINFO,        /* No info given */
-    UICC_FS_LCS_CREAT,        /* Creation */
-    UICC_FS_LCS_INIT,         /* Initialization */
+    // UICC_FS_LCS_NINFO,     /* No info given */
+    // UICC_FS_LCS_CREAT,     /* Creation */
+    // UICC_FS_LCS_INIT,      /* Initialization */
     UICC_FS_LCS_OPER_ACTIV,   /* Operational + Activated */
     UICC_FS_LCS_OPER_DEACTIV, /* Operational + Deactivated */
     UICC_FS_LCS_TERM,         /* Termination */

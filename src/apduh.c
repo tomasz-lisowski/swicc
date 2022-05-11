@@ -1,7 +1,7 @@
 #include "uicc.h"
-#include "uicc/apdu.h"
+#include <byteswap.h>
 #include <stddef.h>
-#include <stdio.h>
+#include <string.h>
 
 /**
  * Store pointers to handlers for every instruction in the interindustry class.
@@ -105,12 +105,13 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
     {
         DATA_REQ_RFU,
 
-        DATA_REQ_FCI, /* Return FCI template. Optional use of FCI tag and
-                         length. */
-        DATA_REQ_CP,  /* Return CP template. Mandatory use of CP tag and length.
-                       */
-        DATA_REQ_FMD, /* Return FMD template. Mandatory use of FMD tag and
-                         length. */
+        DATA_REQ_FCI,    /* Return FCI template. Optional use of FCI tag and
+                            length. */
+        DATA_REQ_FCP,    /* Return FCP template. Mandatory use of FCP tag and
+                          * length.
+                          */
+        DATA_REQ_FMD,    /* Return FMD template. Mandatory use of FMD tag and
+                            length. */
         DATA_REQ_TAGS,   /* Return the tags belonging to the template set
                            by the selection of a constructed DO as a tag list. */
         DATA_REQ_ABSENT, /* No response data if Le is absent or proprietary Le
@@ -179,7 +180,7 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             data_req = DATA_REQ_FCI;
             break;
         case 0b00000100:
-            data_req = DATA_REQ_CP;
+            data_req = DATA_REQ_FCP;
             break;
         case 0b00001000:
             if (meth == METH_DO || meth == METH_DO_PARENT)
@@ -281,55 +282,261 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             __builtin_unreachable();
         }
 
-        /* Respond with failure by default. */
-        res->sw1 = UICC_APDU_SW1_CHER_UNK;
-        res->sw2 = 0U;
-        res->data.len = 0U;
-
         if (ret_select == UICC_RET_FS_NOT_FOUND)
         {
             res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
-            res->sw2 = 0x82; /* Not found. */
+            res->sw2 = 0x82; /* "Not found" */
             res->data.len = 0U;
+            return UICC_RET_SUCCESS;
         }
-        else if (ret_select == UICC_RET_SUCCESS)
+        else if (ret_select != UICC_RET_SUCCESS)
         {
-            uicc_fs_file_hdr_st *file_selected = NULL;
-            if (uicc_state->internal.fs.va.cur_ef.item.type !=
-                UICC_FS_ITEM_TYPE_INVALID)
+            /* Failed to select. */
+            res->sw1 = UICC_APDU_SW1_CHER_UNK;
+            res->sw2 = 0U;
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
+
+        uicc_fs_file_hdr_st *file_selected = NULL;
+        bool file_selected_type_folder = false;
+        if (uicc_state->internal.fs.va.cur_ef.item.type !=
+            UICC_FS_ITEM_TYPE_INVALID)
+        {
+            file_selected = &uicc_state->internal.fs.va.cur_ef;
+        }
+        else if (uicc_state->internal.fs.va.cur_df.item.type !=
+                 UICC_FS_ITEM_TYPE_INVALID)
+        {
+            file_selected_type_folder = true;
+            file_selected = &uicc_state->internal.fs.va.cur_df;
+        }
+        else
+        {
+            /* No file was actually selected. */
+            res->sw1 = UICC_APDU_SW1_CHER_UNK;
+            res->sw2 = 0U;
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
+
+        if (data_req == DATA_REQ_ABSENT)
+        {
+            res->sw1 = UICC_APDU_SW1_NORM_NONE;
+            res->sw2 = 0U;
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
+        else
+        {
+            /* Create tags for use in encoding. */
+            static uint8_t const tags[] = {
+                0x62, 0x64, 0x6F, 0x80, 0x82, 0x83, 0x84, 0x88, 0x8A,
+            };
+            static uint32_t const tags_count = sizeof(tags) / sizeof(tags[0U]);
+            uicc_dato_bertlv_tag_st bertlv_tags[tags_count];
+            for (uint8_t tag_idx = 0U; tag_idx < tags_count; ++tag_idx)
             {
-                file_selected = &uicc_state->internal.fs.va.cur_ef;
-            }
-            else if (uicc_state->internal.fs.va.cur_df.item.type !=
-                     UICC_FS_ITEM_TYPE_INVALID)
-            {
-                file_selected = &uicc_state->internal.fs.va.cur_df;
+                if (uicc_dato_bertlv_tag_create(&bertlv_tags[tag_idx],
+                                                tags[tag_idx]) !=
+                    UICC_RET_SUCCESS)
+                {
+                    res->sw1 = UICC_APDU_SW1_CHER_UNK;
+                    res->sw2 = 0U;
+                    res->data.len = 0U;
+                    return UICC_RET_SUCCESS;
+                }
             }
 
-            if (file_selected != NULL)
+            /* Create data for BER-TLV DOs. */
+            /**
+             * Safe cast since size will at least 0 since size includes
+             * the header length.
+             */
+            uint32_t const data_size =
+                (uint32_t)(file_selected->item.size -
+                           sizeof(uicc_fs_file_hdr_raw_st));
+            uint8_t const data_size_be[] = {
+                (uint8_t)(data_size & 0xFF000000),
+                (uint8_t)(data_size & 0x00FF0000),
+                (uint8_t)(data_size & 0x0000FF00),
+                (uint8_t)(data_size & 0x000000FF),
+            };
+            uint8_t const data_id[] = {
+                (uint8_t)((file_selected->id & 0xFF00) >> 8U),
+                (uint8_t)(file_selected->id & 0x00FF),
+            };
+            uint8_t const data_sid[] = {file_selected->sid};
+            uint8_t lcs_be[1U];
+            uint8_t desc_be[2U];
+            if (uicc_file_descr(file_selected, &lcs_be[0U]) !=
+                    UICC_RET_SUCCESS ||
+                uicc_file_descr(file_selected, &desc_be[0U]) !=
+                    UICC_RET_SUCCESS ||
+                uicc_file_data_coding(file_selected, &desc_be[1U]) !=
+                    UICC_RET_SUCCESS)
+            {
+                res->sw1 = UICC_APDU_SW1_CHER_UNK;
+                res->sw2 = 0U;
+                res->data.len = 0U;
+                return UICC_RET_SUCCESS;
+            }
+
+            uint8_t *bertlv_buf;
+            uint32_t bertlv_len;
+            uicc_ret_et ret_bertlv = UICC_RET_ERROR;
+            uicc_dato_bertlv_enc_st enc;
+            for (bool dry_run = true;;)
+            {
+                if (dry_run)
+                {
+                    bertlv_buf = NULL;
+                    bertlv_len = 0;
+                }
+                else
+                {
+                    bertlv_buf = res->data.b;
+                    if (enc.len > sizeof(res->data.b))
+                    {
+                        break;
+                    }
+                    bertlv_len = enc.len;
+                }
+
+                uicc_dato_bertlv_enc_init(&enc, bertlv_buf, bertlv_len);
+                uicc_dato_bertlv_enc_st enc_nstd;
+
+                /* Nest everything in an FCI if it was requested. */
+                if (data_req == DATA_REQ_FCI)
+                {
+                    if (uicc_dato_bertlv_enc_nstd_start(&enc, &enc_nstd) !=
+                        UICC_RET_SUCCESS)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    /**
+                     * If there is no FCI, nested encoder is just the root
+                     * encoder.
+                     */
+                    enc_nstd = enc;
+                }
+                /* Create an FCP if it was requested. */
+                if (data_req == DATA_REQ_FCI || data_req == DATA_REQ_FCP)
+                {
+                    uicc_dato_bertlv_enc_st enc_fcp;
+                    if (uicc_dato_bertlv_enc_nstd_start(&enc_nstd, &enc_fcp) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_data(
+                            &enc_fcp, data_size_be,
+                            sizeof(data_size_be) / sizeof(data_size_be[0U])) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[3U]) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_data(&enc_fcp, desc_be,
+                                                  sizeof(desc_be) /
+                                                      sizeof(desc_be[0U])) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[4U]) !=
+                            UICC_RET_SUCCESS ||
+                        (file_selected->id != 0
+                             ? uicc_dato_bertlv_enc_data(
+                                   &enc_fcp, data_id,
+                                   sizeof(data_id) / sizeof(data_id[0U])) !=
+                                       UICC_RET_SUCCESS ||
+                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                            &bertlv_tags[5U]) !=
+                                       UICC_RET_SUCCESS
+                             : false) ||
+                        (file_selected_type_folder
+                             ? uicc_dato_bertlv_enc_data(
+                                   &enc_fcp, (uint8_t *)file_selected->name,
+                                   UICC_FS_NAME_LEN_MAX) != UICC_RET_SUCCESS ||
+                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                            &bertlv_tags[6U]) !=
+                                       UICC_RET_SUCCESS
+                             : false) ||
+                        (!file_selected_type_folder && file_selected->sid != 0
+                             ? uicc_dato_bertlv_enc_data(
+                                   &enc_fcp, data_sid,
+                                   sizeof(data_sid) / sizeof(data_sid[0U])) !=
+                                       UICC_RET_SUCCESS ||
+                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                            &bertlv_tags[7U]) !=
+                                       UICC_RET_SUCCESS
+                             : false) ||
+                        uicc_dato_bertlv_enc_data(&enc_fcp, lcs_be,
+                                                  sizeof(lcs_be) /
+                                                      sizeof(lcs_be[0U])) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[8U]) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_nstd_end(&enc_nstd, &enc_fcp) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_hdr(&enc_nstd, &bertlv_tags[0U]) !=
+                            UICC_RET_SUCCESS)
+                    {
+                        break;
+                    }
+                }
+                /* Create an FMD if it was requested. */
+                if (data_req == DATA_REQ_FCI || data_req == DATA_REQ_FMD)
+                {
+                    uicc_dato_bertlv_enc_st enc_fmd;
+                    if (uicc_dato_bertlv_enc_nstd_start(&enc_nstd, &enc_fmd) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_nstd_end(&enc_nstd, &enc_fmd) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_hdr(&enc_nstd, &bertlv_tags[1U]) !=
+                            UICC_RET_SUCCESS)
+                    {
+                        break;
+                    }
+                }
+                if (data_req == DATA_REQ_FCI)
+                {
+                    if (uicc_dato_bertlv_enc_nstd_end(&enc, &enc_nstd) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_hdr(&enc, &bertlv_tags[2U]) !=
+                            UICC_RET_SUCCESS)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    /* Write back to the main encoder. */
+                    enc = enc_nstd;
+                }
+
+                if (!dry_run)
+                {
+                    ret_bertlv = UICC_RET_SUCCESS;
+                    break;
+                }
+                else
+                {
+                    dry_run = !dry_run;
+                }
+            }
+            if (ret_bertlv == UICC_RET_SUCCESS)
             {
                 res->sw1 = UICC_APDU_SW1_NORM_NONE;
                 res->sw2 = 0U;
+                /* Safe cast due check inside the BER-TLV loop. */
+                res->data.len = (uint16_t)bertlv_len;
+                return UICC_RET_SUCCESS;
+            }
+            else
+            {
+                res->sw1 = UICC_APDU_SW1_CHER_UNK;
+                res->sw2 = 0U;
                 res->data.len = 0U;
-                switch (data_req)
-                {
-                case DATA_REQ_FCI:
-                    break;
-                case DATA_REQ_CP:
-                    break;
-                case DATA_REQ_FMD:
-                    break;
-                case DATA_REQ_ABSENT:
-                    break;
-                default:
-                    /**
-                     * Unreachable due to the parameter rejection done before.
-                     */
-                    __builtin_unreachable();
-                }
+                return UICC_RET_SUCCESS;
             }
         }
-        return UICC_RET_SUCCESS;
     }
 }
 
