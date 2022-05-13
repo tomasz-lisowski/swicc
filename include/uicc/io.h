@@ -71,9 +71,9 @@ typedef enum uicc_io_cont_e
  * Lookup tables for resolving an integer of a parameter to the parameter value
  * itself.
  */
-extern uint16_t const uicc_io_fi_arr[UICC_TP_CONF_NUM];
-extern uint8_t const uicc_io_di_arr[UICC_TP_CONF_NUM];
-extern uint32_t const uicc_io_fmax_arr[UICC_TP_CONF_NUM];
+extern uint16_t const uicc_io_fi[UICC_TP_CONF_NUM];
+extern uint8_t const uicc_io_di[UICC_TP_CONF_NUM];
+extern uint32_t const uicc_io_fmax[UICC_TP_CONF_NUM];
 
 /**
  * @brief Process (interface requested) changes in state of the electrical

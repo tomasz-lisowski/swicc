@@ -164,9 +164,9 @@ static uicc_ret_et fsm_handle_s_pps_req(uicc_st *const uicc_state)
              * should wait for a transmission protocol message next.
              */
             uicc_state->internal.fsm_state = UICC_FSM_STATE_CMD_WAIT;
-            uicc_state->internal.tp.di = uicc_io_di_arr[pps_params.di_idx];
-            uicc_state->internal.tp.fi = uicc_io_fi_arr[pps_params.fi_idx];
-            uicc_state->internal.tp.fmax = uicc_io_fmax_arr[pps_params.fi_idx];
+            uicc_state->internal.tp.di = uicc_io_di[pps_params.di_idx];
+            uicc_state->internal.tp.fi = uicc_io_fi[pps_params.fi_idx];
+            uicc_state->internal.tp.fmax = uicc_io_fmax[pps_params.fi_idx];
             uicc_etu(&uicc_state->internal.tp.etu, uicc_state->internal.tp.fi,
                      uicc_state->internal.tp.di, uicc_state->internal.tp.fmax);
             return UICC_RET_FSM_TRANSITION_WAIT;

@@ -8,7 +8,7 @@ CC:=gcc
 AR:=ar
 
 MAIN_NAME:=$(LIB_PREFIX)uicc
-MAIN_SRC:=$(wildcard $(DIR_SRC)/*.c) $(wildcard $(DIR_SRC)/dbg/*.c)
+MAIN_SRC:=$(wildcard $(DIR_SRC)/*.c) $(wildcard $(DIR_SRC)/dbg/*.c) $(wildcard $(DIR_SRC)/fs/*.c)
 MAIN_OBJ:=$(MAIN_SRC:$(DIR_SRC)/%.c=$(DIR_BUILD)/%.o)
 MAIN_DEP:=$(MAIN_OBJ:%.o=%.d)
 MAIN_CC_FLAGS:=-Werror -Wno-unused-parameter -W -Wall -Wextra -Wconversion -Wshadow \
@@ -24,7 +24,7 @@ all-dbg: main
 all-lib: cjson
 
 # Create static library.
-main: $(DIR_BUILD) $(DIR_BUILD)/dbg $(DIR_BUILD)/$(MAIN_NAME).$(EXT_LIB_STATIC)
+main: $(DIR_BUILD) $(DIR_BUILD)/dbg $(DIR_BUILD)/fs $(DIR_BUILD)/$(MAIN_NAME).$(EXT_LIB_STATIC)
 $(DIR_BUILD)/$(MAIN_NAME).$(EXT_LIB_STATIC): $(MAIN_OBJ)
 	$(AR) $(MAIN_AR_FLAGS) $(@) $(^)
 
@@ -49,7 +49,7 @@ $(DIR_BUILD)/%.o: $(DIR_SRC)/%.c
 # Recompile source files after a header they include changes.
 -include $(MAIN_DEP)
 
-$(DIR_BUILD) $(DIR_BUILD)/dbg $(DIR_BUILD_LIB):
+$(DIR_BUILD) $(DIR_BUILD)/dbg $(DIR_BUILD)/fs $(DIR_BUILD_LIB):
 	$(call pal_mkdir,$(@))
 clean:
 	$(call pal_rmdir,$(DIR_BUILD))

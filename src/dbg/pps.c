@@ -13,12 +13,11 @@ uicc_ret_et uicc_dbg_pps_str(char *const buf_str, uint16_t *const buf_str_len,
     uint8_t buf_pps_next = 2U;
 
     uint16_t const di = pps1_present && buf_pps_next < buf_pps_len
-                            ? uicc_io_di_arr[buf_pps[buf_pps_next] & 0x0F]
+                            ? uicc_io_di[buf_pps[buf_pps_next] & 0x0F]
                             : 0;
-    uint16_t const fi =
-        pps1_present && buf_pps_next < buf_pps_len
-            ? uicc_io_fi_arr[(buf_pps[buf_pps_next] & 0xF0) >> 4U]
-            : 0;
+    uint16_t const fi = pps1_present && buf_pps_next < buf_pps_len
+                            ? uicc_io_fi[(buf_pps[buf_pps_next] & 0xF0) >> 4U]
+                            : 0;
     if (pps1_present)
     {
         ++buf_pps_next;

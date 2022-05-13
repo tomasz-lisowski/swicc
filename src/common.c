@@ -72,31 +72,24 @@ uicc_ret_et uicc_hexstr_bytearr(char const *const hexstr,
 uicc_ret_et uicc_reset(uicc_st *const uicc_state)
 {
     uicc_ret_et ret = UICC_RET_ERROR;
-    ret = uicc_fs_reset(uicc_state);
+    ret = uicc_va_reset(&uicc_state->internal.fs);
     if (ret != UICC_RET_SUCCESS)
     {
         return ret;
     }
     uicc_state->internal.fsm_state = UICC_FSM_STATE_OFF;
-    uicc_state->internal.tp.fi = uicc_io_fi_arr[UICC_TP_CONF_DEFAULT];
-    uicc_state->internal.tp.di = uicc_io_di_arr[UICC_TP_CONF_DEFAULT];
-    uicc_state->internal.tp.fmax = uicc_io_fmax_arr[UICC_TP_CONF_DEFAULT];
-    uicc_etu(&uicc_state->internal.tp.etu, uicc_io_fi_arr[UICC_TP_CONF_DEFAULT],
-             uicc_io_di_arr[UICC_TP_CONF_DEFAULT],
-             uicc_io_fmax_arr[UICC_TP_CONF_DEFAULT]);
+    uicc_state->internal.tp.fi = uicc_io_fi[UICC_TP_CONF_DEFAULT];
+    uicc_state->internal.tp.di = uicc_io_di[UICC_TP_CONF_DEFAULT];
+    uicc_state->internal.tp.fmax = uicc_io_fmax[UICC_TP_CONF_DEFAULT];
+    uicc_etu(&uicc_state->internal.tp.etu, uicc_io_fi[UICC_TP_CONF_DEFAULT],
+             uicc_io_di[UICC_TP_CONF_DEFAULT],
+             uicc_io_fmax[UICC_TP_CONF_DEFAULT]);
     return UICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_terminate(uicc_st *const uicc_state)
+void uicc_terminate(uicc_st *const uicc_state)
 {
-    uicc_ret_et ret = uicc_reset(uicc_state);
-    if (ret != UICC_RET_SUCCESS)
-    {
-        return ret;
-    }
-    uicc_fs_disk_unload(uicc_state);
-    ret = UICC_RET_SUCCESS;
-    return ret;
+    uicc_disk_unload(&uicc_state->internal.fs.disk);
 }
 
 uicc_ret_et uicc_file_lcs(uicc_fs_file_hdr_st const *const file,

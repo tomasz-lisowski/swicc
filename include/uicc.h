@@ -6,7 +6,6 @@
 #include "uicc/dato.h"
 #include "uicc/dbg.h"
 #include "uicc/fs.h"
-#include "uicc/fsjson.h"
 #include "uicc/fsm.h"
 #include "uicc/io.h"
 #include "uicc/pps.h"
@@ -32,8 +31,8 @@ typedef struct uicc_tp_s
 
 typedef struct uicc_fs_s
 {
-    uicc_fs_disk_st disk;
-    uicc_fs_va_st va;
+    uicc_va_st va;
+    uicc_disk_st disk;
 } uicc_fs_st;
 
 typedef struct uicc_s
@@ -54,6 +53,7 @@ typedef struct uicc_s
         } apdu_cur;
 
         uicc_fsm_state_et fsm_state;
+
         uicc_tp_st tp;
         uicc_fs_st fs;
         uicc_apduh_ft *apduh_pro; /* For all proprietary classes. */

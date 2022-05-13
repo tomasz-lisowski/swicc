@@ -18,7 +18,7 @@ static char const *const item_type_str[] = {
 };
 
 static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
-                               uicc_fs_tree_st *const tree,
+                               uicc_disk_tree_st *const tree,
                                uicc_fs_item_hdr_st const *const item,
                                uint8_t const depth)
 {
@@ -100,17 +100,20 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
         /* Success by default because while loop may never run. */
         uicc_ret_et ret_item = UICC_RET_SUCCESS;
 
-        if (item->offset_trel + sizeof(uicc_fs_file_hdr_raw_st) > UINT32_MAX)
+        uint32_t const hdr_len = item->type == UICC_FS_ITEM_TYPE_FILE_ADF
+                                     ? sizeof(uicc_fs_adf_hdr_raw_st)
+                                     : sizeof(uicc_fs_file_hdr_raw_st);
+
+        if (item->offset_trel + hdr_len > UINT32_MAX)
         {
             return ret;
         }
 
         /* Safe cast due to check against uint32 max. */
         uint32_t const data_offset_start =
-            (uint32_t)(item->offset_trel + sizeof(uicc_fs_file_hdr_raw_st));
+            (uint32_t)(item->offset_trel + hdr_len);
         /* Safe cast since size is at least as large as the header. */
-        uint32_t const data_len =
-            (uint32_t)(item->size - sizeof(uicc_fs_file_hdr_raw_st));
+        uint32_t const data_len = (uint32_t)(item->size - hdr_len);
 
         uint32_t data_idx = 0U;
         while (data_idx < data_len)
@@ -235,8 +238,8 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
 }
 #endif
 
-uicc_ret_et uicc_dbg_fs_str(char *const buf_str, uint16_t *const buf_str_len,
-                            uicc_fs_disk_st const *const disk)
+uicc_ret_et uicc_dbg_disk_str(char *const buf_str, uint16_t *const buf_str_len,
+                              uicc_disk_st const *const disk)
 {
 #ifdef DEBUG
     uint16_t const buf_size = *buf_str_len;
@@ -256,7 +259,7 @@ uicc_ret_et uicc_dbg_fs_str(char *const buf_str, uint16_t *const buf_str_len,
         buf_unused_len = (uint16_t)(buf_unused_len - disk_hdr_str_len);
     }
 
-    uicc_fs_tree_st *tree = disk->root;
+    uicc_disk_tree_st *tree = disk->root;
     while (tree != NULL)
     {
         uint32_t disk_idx = 0U;
