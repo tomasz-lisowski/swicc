@@ -1,19 +1,20 @@
 #include "uicc.h"
 
 /**
- * ATR defined according to ISO 7816-3:2006 p.15-20 sec.8
+ * ATR defined according to ISO 7816-3:2006 p.15-20 sec.8 and ISO 7816-4:2020
+ * p.120 sec.12.2.2.
  */
-uint8_t const uicc_atr[UICC_ATR_LEN] = {
+uint8_t const uicc_atr[] = {
     0b00111011, /**
                  * LSB>MSB
-                 * TS =   L (implicit character start indicator)
-                 *      + HHL (synchronization pattern)
-                 *      + HHH or LLL (HHH selects 'direct' enc/decoding
-                 *                    convention LSB>MSB with no bit inversion)
-                 *      + LL
-                 *      + H (implicit character parity bit of moments 2 to 10
-                 *           i.e. after character start and including this
-                 *           moment)
+                 * TS  =   L (implicit character start indicator)
+                 *       + HHL (synchronization pattern)
+                 *       + HHH or LLL (HHH selects 'direct' enc/decoding
+                 *                     convention LSB>MSB with no bit inversion)
+                 *       + LL
+                 *       + H (implicit character parity bit of moments 2 to 10
+                 *            i.e. after character start and including this
+                 *            moment)
                  * ISO 7816-3:2006 p.15 sec.8.1
                  */
 
@@ -28,49 +29,121 @@ uint8_t const uicc_atr[UICC_ATR_LEN] = {
      * E.g. 0b0101 = TA, TC are present and TB, TD are not present.
      */
 
-    0b10010000, /**
+    0b11011111, /**
                  * LSB>MSB
-                 * T0 =   4b K  = 0 = number of 'historical bytes' (if any)
-                 *      + 4b Y1 = TA1 and TD1 are present
+                 * T00 =   4b K  = 15 (number of historical bytes)
+                 *       + 4b Y1 = TA1, TC1, and TD1 are present
                  */
     0b00010001, /**
                  * LSB>MSB
                  * TA1 =   4b Di = 1   (default)
                  *       + 4b Fi = 372 (default)
                  */
-    0b10000000, /**
-                 * LSB>MSB
-                 * TD1 =   4b T  = 0 = Half-duplex character-based protocol
-                 *       + 4b Y2 = TD2 is present
-                 *
-                 * (TODO: Look into TC2 which encodes WI i.e. the waiting time
-                 *  integer)
+    0b00000000, /**
+                 * TC1 = N (extra guard time) = 0 (default)
                  */
-
     0b10010000, /**
                  * LSB>MSB
-                 * TD2 =   4b T  = 0
-                 *       + 4b Y3 = TA3 and TD3 are present
+                 * TD1 =   4b T  = 0 (half-duplex character-based protocol)
+                 *       + 4b Y2 = TA2 and TD2 are present
                  */
-
+    0b00010000, /**
+                 * LSB>MSB
+                 * TA2 =   4b T       = 0 (half-duplex character-based protocol)
+                 *       + 1b F and D = 1 (implicit values)
+                 *       + 2b RFU     = 0
+                 *       + 1b Mode    = 0 (capable to change)
+                 */
+    0b00111111, /**
+                 * LSB>MSB
+                 * TD2 =   4b T  = 15
+                 *       + 4b Y3 = TA3 and TB3 are present
+                 */
+    0b11000111, /**
+                 * LSB>MSB
+                 * TA3 =   6b Y = 7 = A, B, and C (class indicator)
+                 *       + 2b X = 3 = No preference so can stop at L or H or not
+                 *                    at all (clock stop indicator)
+                 */
     0b00000000, /**
                  * LSB>MSB
-                 * TA3 =   4b T = 0 = Half-duplex character-based protocol
-                 *       + 1b Fi/Di Definition = 0 = as defined in TA1
-                 *       + 2b Reserved = 0
-                 *       + 1b Ability to change nego/spec modes = 0 = capable
-                 */
-    0b00010001, /**
-                 * LSB>MSB
-                 * TD3 =   4b T = 1 = Half-duplex block-based protocol
-                 *       + 4b Y4 = TA4 is present
+                 * TB3 =   7b SPU Purpose     = 0 (not used)
+                 *       + 1b SPU Proprietary = 0 (standard use of SPU)
                  */
 
+    /**
+     * Historical bytes are sent as a COMPACT-TLV data object.
+     *
+     * COMPACT-TLV works by packing the tag and length into a single byte like
+     * this: 0x73 which means tag = 7 and length = 3 (bytes in the value field).
+     */
+    0x80,       /**
+                 * Category Indicator = 0x80 (status indicator may be present in
+                 *                            a COMPACT-TLV data object)
+                 */
+    0x31,       /**
+                 * Tag = 3 (card service data)
+                 * Len = 1
+                 */
+    0b11100000, /**
+                 * LSB>MSB
+                 * CSD
+                 *  =   1b Card MF = 0 (card with MF)
+                 *    + 3b EF.DIR and EF.ATR/INFO access services
+                 *      = 0 (by READ RECORD command)
+                 *    + 2b DOs available = 2 (in EF.DIR but not in EF.ATR/INFO)
+                 *    + 2b Application selection = 3 (by full DF name and
+                 *                                    partial DF name)
+                 */
+    0x67,       /**
+                 * Tag = 4 (pre-issuing data)
+                 * Len = 8
+                 */
+
+    's', 'w', 's', 'i', 'm', '.', '0',
+
+    0x73,       /**
+                 * Tag = 7 (card capabilities)
+                 * Len = 3
+                 */
+    0b11111110, /**
+                 * LSB>MSB
+                 * Selection Methods
+                 *  =   1b Record ID support     = 0 (no)
+                 *    + 1b Record number support = 1 (yes)
+                 *    + 1b Short EF ID support   = 1 (yes)
+                 *    + 1b Implicit DF selection = 1 (yes)
+                 *    + 1b DF by full DF name    = 1 (yes)
+                 *    + 1b DF by partial DF name = 1 (yes)
+                 *    + 1b DF by path            = 1 (yes)
+                 *    + 1b DF by file ID         = 1 (yes)
+                 */
+    0b00100001, /**
+                 * LSB>MSB
+                 * Data Coding
+                 *  =   4b Data unit size = 1 (2 quartets)
+                 *    + 1b First byte of BER-TLV is 'FF' = 0 (invalid)
+                 *    + 2b Write behavior = 1 (proprietary)
+                 *    + 1b EFs of BER-TLV struct support = 0 (no)
+                 */
     0b00000000, /**
                  * LSB>MSB
-                 * TA4 =   4b T = 1 = Half-duplex block-based protocol
-                 *       + 1b Fi/Di Definition = 0 = as defined in TA1
-                 *       + 2b Reserved = 0
-                 *       + 1b Ability to change nego/spec modes = 0 = capable
+                 * Command chaining, length fields, and logical channels
+                 *  =   1b t = 0
+                 *    + 1b z = 0
+                 *    + 1b y = 0
+                 *    + 2b Logical channel assignment
+                 *      = 0 (only basic channel available)
+                 *    + 1b Extended length info in EF.ATR/INFO = 0 (no)
+                 *    + 1b Extended Lc and Le fields = 0 (no)
+                 *    + 1b Command chaining = 0 (no)
+                 *
+                 * @note Maximum number of logical channels is calculated using
+                 * 't', 'z', 'y' with: 4y + 2z + t + 1 (when not all =1, else it
+                 * means 8 or more)
+                 */
+    0x41,       /**
+                 * Check byte (TCK)
+                 *  = XOR of all bytes (with TCK=0)
                  */
 };

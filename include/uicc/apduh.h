@@ -21,7 +21,6 @@ typedef uicc_ret_et uicc_apduh_ft(uicc_st *const uicc_state,
  * @param uicc_state
  * @param handler Handler for all proprietary messages.
  * @return Return code.
- * @note Sorry for the long name...
  */
 uicc_ret_et uicc_apduh_pro_register(uicc_st *const uicc_state,
                                     uicc_apduh_ft *const handler);

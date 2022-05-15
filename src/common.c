@@ -11,7 +11,7 @@ void uicc_etu(uint32_t *const etu, uint16_t const fi, uint8_t const di,
     *etu = fi / (di * fmax);
 }
 
-uint8_t uicc_tck(uint8_t const *const buf_raw, uint16_t const buf_raw_len)
+uint8_t uicc_tck(uint8_t const *const buf_raw, uint8_t const buf_raw_len)
 {
     uint8_t tck = false;
     for (uint16_t buf_idx = 0U; buf_idx < buf_raw_len; ++buf_idx)

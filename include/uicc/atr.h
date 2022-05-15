@@ -5,7 +5,7 @@
  * ATR = Answer-to-reset
  */
 
-#define UICC_ATR_LEN 10
+#define UICC_ATR_LEN 25
 
 /**
  * Card ATR for use when the interface shall either enter a negotiation (PPS

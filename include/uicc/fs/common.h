@@ -59,7 +59,6 @@ typedef enum uicc_fs_path_type_e
 
 typedef uint16_t uicc_fs_id_kt;      /* ID like FID. */
 typedef uint8_t uicc_fs_sid_kt;      /* Short ID like SFI. */
-typedef uint16_t uicc_fs_rcrd_id_kt; /* Record 'number' or ID. */
 typedef uint8_t uicc_fs_rcrd_idx_kt; /* Record index. */
 
 /**

@@ -192,12 +192,6 @@ uicc_ret_et uicc_va_select_do_tag(uicc_fs_st *const fs, uint16_t const tag)
     return UICC_RET_UNKNOWN;
 }
 
-uicc_ret_et uicc_va_select_record_id(uicc_fs_st *const fs,
-                                     uicc_fs_rcrd_id_kt id)
-{
-    return UICC_RET_UNKNOWN;
-}
-
 uicc_ret_et uicc_va_select_record_idx(uicc_fs_st *const fs,
                                       uicc_fs_rcrd_idx_kt idx)
 {

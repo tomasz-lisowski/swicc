@@ -22,10 +22,8 @@ uicc_ret_et uicc_dbg_fsm_state_str(char *const buf_str,
 {
 #ifdef DEBUG
     int bytes_written = snprintf(buf_str, *buf_str_len,
-                                 // clang-format off
                                  "(FSM"
                                  "\n  (STATE '%s'))",
-                                 // clang-format on
                                  uicc_dbg_table_str_fsm_state[fsm_state]);
     if (bytes_written < 0)
     {

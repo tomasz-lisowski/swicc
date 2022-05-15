@@ -7,18 +7,16 @@ typedef struct uicc_atr_chunk
 {
     bool y[4U];
     uint8_t tabcd[4U];
-    union {
-        /**
-         * Number of historical bytes.
-         * ISO 7816-4:2020 p.16 sec.8.2.1 table.6.
-         **/
-        uint8_t k;
-        /**
-         * Tranmission protocol.
-         * ISO 7816-4:2020 p.17 sec.8.2.3.
-         **/
-        uint8_t t;
-    };
+    /**
+     * Number of historical bytes.
+     * ISO 7816-4:2020 p.16 sec.8.2.1 table.6.
+     **/
+    uint8_t k;
+    /**
+     * Tranmission protocol.
+     * ISO 7816-4:2020 p.17 sec.8.2.3.
+     **/
+    uint8_t t;
 } uicc_atr_chunk_t;
 
 #ifdef DEBUG
@@ -88,12 +86,19 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         {
             return UICC_RET_BUFFER_TOO_SHORT;
         }
-        ret = snprintf(buf_str + bytes_written,
-                       *buf_str_len - (uint32_t)bytes_written,
-                       // clang-format off
-                       "\n  (T%u ",
-                       // clang-format on
-                       chunk_idx);
+        if (chunk_idx == 0U)
+        {
+            ret = snprintf(buf_str + bytes_written,
+                           *buf_str_len - (uint32_t)bytes_written,
+                           "\n  (T%02u ", chunk_idx);
+        }
+        else
+        {
+            /* TI = Interface byte. */
+            ret = snprintf(buf_str + bytes_written,
+                           *buf_str_len - (uint32_t)bytes_written, "\n  (TI%u ",
+                           chunk_idx - 1U);
+        }
         if (ret < 0)
         {
             return UICC_RET_BUFFER_TOO_SHORT;
@@ -182,10 +187,8 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
                     }
                     ret = snprintf(buf_str + bytes_written,
                                    *buf_str_len - (uint32_t)bytes_written,
-                                   // clang-format off
-                                   "\n    (T%c%u 0x%02X)",
-                                   // clang-format on
-                                   'A' + y_idx, chunk_idx, chunk.tabcd[y_idx]);
+                                   "\n    (T%c%u 0x%02X)", 'A' + y_idx,
+                                   chunk_idx, chunk.tabcd[y_idx]);
                     if (ret < 0)
                     {
                         return UICC_RET_BUFFER_TOO_SHORT;
@@ -220,9 +223,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         {
             ret = snprintf(
                 buf_str + bytes_written, *buf_str_len - (uint32_t)bytes_written,
-                // clang-format off
                 "\n    (Y%u (A '%s') (B '%s') (C '%s') (D '%s'))",
-                // clang-format on
                 chunk_idx + 1U, uicc_dbg_table_str_indicator[chunk.y[0U]],
                 uicc_dbg_table_str_indicator[chunk.y[1U]],
                 uicc_dbg_table_str_indicator[chunk.y[2U]],
@@ -250,19 +251,13 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
             {
                 ret = snprintf(buf_str + bytes_written,
                                *buf_str_len - (uint32_t)bytes_written,
-                               // clang-format off
-                               "\n    (T%u %u))",
-                               // clang-format on
-                               chunk_idx + 1U, chunk.t);
+                               "\n    (T%u %u))", chunk_idx + 1U, chunk.t);
             }
             else
             {
                 ret = snprintf(buf_str + bytes_written,
                                *buf_str_len - (uint32_t)bytes_written,
-                               // clang-format off
-                               "\n    (K %u))",
-                               // clang-format on
-                               chunk.k);
+                               "\n    (K %u))", chunk.k);
             }
         }
         if (ret < 0)
@@ -277,28 +272,59 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         {
             return UICC_RET_ATR_INVALID;
         }
-        buf_atr_idx =
-            (uint16_t)(buf_atr_idx +
-                       chunk_size); /* NOTE: Safe cast due to check above. */
+        /* Safe cast due to check above. */
+        buf_atr_idx = (uint16_t)(buf_atr_idx + chunk_size);
     } while (buf_atr_idx < (buf_atr_len - 1 /* TCK */) && chunk_last == false);
 
-    /* TODO: Print historical bytes (if any) here. */
-
-    /* Close the ATR expression. */
-    if (*buf_str_len - bytes_written < 0)
+    /* Print historical bytes (if any) here. */
+    for (uint8_t hist_idx = 0U; hist_idx < chunk.k; ++hist_idx)
     {
-        return UICC_RET_BUFFER_TOO_SHORT;
+        if (*buf_str_len - bytes_written < 0)
+        {
+            return UICC_RET_BUFFER_TOO_SHORT;
+        }
+        ret = snprintf(
+            buf_str + bytes_written, *buf_str_len - (uint32_t)bytes_written,
+            "\n  (T%02u 0x%02X)", hist_idx + 1U /* T0 is the format byte */,
+            buf_atr[buf_atr_idx + hist_idx]);
+        if (ret < 0)
+        {
+            return UICC_RET_BUFFER_TOO_SHORT;
+        }
+        bytes_written += ret;
     }
-    /* Determine if TCK is present. */
-    if (!((t0_present && !not_t0_or_t15_present) ||
-          (t0_present && t15_present && !not_t0_or_t15_present)))
+    /* Done printing the historical bytes. */
+    if (buf_atr_idx + chunk.k > UINT16_MAX)
     {
-        uint8_t tck = uicc_tck(buf_atr, buf_atr_len);
-        ret = snprintf(buf_str + bytes_written,
-                       *buf_str_len - (uint32_t)bytes_written,
-                       "\n  (TCK '%s')"
-                       ")",
-                       tck != 0 ? "invalid" : "valid");
+        return UICC_RET_ATR_INVALID;
+    }
+    /* Safe cast due to check above. */
+    buf_atr_idx = (uint16_t)(buf_atr_idx + chunk.k);
+
+    /* Determine if TCK is present. */
+    if (!(t0_present && !t15_present && !not_t0_or_t15_present))
+    {
+        if (*buf_str_len - bytes_written < 0)
+        {
+            return UICC_RET_BUFFER_TOO_SHORT;
+        }
+        if (buf_atr_idx >= buf_atr_len)
+        {
+            /* ATR does not contain a TCK when it should. */
+            ret = snprintf(buf_str + bytes_written,
+                           *buf_str_len - (uint32_t)bytes_written,
+                           "\n  (TCK 'missing'))");
+            return UICC_RET_ATR_INVALID;
+        }
+        else
+        {
+            /* Safe cast since at this point the length of ATR will be >= 1. */
+            uint8_t const tck = uicc_tck(buf_atr + 1U /* Skip TS */,
+                                         (uint8_t)(buf_atr_len - 1U));
+            ret = snprintf(buf_str + bytes_written,
+                           *buf_str_len - (uint32_t)bytes_written,
+                           "\n  (TCK '%s'))", tck != 0 ? "invalid" : "valid");
+        }
     }
     else
     {

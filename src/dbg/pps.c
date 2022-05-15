@@ -30,12 +30,10 @@ uicc_ret_et uicc_dbg_pps_str(char *const buf_str, uint16_t *const buf_str_len,
     }
 
     int bytes_written = snprintf(buf_str, *buf_str_len,
-                                 // clang-format off
                                  "(PPS"
                                  "\n  (T %u)"
                                  "\n  (Fi %u) (Di %u)"
                                  "\n  (SPU %u))",
-                                 // clang-format on
                                  pps0 & 0x0F, fi, di, spu);
     if (bytes_written < 0)
     {

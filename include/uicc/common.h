@@ -49,8 +49,8 @@ typedef struct uicc_s uicc_st;
 
 /**
  * Need it here to declaring it.
- * XXX: It's important this is updated or removed if it's no longer needed or if
- * the struct changed definition.
+ * @warning It's important this is updated or removed if it's no longer needed
+ * or if the struct changed definition.
  */
 typedef struct uicc_fs_file_hdr_s uicc_fs_file_hdr_st;
 
@@ -72,7 +72,7 @@ void uicc_etu(uint32_t *const etu, uint16_t const fi, uint8_t const di,
  * @param buf_raw_len Length of the data in the buffer.
  * @return XOR of all bytes in the buffer.
  */
-uint8_t uicc_tck(uint8_t const *const buf_raw, uint16_t const buf_raw_len);
+uint8_t uicc_tck(uint8_t const *const buf_raw, uint8_t const buf_raw_len);
 
 /**
  * @brief Converts a string of hex nibbles (encoded as ASCII), into a byte

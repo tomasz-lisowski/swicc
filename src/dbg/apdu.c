@@ -352,13 +352,11 @@ uicc_ret_et uicc_dbg_apdu_cmd_str(char *const buf_str,
 #ifdef DEBUG
     int bytes_written =
         snprintf(buf_str, *buf_str_len,
-                 // clang-format off
                  "(APDU"
                  "\n  (CLA (CHAIN '%s') (SM '%s') (INFO '%s') (LCHAN %u))"
                  "\n  (INS OP '%s')"
                  "\n  (P1 0x%02X)"
                  "\n  (P2 0x%02X))",
-                 // clang-format on
                  uicc_dbg_apdu_cla_ccc_str(apdu_cmd->hdr->cla),
                  uicc_dbg_apdu_cla_sm_str(apdu_cmd->hdr->cla),
                  uicc_dbg_apdu_cla_type_str(apdu_cmd->hdr->cla),

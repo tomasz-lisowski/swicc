@@ -279,7 +279,7 @@ static uicc_ret_et fsm_handle_s_cmd_data(uicc_st *const uicc_state)
         }
     }
     /**
-     * NOTE: If the APDU handler wants data multiple times (which is not
+     * @note If the APDU handler wants data multiple times (which is not
      * supported or expected) it leads to a fallthrough to here.
      */
     uicc_state->internal.fsm_state = UICC_FSM_STATE_OFF;

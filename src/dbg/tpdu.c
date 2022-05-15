@@ -12,7 +12,6 @@ uicc_ret_et uicc_dbg_tpdu_cmd_str(char *const buf_str,
     }
     int bytes_written = snprintf(
         buf_str, *buf_str_len,
-        // clang-format off
         "(TPDU"
         "\n  (CLA (CHAIN '%s') (SM '%s') (INFO '%s') (LCHAN %u))"
         "\n  (INS OP '%s')"
@@ -20,7 +19,6 @@ uicc_ret_et uicc_dbg_tpdu_cmd_str(char *const buf_str,
         "\n  (P2 0x%02X)"
         "\n  (P3 0x%02X))"
         "\n  (Data Len %u))",
-        // clang-format on
         uicc_dbg_apdu_cla_ccc_str(tpdu_cmd->hdr.cla),
         uicc_dbg_apdu_cla_sm_str(tpdu_cmd->hdr.cla),
         uicc_dbg_apdu_cla_type_str(tpdu_cmd->hdr.cla), tpdu_cmd->hdr.cla.lchan,

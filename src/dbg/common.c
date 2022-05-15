@@ -33,10 +33,7 @@ uicc_ret_et uicc_dbg_ret_str(char *const buf_str, uint16_t *const buf_str_len,
                              uicc_ret_et const ret)
 {
 #ifdef DEBUG
-    int bytes_written = snprintf(buf_str, *buf_str_len,
-                                 // clang-format off
-                                 "(RET '%s')",
-                                 // clang-format on
+    int bytes_written = snprintf(buf_str, *buf_str_len, "(RET '%s')",
                                  uicc_dbg_table_str_ret[ret]);
     if (bytes_written < 0)
     {

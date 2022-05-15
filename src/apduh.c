@@ -343,9 +343,20 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
         }
         else
         {
-            /* Create tags for use in encoding. */
+            /**
+             * Create tags for use in encoding.
+             * ISO 7816-4:2020 p.27 sec.7.4.3 table.11.
+             */
             static uint8_t const tags[] = {
-                0x62, 0x64, 0x6F, 0x80, 0x82, 0x83, 0x84, 0x88, 0x8A,
+                0x62, /* FCP Template */
+                0x64, /* FMD Template */
+                0x6F, /* FCI Template */
+                0x80, /* Data byte count */
+                0x82, /* File descripotor and coding */
+                0x83, /* File ID */
+                0x84, /* DF Name */
+                0x88, /* Short File ID */
+                0x8A, /* Life cycle status */
             };
             static uint32_t const tags_count = sizeof(tags) / sizeof(tags[0U]);
             uicc_dato_bertlv_tag_st bertlv_tags[tags_count];
@@ -566,6 +577,18 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
                                   uicc_apdu_cmd_st const *const cmd,
                                   uicc_apdu_res_st *const res)
 {
+    /**
+     * Odd instruction (B1) not supported. It would have the data field encoded
+     * as a BER-TLV DO.
+     */
+    if (cmd->hdr->ins != 0xB0)
+    {
+        res->sw1 = UICC_APDU_SW1_CHER_INS;
+        res->sw2 = 0U;
+        res->data.len = 0U;
+        return UICC_RET_SUCCESS;
+    }
+
     res->sw1 = UICC_APDU_SW1_CHER_UNK;
     res->sw2 = 0U;
     res->data.len = 0U;
@@ -585,6 +608,18 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
                                    uicc_apdu_cmd_st const *const cmd,
                                    uicc_apdu_res_st *const res)
 {
+    /**
+     * Odd instruction (B3) not supported. It would have the data field encoded
+     * as a BER-TLV DO.
+     */
+    if (cmd->hdr->ins != 0xB2)
+    {
+        res->sw1 = UICC_APDU_SW1_CHER_INS;
+        res->sw2 = 0U;
+        res->data.len = 0U;
+        return UICC_RET_SUCCESS;
+    }
+
     res->sw1 = UICC_APDU_SW1_CHER_UNK;
     res->sw2 = 0U;
     res->data.len = 0U;

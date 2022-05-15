@@ -145,8 +145,8 @@ static uicc_ret_et jsitem_prs_type_str(char const *const type_str,
     }
 
     /**
-     * XXX: The following 3 arrays (and the count variable) must be kept in sync
-     * when edited. This is very important!
+     * @warning The following 3 arrays (and the count variable) must be kept in
+     * sync when edited. This is very important!
      */
     static char const *const type_strs[] = {
         "file_mf",

@@ -95,15 +95,6 @@ uicc_ret_et uicc_va_select_file_path(uicc_fs_st *const fs,
 uicc_ret_et uicc_va_select_do_tag(uicc_fs_st *const fs, uint16_t const tag);
 
 /**
- * @brief Select a record by its unique identifier.
- * @param fs
- * @param id Record ID.
- * @return Return code.
- */
-uicc_ret_et uicc_va_select_record_id(uicc_fs_st *const fs,
-                                     uicc_fs_rcrd_id_kt id);
-
-/**
  * @brief Select a record by its record number i.e. index of the record in the
  * file.
  * @param fs

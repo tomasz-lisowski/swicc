@@ -171,7 +171,7 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
             return UICC_RET_APDU_RES_INVALID;
         }
         /**
-         * NOTE: Can also be INS XOR 0xFF to get the next (one) byte but this is
+         * @note Can also be INS XOR 0xFF to get the next (one) byte but this is
          * not supported in this implementation. Older 7816-3 standard editions
          * defined two other ways that have been deprecated now.
          */
