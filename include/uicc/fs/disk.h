@@ -62,15 +62,27 @@ typedef struct uicc_disk_tree_iter_s
 } uicc_disk_tree_iter_st;
 
 /**
- * @brief Get the file at the start of a tree (root of the tree).
- * @param tree
- * @param file_hdr_raw Where to write the pointer to the file inside the tree.
- * @param offset_trel Tree-relative offset to the start of the returned file.
+ * @brief A callback for the 'foreach' iterator.
+ * @param tree The tree inside which is the file.
+ * @param file A file in the tree.
+ * @param userdata Anything the user needs to access in their callback which is
+ * not already provided.
  * @return Return code.
  */
-uicc_ret_et uicc_disk_tree_file(uicc_disk_tree_st *const tree,
-                                uicc_fs_file_hdr_raw_st **const file_hdr_raw,
-                                uint32_t *const offset_trel);
+typedef uicc_ret_et fs_file_foreach_cb(uicc_disk_tree_st *const tree,
+                                       uicc_fs_file_hdr_st *const file,
+                                       void *const userdata);
+/**
+ * @brief For every file in a tree, perform some operation.
+ * @param tree Tree to iterate through all items in.
+ * @param cb A callback that will be run for every item in the tree.
+ * @param userdata Pointer to any additional data the user needs access to in
+ * the callback.
+ * @return Return code.
+ */
+uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
+                                        fs_file_foreach_cb *const cb,
+                                        void *const userdata);
 
 /**
  * @brief Get a tree iterator for more efficient searches for trees.
@@ -138,6 +150,32 @@ void uicc_disk_lutsid_empty(uicc_disk_tree_st *const tree);
 void uicc_disk_lutid_empty(uicc_disk_st *const disk);
 
 /**
+ * @brief Perform a lookup in the SID LUT of a given tree.
+ * @param tree
+ * @param sid
+ * @param file Gets the file header that was found with the lookup (only on
+ * success).
+ * @return Return code.
+ */
+uicc_ret_et uicc_disk_lutsid_lookup(uicc_disk_tree_st *const tree,
+                                    uicc_fs_sid_kt const sid,
+                                    uicc_fs_file_hdr_st *const file);
+
+/**
+ * @brief Perform a lookup in the ID LUT of a given disk.
+ * @param tree Gets a pointer to the tree in which the file is located (only on
+ * success).
+ * @param id
+ * @param file Gets the file header that was found with the lookup (only on
+ * success).
+ * @return Return code.
+ */
+uicc_ret_et uicc_disk_lutid_lookup(uicc_disk_st *const disk,
+                                   uicc_disk_tree_st **const tree,
+                                   uicc_fs_id_kt const id,
+                                   uicc_fs_file_hdr_st *const file);
+
+/**
  * @brief Save the disk as a UICC FS file to a specified file.
  * @param disk
  * @param disk_path Path where to save the disk file.
@@ -161,3 +199,27 @@ uicc_ret_et uicc_disk_lutid_rebuild(uicc_disk_st *const disk);
  */
 uicc_ret_et uicc_disk_lutsid_rebuild(uicc_disk_st *const disk,
                                      uicc_disk_tree_st *const tree);
+
+/**
+ * @brief Obtain data contained in a record inside a file.
+ * @param tree The tree which contains the file.
+ * @param file The file which must contain the record.
+ * @param idx Index of the record to obtain.
+ * @param buf Where the pointer to the record buffer will be written.
+ * @param len Length of the record buffer.
+ * @return Return code.
+ */
+uicc_ret_et uicc_disk_file_rcrd(uicc_disk_tree_st *const tree,
+                                uicc_fs_file_hdr_st *const file,
+                                uicc_fs_rcrd_idx_kt const idx,
+                                uint8_t **const buf, uint8_t *const len);
+
+/**
+ * @brief Gets the number of records that a file holds.
+ * @param tree The tree which contains the file.
+ * @param file
+ * @param rcrd_count Where the record count will be written.
+ */
+uicc_ret_et uicc_disk_file_rcrd_cnt(uicc_disk_tree_st *const tree,
+                                    uicc_fs_file_hdr_st *const file,
+                                    uint32_t *const rcrd_cnt);

@@ -36,14 +36,16 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
     *buf_str_len = 0;
 
     uint16_t buf_unused_len = buf_size;
-    int32_t dbg_str_len_tmp =
-        snprintf(buf_str, buf_unused_len,
-                 "\n%s(%s"
-                 "\n%s  (Size %u)"
-                 "\n%s  (LCS %u)"
-                 "\n%s  (Type %u)",
-                 ds, item_type_str[item->type], ds, item->size, ds, item->lcs,
-                 ds, item->type);
+    int32_t dbg_str_len_tmp = snprintf(
+        buf_str, buf_unused_len,
+        // clang-format off
+        "\n%s(" CLR_KND("%s") ""
+        "\n%s  (" CLR_KND("Size") " " CLR_VAL("%u") ")"
+        "\n%s  (" CLR_KND("LCS") " " CLR_VAL("%u") ")"
+        "\n%s  (" CLR_KND("Type") " " CLR_VAL("%u") ")",
+        // clang-format on
+        ds, item_type_str[item->type], ds, item->size, ds, item->lcs, ds,
+        item->type);
     if (dbg_str_len_tmp < 0 || (int64_t)buf_unused_len - dbg_str_len_tmp <= 0)
     {
         return UICC_RET_BUFFER_TOO_SHORT;
@@ -54,6 +56,7 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
         buf_unused_len = (uint16_t)(buf_unused_len - dbg_str_len_tmp);
     }
 
+    /* Create the common file header. */
     switch (item->type)
     {
     case UICC_FS_ITEM_TYPE_FILE_MF:
@@ -69,13 +72,14 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
         {
             return ret;
         }
-        dbg_str_len_tmp =
-            snprintf(&buf_str[buf_size - buf_unused_len], buf_unused_len,
-                     "\n%s  (ID 0x%04X)"
-                     "\n%s  (SID 0x%02X)"
-                     "\n%s  (Name '%s')"
-                     "\n%s  (Contents",
-                     ds, file.id, ds, file.sid, ds, file.name, ds);
+        dbg_str_len_tmp = snprintf(
+            &buf_str[buf_size - buf_unused_len], buf_unused_len,
+            // clang-format off
+            "\n%s  (" CLR_KND("ID") " " CLR_VAL("0x%04X") ")"
+            "\n%s  (" CLR_KND("SID") " " CLR_VAL("0x%02X") ")"
+            "\n%s  (" CLR_KND("Name") " " CLR_VAL("'%s'") ")",
+            // clang-format on
+            ds, file.id, ds, file.sid, ds, file.name);
         if (dbg_str_len_tmp < 0 ||
             (int64_t)buf_unused_len - dbg_str_len_tmp <= 0)
         {
@@ -90,6 +94,51 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
     }
     default:
         break;
+    }
+
+    /* For EFs with records, also add the record length to the header. */
+    {
+        if (item->type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED)
+        {
+            uicc_fs_ef_linearfixed_hdr_raw_st const *const ef_linearfixed =
+                (uicc_fs_ef_linearfixed_hdr_raw_st *)&tree
+                    ->buf[item->offset_trel];
+            dbg_str_len_tmp =
+                snprintf(&buf_str[buf_size - buf_unused_len], buf_unused_len,
+                         // clang-format off
+                     "\n%s  (" CLR_KND("Record Length") " " CLR_VAL("%u") ")"
+                     "\n%s  (" CLR_KND("Contents"),
+                         // clang-format on
+                         ds, ef_linearfixed->rcrd_size, ds);
+        }
+        else if (item->type == UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
+        {
+            uicc_fs_ef_cyclic_hdr_raw_st const *const ef_cyclic =
+                (uicc_fs_ef_cyclic_hdr_raw_st *)&tree->buf[item->offset_trel];
+            dbg_str_len_tmp =
+                snprintf(&buf_str[buf_size - buf_unused_len], buf_unused_len,
+                         // clang-format off
+                     "\n%s  (" CLR_KND("Record Length") " " CLR_VAL("%u") ")"
+                     "\n%s  (" CLR_KND("Contents"),
+                         // clang-format on
+                         ds, ef_cyclic->rcrd_size, ds);
+        }
+        else
+        {
+            dbg_str_len_tmp =
+                snprintf(&buf_str[buf_size - buf_unused_len], buf_unused_len,
+                         "\n%s  (" CLR_KND("Contents"), ds);
+        }
+        if (dbg_str_len_tmp < 0 ||
+            (int64_t)buf_unused_len - dbg_str_len_tmp <= 0)
+        {
+            return UICC_RET_BUFFER_TOO_SHORT;
+        }
+        else
+        {
+            /* Safe because it was checked to not become negative. */
+            buf_unused_len = (uint16_t)(buf_unused_len - dbg_str_len_tmp);
+        }
     }
 
     switch (item->type)
@@ -162,38 +211,39 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
     case UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
     case UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC:
     case UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT: {
+        uint8_t const ef_hdr_extra =
+            item->type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED ||
+                    item->type == UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC
+                ? sizeof(uicc_fs_ef_linearfixed_hdr_raw_st) -
+                      sizeof(uicc_fs_file_hdr_raw_st)
+                : 0U;
         /* Safe cast since size is guaranteed to have at least a header. */
         uint32_t const data_len =
-            (uint32_t)(item->size - sizeof(uicc_fs_file_hdr_raw_st));
+            (uint32_t)(item->size - sizeof(uicc_fs_file_hdr_raw_st) -
+                       ef_hdr_extra);
         if (buf_unused_len - (int32_t)(data_len * 3) < 0)
         {
             return UICC_RET_BUFFER_TOO_SHORT;
         }
         for (uint32_t data_idx = 0U; data_idx < data_len; ++data_idx)
         {
-            char *const buf_str_start = &buf_str[buf_size - buf_unused_len];
             uint8_t const data_byte =
-                tree->buf[item->offset_trel + sizeof(uicc_fs_file_hdr_raw_st) +
-                          data_idx];
-            char nibble[2U] = {(char)((0xF0 & data_byte) >> 4U),
-                               (0x0F & data_byte)};
-            for (uint8_t n_idx = 0U; n_idx < 2U; ++n_idx)
+                tree->buf[ef_hdr_extra + item->offset_trel +
+                          sizeof(uicc_fs_file_hdr_raw_st) + data_idx];
+            dbg_str_len_tmp =
+                snprintf(&buf_str[buf_size - buf_unused_len], buf_unused_len,
+                         " " CLR_VAL("%02X"), data_byte);
+            if (dbg_str_len_tmp < 0 ||
+                (int64_t)buf_unused_len - dbg_str_len_tmp <= 0)
             {
-                if (nibble[n_idx] >= 0x0A)
-                {
-                    nibble[n_idx] = (char)((nibble[n_idx] - 0x0A) + 'A');
-                }
-                else
-                {
-                    nibble[n_idx] = (char)(nibble[n_idx] + '0');
-                }
+                return UICC_RET_BUFFER_TOO_SHORT;
             }
-            buf_str_start[(data_idx * 3U) + 0U] = ' ';
-            buf_str_start[(data_idx * 3U) + 1U] = nibble[0U];
-            buf_str_start[(data_idx * 3U) + 2U] = nibble[1U];
+            else
+            {
+                /* Safe because it was checked to not become negative. */
+                buf_unused_len = (uint16_t)(buf_unused_len - dbg_str_len_tmp);
+            }
         }
-        /* Safe cast because checked to not become negative. */
-        buf_unused_len = (uint16_t)(buf_unused_len - (data_len * 3U));
         ret = UICC_RET_SUCCESS;
         break;
     }
@@ -246,9 +296,9 @@ uicc_ret_et uicc_dbg_disk_str(char *const buf_str, uint16_t *const buf_str_len,
     *buf_str_len = 0U;
     uint16_t buf_unused_len = buf_size;
 
-    int32_t disk_hdr_str_len = snprintf(buf_str, buf_unused_len,
-                                        "(Disk"
-                                        "\n  (Contents ");
+    int32_t disk_hdr_str_len =
+        snprintf(buf_str, buf_unused_len,
+                 "(" CLR_KND("Disk") "\n  (" CLR_KND("Contents") " ");
     if (disk_hdr_str_len < 0 || (int64_t)buf_unused_len - disk_hdr_str_len <= 0)
     {
         return UICC_RET_BUFFER_TOO_SHORT;

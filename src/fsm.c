@@ -198,51 +198,61 @@ static uicc_ret_et fsm_handle_s_pps_req(uicc_st *const uicc_state)
 
 static uicc_ret_et fsm_handle_s_cmd_wait(uicc_st *const uicc_state)
 {
-    if (uicc_state->cont_state_rx == FSM_STATE_CONT_READY &&
-        uicc_state->buf_rx_len == 5U /* Expecting just header. */)
+    if (uicc_state->cont_state_rx == FSM_STATE_CONT_READY)
     {
-        uicc_tpdu_cmd_st tpdu_cmd;
-        if (uicc_tpdu_cmd_parse(uicc_state->buf_rx, uicc_state->buf_rx_len,
-                                &tpdu_cmd) == UICC_RET_SUCCESS)
+        /* Expecting just the header. */
+        if (uicc_state->buf_rx_len == 5U)
         {
-            uicc_apdu_cmd_st apdu_cmd;
-            if (uicc_tpdu_to_apdu(&apdu_cmd, &tpdu_cmd) == UICC_RET_SUCCESS)
+            uicc_tpdu_cmd_st tpdu_cmd;
+            if (uicc_tpdu_cmd_parse(uicc_state->buf_rx, uicc_state->buf_rx_len,
+                                    &tpdu_cmd) == UICC_RET_SUCCESS)
             {
-                uicc_apdu_res_st apdu_res;
-                uicc_ret_et const apdu_handle_ret =
-                    uicc_apduh_demux(uicc_state, &apdu_cmd, &apdu_res);
-                if (apdu_handle_ret == UICC_RET_SUCCESS)
+                uicc_apdu_cmd_st apdu_cmd;
+                if (uicc_tpdu_to_apdu(&apdu_cmd, &tpdu_cmd) == UICC_RET_SUCCESS)
                 {
-                    uicc_ret_et const ret_res = uicc_apdu_res_deparse(
-                        uicc_state->buf_tx, &uicc_state->buf_tx_len, &apdu_cmd,
-                        &apdu_res);
-                    if (ret_res == UICC_RET_APDU_DATA_WAIT)
+                    uicc_apdu_res_st apdu_res;
+                    uicc_ret_et const apdu_handle_ret =
+                        uicc_apduh_demux(uicc_state, &apdu_cmd, &apdu_res);
+                    if (apdu_handle_ret == UICC_RET_SUCCESS)
                     {
-                        /**
-                         * Store the command header for use in the next state
-                         * when the rest of the data is received.
-                         */
-                        memcpy(&uicc_state->internal.apdu_cur.hdr, apdu_cmd.hdr,
-                               sizeof(uicc_state->internal.apdu_cur.hdr));
-                        uicc_state->internal.apdu_cur.p3 = *apdu_cmd.p3;
+                        uicc_ret_et const ret_res = uicc_apdu_res_deparse(
+                            uicc_state->buf_tx, &uicc_state->buf_tx_len,
+                            &apdu_cmd, &apdu_res);
+                        if (ret_res == UICC_RET_APDU_DATA_WAIT)
+                        {
+                            /**
+                             * Store the command header for use in the next
+                             * state when the rest of the data is received.
+                             */
+                            memcpy(&uicc_state->internal.apdu_cur.hdr,
+                                   apdu_cmd.hdr,
+                                   sizeof(uicc_state->internal.apdu_cur.hdr));
+                            uicc_state->internal.apdu_cur.p3 = *apdu_cmd.p3;
 
-                        /* There is more data to come for this command. */
-                        uicc_state->internal.fsm_state =
-                            UICC_FSM_STATE_CMD_DATA;
+                            /* There is more data to come for this command. */
+                            uicc_state->internal.fsm_state =
+                                UICC_FSM_STATE_CMD_DATA;
+                        }
+                        else if (ret_res == UICC_RET_SUCCESS)
+                        {
+                            /**
+                             * The command has been handled from just the header
+                             * (or rejected early).
+                             */
+                            uicc_state->internal.fsm_state =
+                                UICC_FSM_STATE_CMD_WAIT;
+                        }
+                        return UICC_RET_FSM_TRANSITION_WAIT;
                     }
-                    else if (ret_res == UICC_RET_SUCCESS)
-                    {
-                        /**
-                         * The command has been handled from just the header (or
-                         * rejected early).
-                         */
-                        uicc_state->internal.fsm_state =
-                            UICC_FSM_STATE_CMD_WAIT;
-                    }
-                    return UICC_RET_FSM_TRANSITION_WAIT;
                 }
             }
         }
+        /**
+         * Contact state is still fine so just return to the same state and
+         * ignore the received data.
+         */
+        uicc_state->buf_tx_len = 0U;
+        return UICC_RET_FSM_TRANSITION_WAIT;
     }
     uicc_state->internal.fsm_state = UICC_FSM_STATE_OFF;
     uicc_state->buf_tx_len = 0;
@@ -251,32 +261,43 @@ static uicc_ret_et fsm_handle_s_cmd_wait(uicc_st *const uicc_state)
 
 static uicc_ret_et fsm_handle_s_cmd_data(uicc_st *const uicc_state)
 {
-    if (uicc_state->cont_state_rx == FSM_STATE_CONT_READY &&
-        uicc_state->buf_rx_len <= UICC_DATA_MAX)
+    if (uicc_state->cont_state_rx == FSM_STATE_CONT_READY)
     {
-        uicc_tpdu_cmd_st tpdu_cmd;
-        uicc_apdu_cmd_st const apdu_cmd = {
-            .hdr = &tpdu_cmd.hdr, .p3 = &tpdu_cmd.p3, .data = &tpdu_cmd.data};
-
-        memcpy(apdu_cmd.hdr, &uicc_state->internal.apdu_cur.hdr,
-               sizeof(uicc_state->internal.apdu_cur.hdr));
-        *apdu_cmd.p3 = uicc_state->internal.apdu_cur.p3;
-        memcpy(apdu_cmd.data->b, uicc_state->buf_rx, uicc_state->buf_rx_len);
-        apdu_cmd.data->len = uicc_state->buf_rx_len;
-
-        uicc_apdu_res_st apdu_res;
-        uicc_ret_et const apdu_handle_ret =
-            uicc_apduh_demux(uicc_state, &apdu_cmd, &apdu_res);
-        if (apdu_handle_ret == UICC_RET_SUCCESS)
+        if (uicc_state->buf_rx_len <= UICC_DATA_MAX)
         {
-            if (uicc_apdu_res_deparse(uicc_state->buf_tx,
-                                      &uicc_state->buf_tx_len, &apdu_cmd,
-                                      &apdu_res) == UICC_RET_SUCCESS)
+            uicc_tpdu_cmd_st tpdu_cmd;
+            uicc_apdu_cmd_st const apdu_cmd = {.hdr = &tpdu_cmd.hdr,
+                                               .p3 = &tpdu_cmd.p3,
+                                               .data = &tpdu_cmd.data};
+
+            /* Restore the received header into the command. */
+            memcpy(apdu_cmd.hdr, &uicc_state->internal.apdu_cur.hdr,
+                   sizeof(uicc_state->internal.apdu_cur.hdr));
+            *apdu_cmd.p3 = uicc_state->internal.apdu_cur.p3;
+
+            /* Get the data. */
+            memcpy(apdu_cmd.data->b, uicc_state->buf_rx,
+                   uicc_state->buf_rx_len);
+            apdu_cmd.data->len = uicc_state->buf_rx_len;
+
+            uicc_apdu_res_st apdu_res;
+            uicc_ret_et const apdu_handle_ret =
+                uicc_apduh_demux(uicc_state, &apdu_cmd, &apdu_res);
+            if (apdu_handle_ret == UICC_RET_SUCCESS)
             {
-                uicc_state->internal.fsm_state = UICC_FSM_STATE_CMD_FULL;
-                return UICC_RET_FSM_TRANSITION_NOW;
+                if (uicc_apdu_res_deparse(uicc_state->buf_tx,
+                                          &uicc_state->buf_tx_len, &apdu_cmd,
+                                          &apdu_res) == UICC_RET_SUCCESS)
+                {
+                    uicc_state->internal.fsm_state = UICC_FSM_STATE_CMD_FULL;
+                    return UICC_RET_FSM_TRANSITION_NOW;
+                }
             }
         }
+        /* Contact state is still fine so just return to waiting for command. */
+        uicc_state->buf_tx_len = 0U;
+        uicc_state->internal.fsm_state = UICC_FSM_STATE_CMD_WAIT;
+        return UICC_RET_FSM_TRANSITION_WAIT;
     }
     /**
      * @note If the APDU handler wants data multiple times (which is not
@@ -292,8 +313,9 @@ static uicc_ret_et fsm_handle_s_cmd_full(uicc_st *const uicc_state)
     if (uicc_state->cont_state_rx == FSM_STATE_CONT_READY)
     {
         /* Ensure the state of the SIM is ready to handle another command. */
-        memset(&uicc_state->internal.apdu_cur, 0,
+        memset(&uicc_state->internal.apdu_cur, 0U,
                sizeof(uicc_state->internal.apdu_cur));
+        uicc_state->buf_tx_len = 0;
         uicc_state->internal.fsm_state = UICC_FSM_STATE_CMD_WAIT;
         return UICC_RET_FSM_TRANSITION_WAIT;
     }

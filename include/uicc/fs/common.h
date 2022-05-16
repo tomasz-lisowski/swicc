@@ -22,7 +22,7 @@ typedef struct uicc_fs_s uicc_fs_st;
 
 typedef enum uicc_fs_item_type_e
 {
-    UICC_FS_ITEM_TYPE_INVALID,
+    UICC_FS_ITEM_TYPE_INVALID = 0U,
 
     UICC_FS_ITEM_TYPE_FILE_MF,
     UICC_FS_ITEM_TYPE_FILE_ADF,
@@ -37,6 +37,8 @@ typedef enum uicc_fs_item_type_e
     UICC_FS_ITEM_TYPE_HEX,
     UICC_FS_ITEM_TYPE_ASCII,
 } uicc_fs_item_type_et;
+static_assert(UICC_FS_ITEM_TYPE_INVALID == 0U,
+              "Invalid file type must be equal to 0");
 
 /**
  * Life cycle status as specified in ISO 7816-4:2020 p.31 sec.7.4.10 table.15.
@@ -57,9 +59,23 @@ typedef enum uicc_fs_path_type_e
     UICC_FS_PATH_TYPE_DF, /* Relative to the current DF. */
 } uicc_fs_path_type_et;
 
-typedef uint16_t uicc_fs_id_kt;      /* ID like FID. */
-typedef uint8_t uicc_fs_sid_kt;      /* Short ID like SFI. */
-typedef uint8_t uicc_fs_rcrd_idx_kt; /* Record index. */
+/**
+ * Occurrence for specifying how a selection should be done if multiple items
+ * match.
+ */
+typedef enum uicc_fs_occ_e
+{
+    UICC_FS_OCC_FIRST,
+    UICC_FS_OCC_LAST,
+    UICC_FS_OCC_NEXT,
+    UICC_FS_OCC_PREV,
+} uicc_fs_occ_et;
+
+typedef uint16_t uicc_fs_id_kt; /* ID like FID. */
+typedef uint8_t uicc_fs_sid_kt; /* Short ID like SFI. */
+typedef uint8_t
+    uicc_fs_rcrd_idx_kt; /* Record index (NOT the record number whose indexing
+                            begins at 1, the IDX begins at 0). */
 
 /**
  * A represenatation of a header of any item in the UICC FS.
@@ -156,10 +172,6 @@ typedef uicc_fs_ef_linearfixed_hdr_raw_st uicc_fs_ef_cyclic_hdr_raw_st;
 /* Describes a record of an EF. */
 typedef struct uicc_fs_rcrd_s
 {
-    uint32_t size;
-    uint32_t parent_offset_trel;
-    uint32_t offset_prel_start;
-    uicc_fs_rcrd_id_kt id;
     uicc_fs_rcrd_idx_kt idx;
 } uicc_fs_rcrd_st;
 
@@ -168,8 +180,8 @@ typedef struct uicc_fs_data_s
 {
     uint32_t size;
     uint32_t parent_offset_trel;
-    uint32_t offset_prel_start;
-    uint32_t offset_prel_select;
+    uint32_t offset_prel;
+    uint32_t offset_select;
 } uicc_fs_data_st;
 
 /* Describes a data object or a part of one. */

@@ -5,8 +5,11 @@
 #include "uicc/fs/disk.h"
 
 /**
- * TODO: Implement selection based on an occurrence enum i.e. first, last, and
+ * @todo Implement selection based on an occurrence enum i.e. first, last, and
  * next.
+ * @todo Add ability to 'dry-select' into a copy of VA (transactional system) so
+ * that instructions can create these temporary VAs and either submit or reject
+ * their changes based on if they fail or not.
  */
 
 /**
@@ -76,6 +79,16 @@ uicc_ret_et uicc_va_select_file_id(uicc_fs_st *const fs,
                                    uicc_fs_id_kt const fid);
 
 /**
+ * @brief Select a file by file SID (short file identifier).
+ * @param fs
+ * @param sid Short file identifier.
+ * @return Return code.
+ * @note Implicitly, the SID search is done on the current tree.
+ */
+uicc_ret_et uicc_va_select_file_sid(uicc_fs_st *const fs,
+                                    uicc_fs_sid_kt const sid);
+
+/**
  * @brief Select a file using a path.
  * @param fs
  * @param path Buffer which must be a concatenation of file IDs.
@@ -84,15 +97,6 @@ uicc_ret_et uicc_va_select_file_id(uicc_fs_st *const fs,
  */
 uicc_ret_et uicc_va_select_file_path(uicc_fs_st *const fs,
                                      uicc_fs_path_st const path);
-
-/**
- * @brief Select a DO by tag. This works because a given tag occurs exactly once
- * in a file.
- * @param fs
- * @param tag The tag of the DO to select.
- * @return Return code.
- */
-uicc_ret_et uicc_va_select_do_tag(uicc_fs_st *const fs, uint16_t const tag);
 
 /**
  * @brief Select a record by its record number i.e. index of the record in the

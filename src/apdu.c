@@ -134,7 +134,7 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
     case UICC_APDU_SW1_CHER_INS:
     case UICC_APDU_SW1_CHER_CLA:
     case UICC_APDU_SW1_CHER_UNK:
-        if (res->sw2 != 0)
+        if (res->sw2 != 0U)
         {
             return UICC_RET_APDU_RES_INVALID;
         }
@@ -163,7 +163,7 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
             return UICC_RET_APDU_RES_INVALID;
         }
         buf_raw[0U] = 0x60;
-        *buf_raw_len = 1;
+        *buf_raw_len = 1U;
         return UICC_RET_SUCCESS;
     case UICC_APDU_SW1_PROC_ACK:
         if (res->data.len != 0 || res->sw2 != 0)
@@ -176,7 +176,7 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
          * defined two other ways that have been deprecated now.
          */
         buf_raw[0U] = cmd->hdr->ins; /* The raw INS byte. */
-        *buf_raw_len = 1;
+        *buf_raw_len = 1U;
         return UICC_RET_APDU_DATA_WAIT;
     }
     return UICC_RET_SUCCESS;

@@ -21,10 +21,11 @@ uicc_ret_et uicc_dbg_fsm_state_str(char *const buf_str,
                                    uicc_fsm_state_et fsm_state)
 {
 #ifdef DEBUG
-    int bytes_written = snprintf(buf_str, *buf_str_len,
-                                 "(FSM"
-                                 "\n  (STATE '%s'))",
-                                 uicc_dbg_table_str_fsm_state[fsm_state]);
+    int bytes_written = snprintf(
+        buf_str, *buf_str_len,
+
+        "(" CLR_KND("FSM") "\n  (" CLR_KND("State") " " CLR_VAL("'%s'") "))",
+        uicc_dbg_table_str_fsm_state[fsm_state]);
     if (bytes_written < 0)
     {
         return UICC_RET_BUFFER_TOO_SHORT;

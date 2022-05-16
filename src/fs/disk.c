@@ -72,26 +72,7 @@ static uicc_ret_et lut_insert(uicc_disk_lut_st *const lut,
     return UICC_RET_SUCCESS;
 }
 
-/**
- * @brief A callback for the 'foreach' iterator.
- * @param tree The tree inside which is the file.
- * @param file A file in the tree.
- * @param userdata Anything the user needs to access in their callback which is
- * not already provided.
- * @return Return code.
- */
-typedef uicc_ret_et fs_file_foreach_cb(uicc_disk_tree_st *const tree,
-                                       uicc_fs_file_hdr_st *const file,
-                                       void *const userdata);
-/**
- * @brief For every file in a tree, perform some operation.
- * @param tree Tree to iterate through all items in.
- * @param cb A callback that will be run for every item in the tree.
- * @param userdata Pointer to any additional data the user needs access to in
- * the callback.
- * @return Return code.
- */
-static uicc_ret_et fs_tree_file_foreach(uicc_disk_tree_st *const tree,
+uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
                                         fs_file_foreach_cb *const cb,
                                         void *const userdata)
 {
@@ -129,7 +110,7 @@ static uicc_ret_et fs_tree_file_foreach(uicc_disk_tree_st *const tree,
             uint32_t depth = 1U; /* Inside the tree so 1 already. */
             while (depth < UICC_FS_DEPTH_MAX)
             {
-                if (stack_data_idx[depth] >= file_hdr.item.size)
+                if (stack_data_idx[depth - 1U] >= file_hdr.item.size)
                 {
                     depth -= 1U;
                     if (depth < 1U)
@@ -196,7 +177,15 @@ static uicc_ret_et fs_tree_file_foreach(uicc_disk_tree_st *const tree,
                 case UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC:
                     stack_data_idx[depth - 1U] += file_nested_hdr.item.size;
                     break;
+                case UICC_FS_ITEM_TYPE_INVALID:
+                    ret = UICC_RET_ERROR;
+                    break;
                 default:
+                    break;
+                }
+
+                if (ret != UICC_RET_SUCCESS)
+                {
                     break;
                 }
             }
@@ -206,20 +195,6 @@ static uicc_ret_et fs_tree_file_foreach(uicc_disk_tree_st *const tree,
             /* Only MFs and ADFs can be roots of trees. */
             ret = UICC_RET_ERROR;
         }
-    }
-    return ret;
-}
-
-uicc_ret_et uicc_disk_tree_file(uicc_disk_tree_st *const tree,
-                                uicc_fs_file_hdr_raw_st **const file_hdr_raw,
-                                uint32_t *const offset_trel)
-{
-    uicc_ret_et ret = UICC_RET_ERROR;
-    if (tree != NULL && tree->buf != NULL)
-    {
-        *file_hdr_raw = (uicc_fs_file_hdr_raw_st *)&tree->buf[0U];
-        *offset_trel = 0U;
-        return UICC_RET_SUCCESS;
     }
     return ret;
 }
@@ -508,6 +483,123 @@ void uicc_disk_lutid_empty(uicc_disk_st *const disk)
     memset(&disk->lutid, 0U, sizeof(disk->lutid));
 }
 
+uicc_ret_et uicc_disk_lutsid_lookup(uicc_disk_tree_st *const tree,
+                                    uicc_fs_sid_kt const sid,
+                                    uicc_fs_file_hdr_st *const file)
+{
+    uicc_disk_lut_st *const lutsid = &tree->lutsid;
+
+    /* Make sure the SID LUT is as expected. */
+    if (lutsid->buf1 == NULL || lutsid->size_item1 != sizeof(uicc_fs_sid_kt) ||
+        lutsid->size_item2 != sizeof(uint32_t))
+    {
+        return UICC_RET_ERROR;
+    }
+
+    /* Find the file by SID. */
+    uint32_t entry_idx = 0U;
+    while (entry_idx < lutsid->count)
+    {
+        if (memcmp(&lutsid->buf1[lutsid->size_item1 * entry_idx], &sid,
+                   lutsid->size_item1) == 0)
+        {
+            break;
+        }
+        entry_idx += 1U;
+    }
+    if (entry_idx >= lutsid->count)
+    {
+        return UICC_RET_FS_NOT_FOUND;
+    }
+
+    uint32_t const offset =
+        *(uint32_t *)&lutsid->buf2[lutsid->size_item2 * entry_idx];
+    /* Offset too large. */
+    if (offset >= tree->len)
+    {
+        return UICC_RET_ERROR;
+    }
+
+    uicc_fs_file_hdr_raw_st *const file_raw =
+        (uicc_fs_file_hdr_raw_st *)&tree->buf[offset];
+    if (uicc_fs_item_hdr_prs(&file_raw->item, &file->item) != UICC_RET_SUCCESS)
+    {
+        return UICC_RET_ERROR;
+    }
+    file->item.offset_trel = offset;
+    if (uicc_fs_file_hdr_prs(file_raw, file) != UICC_RET_SUCCESS)
+    {
+        return UICC_RET_ERROR;
+    }
+
+    return UICC_RET_SUCCESS;
+}
+
+uicc_ret_et uicc_disk_lutid_lookup(uicc_disk_st *const disk,
+                                   uicc_disk_tree_st **const tree,
+                                   uicc_fs_id_kt const id,
+                                   uicc_fs_file_hdr_st *const file)
+{
+    uicc_disk_lut_st *const lutid = &disk->lutid;
+
+    /* Make sure the ID LUT is as expected. */
+    if (lutid->buf1 == NULL || lutid->size_item1 != sizeof(uicc_fs_id_kt) ||
+        lutid->size_item2 != sizeof(uint32_t) + sizeof(uint8_t))
+    {
+        return UICC_RET_ERROR;
+    }
+
+    /* Find the file by ID. */
+    uint32_t entry_idx = 0U;
+    while (entry_idx < lutid->count)
+    {
+        if (memcmp(&lutid->buf1[lutid->size_item1 * entry_idx], &id,
+                   lutid->size_item1) == 0)
+        {
+            break;
+        }
+        entry_idx += 1U;
+    }
+    if (entry_idx >= lutid->count)
+    {
+        return UICC_RET_FS_NOT_FOUND;
+    }
+
+    uint32_t const offset =
+        *(uint32_t *)&lutid->buf2[(lutid->size_item2 * entry_idx) + 0U];
+    uint8_t const tree_idx =
+        lutid->buf2[(lutid->size_item2 * entry_idx) + sizeof(uint32_t)];
+
+    /* Find the tree in which the file resides. */
+    uicc_disk_tree_iter_st tree_iter;
+    if (uicc_disk_tree_iter(disk, &tree_iter) != UICC_RET_SUCCESS ||
+        uicc_disk_tree_iter_idx(&tree_iter, tree_idx, tree) !=
+            UICC_RET_SUCCESS ||
+        (*tree)->len <= offset)
+    {
+        return UICC_RET_ERROR;
+    }
+
+    /* Offset too large. */
+    if (offset >= (*tree)->len)
+    {
+        return UICC_RET_ERROR;
+    }
+    uicc_fs_file_hdr_raw_st *const file_raw =
+        (uicc_fs_file_hdr_raw_st *)&(*tree)->buf[offset];
+    if (uicc_fs_item_hdr_prs(&file_raw->item, &file->item) != UICC_RET_SUCCESS)
+    {
+        return UICC_RET_ERROR;
+    }
+    file->item.offset_trel = offset;
+    if (uicc_fs_file_hdr_prs(file_raw, file) != UICC_RET_SUCCESS)
+    {
+        return UICC_RET_ERROR;
+    }
+
+    return UICC_RET_SUCCESS;
+}
+
 uicc_ret_et uicc_disk_save(uicc_disk_st *const disk,
                            char const *const disk_path)
 {
@@ -594,7 +686,7 @@ uicc_ret_et uicc_disk_lutid_rebuild(uicc_disk_st *const disk)
     {
         lut_id_rebuild_cb_userdata_st userdata = {.lut = &disk->lutid,
                                                   .tree_idx = tree_idx};
-        ret = fs_tree_file_foreach(tree, lutid_rebuild_cb, &userdata);
+        ret = uicc_disk_tree_file_foreach(tree, lutid_rebuild_cb, &userdata);
         if (ret != UICC_RET_SUCCESS)
         {
             uicc_disk_lutid_empty(disk);
@@ -646,10 +738,91 @@ uicc_ret_et uicc_disk_lutsid_rebuild(uicc_disk_st *const disk,
         return UICC_RET_ERROR;
     }
 
-    uicc_ret_et ret = fs_tree_file_foreach(tree, lutsid_rebuild_cb, NULL);
+    uicc_ret_et ret =
+        uicc_disk_tree_file_foreach(tree, lutsid_rebuild_cb, NULL);
     if (ret != UICC_RET_SUCCESS)
     {
         uicc_disk_lutsid_empty(tree);
     }
     return ret;
+}
+
+uicc_ret_et uicc_disk_file_rcrd(uicc_disk_tree_st *const tree,
+                                uicc_fs_file_hdr_st *const file,
+                                uicc_fs_rcrd_idx_kt const idx,
+                                uint8_t **const buf, uint8_t *const len)
+{
+    /* Only linear-fixed or cyclic files have records. */
+    if (file->item.type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED ||
+        file->item.type == UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
+    {
+        /* Indexes begin at the first record in the array. */
+        uicc_fs_ef_linearfixed_hdr_raw_st *ef_linearfixed =
+            (uicc_fs_ef_linearfixed_hdr_raw_st *)&tree
+                ->buf[file->item.offset_trel];
+        uicc_fs_ef_cyclic_hdr_raw_st *ef_cyclic =
+            (uicc_fs_ef_linearfixed_hdr_raw_st *)&tree
+                ->buf[file->item.offset_trel];
+
+        uint8_t const rcrd_size =
+            file->item.type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED
+                ? ef_linearfixed->rcrd_size
+                : ef_cyclic->rcrd_size;
+        uint32_t const hdr_size =
+            file->item.type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED
+                ? sizeof(*ef_linearfixed)
+                : sizeof(*ef_cyclic);
+
+        uint32_t rcrd_cnt;
+        uicc_ret_et const ret_rcrd_cnt =
+            uicc_disk_file_rcrd_cnt(tree, file, &rcrd_cnt);
+        if (ret_rcrd_cnt == UICC_RET_SUCCESS)
+        {
+            if (idx >= ret_rcrd_cnt)
+            {
+                return UICC_RET_FS_NOT_FOUND;
+            }
+            /* Safe cast, this sum will never be greater than uint64 max. */
+            uint64_t const rcrd_offset =
+                (uint64_t)(file->item.offset_trel + hdr_size) +
+                (uint64_t)(rcrd_size * idx);
+            if (rcrd_offset > UINT32_MAX)
+            {
+                return UICC_RET_ERROR;
+            }
+            /* Safe cast due to check on size. */
+            *buf = &tree->buf[(uint32_t)rcrd_offset];
+            *len = rcrd_size;
+            return UICC_RET_SUCCESS;
+        }
+    }
+    return UICC_RET_ERROR;
+}
+
+uicc_ret_et uicc_disk_file_rcrd_cnt(uicc_disk_tree_st *const tree,
+                                    uicc_fs_file_hdr_st *const file,
+                                    uint32_t *const rcrd_cnt)
+{
+    if (file->item.type != UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED)
+    {
+        /* Indexes begin at the first record in the array. */
+        uicc_fs_ef_linearfixed_hdr_raw_st *ef =
+            (uicc_fs_ef_linearfixed_hdr_raw_st *)&tree
+                ->buf[file->item.offset_trel];
+        /* Safe case since there can only be UINT32_MAX/1 records at most. */
+        *rcrd_cnt =
+            (uint32_t)((ef->file.item.size - sizeof(*ef)) / ef->rcrd_size);
+        return UICC_RET_SUCCESS;
+    }
+    else if (file->item.type != UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
+    {
+        /* Indexes begin at the last/selected record in the array. */
+        uicc_fs_ef_cyclic_hdr_raw_st *ef =
+            (uicc_fs_ef_cyclic_hdr_raw_st *)&tree->buf[file->item.offset_trel];
+        /* Safe case since there can only be UINT32_MAX/1 records at most. */
+        *rcrd_cnt =
+            (uint32_t)((ef->file.item.size - sizeof(*ef)) / ef->rcrd_size);
+        return UICC_RET_SUCCESS;
+    }
+    return UICC_RET_ERROR;
 }

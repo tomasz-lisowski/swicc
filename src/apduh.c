@@ -1,6 +1,7 @@
 #include "uicc.h"
 #include <byteswap.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 /**
@@ -91,15 +92,7 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                            Data: Absent. */
     } meth = METH_RFU;
 
-    enum occ_e
-    {
-        OCC_RFU,
-
-        OCC_FIRST, /* First or only occurrence. */
-        OCC_LAST,  /* Last occurrence. */
-        OCC_NEXT,  /* Next occurrence. */
-        OCC_PREV,  /* Previous occurrence. */
-    } occ = OCC_RFU;
+    uicc_fs_occ_et occ;
 
     enum data_req_e
     {
@@ -159,19 +152,16 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
         switch (cmd->hdr->p2 & 0b00000011)
         {
         case 0b00000000:
-            occ = OCC_FIRST;
+            occ = UICC_FS_OCC_FIRST;
             break;
         case 0b00000001:
-            occ = OCC_LAST;
+            occ = UICC_FS_OCC_LAST;
             break;
         case 0b00000010:
-            occ = OCC_NEXT;
+            occ = UICC_FS_OCC_NEXT;
             break;
         case 0b00000011:
-            occ = OCC_PREV;
-            break;
-        default:
-            occ = OCC_RFU;
+            occ = UICC_FS_OCC_PREV;
             break;
         }
         switch (cmd->hdr->p2 & 0b00001100)
@@ -204,8 +194,8 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
     /* Perform the requested action. */
     {
         /* Unsupported P1/P2 parameters. */
-        if (meth == METH_RFU || data_req == DATA_REQ_RFU || occ == OCC_RFU ||
-            meth == METH_DO || meth == METH_DO_PARENT)
+        if (meth == METH_RFU || data_req == DATA_REQ_RFU || meth == METH_DO ||
+            meth == METH_DO_PARENT)
         {
             res->sw1 = UICC_APDU_SW1_CHER_P1P2;
             res->sw2 = 0U;
@@ -246,7 +236,7 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             break;
         case METH_DF_NAME:
             /* Name must be at least 1 char long. */
-            if (cmd->data->len == 0 || occ != OCC_FIRST)
+            if (cmd->data->len == 0 || occ != UICC_FS_OCC_FIRST)
             {
                 ret_select = UICC_RET_ERROR;
             }
@@ -259,7 +249,8 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             break;
         case METH_MF_PATH:
             /* Must contain at least 1 ID in the path. */
-            if (cmd->data->len < sizeof(uicc_fs_id_kt) || occ != OCC_FIRST)
+            if (cmd->data->len < sizeof(uicc_fs_id_kt) ||
+                occ != UICC_FS_OCC_FIRST)
             {
                 ret_select = UICC_RET_ERROR;
             }
@@ -276,7 +267,8 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             break;
         case METH_DF_PATH:
             /* Must contain at least 1 ID in the path. */
-            if (cmd->data->len < sizeof(uicc_fs_id_kt) || occ != OCC_FIRST)
+            if (cmd->data->len < sizeof(uicc_fs_id_kt) ||
+                occ != UICC_FS_OCC_FIRST)
             {
                 ret_select = UICC_RET_ERROR;
             }
@@ -620,6 +612,219 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
         return UICC_RET_SUCCESS;
     }
 
+    /* Where to read records from. */
+    enum trgt_e
+    {
+        TRGT_EF_CUR,
+        TRGT_EF_SID,
+        TRGT_MANY,
+    } trgt;
+
+    /* Which occurrence to read when reading using an ID. */
+    __attribute__((unused)) uicc_fs_occ_et occ = UICC_FS_OCC_FIRST;
+
+    /* What to record(s) to read when reading using a number. */
+    enum what_e
+    {
+        WHAT_P1,
+        WHAT_P1_TO_LAST,
+        WHAT_LAST_TO_P1,
+        WHAT_RFU,
+    } what = WHAT_RFU;
+
+    /* Method of selecting a record to read. */
+    enum meth_e
+    {
+        METH_RCRD_ID,
+        METH_RCRD_NUM,
+    } meth;
+
+    /**
+     * Value of first 5 bits. This can be interpreted differently based on the
+     * other bits and P1.
+     */
+    uint8_t const p2_val = (cmd->hdr->p2 & 0b11111000) >> 3U;
+
+    /* Parse P1 and P2 */
+    {
+        switch (p2_val)
+        {
+        case 0b00000:
+            trgt = TRGT_EF_CUR;
+            break;
+        case 0b11111:
+            trgt = TRGT_MANY;
+            break;
+        default:
+            trgt = TRGT_EF_SID;
+            break;
+        }
+
+        if (cmd->hdr->p2 & 0b00000100)
+        {
+            meth = METH_RCRD_NUM;
+            switch (cmd->hdr->p2 & 0b00000011)
+            {
+            case 0b00:
+                what = WHAT_P1;
+                break;
+            case 0b01:
+                what = WHAT_P1_TO_LAST;
+                break;
+            case 0b10:
+                what = WHAT_LAST_TO_P1;
+                break;
+            default:
+                what = WHAT_RFU;
+                break;
+            }
+        }
+        else
+        {
+            meth = METH_RCRD_ID;
+            switch (cmd->hdr->p2 & 0b00000011)
+            {
+            case 0b00:
+                occ = UICC_FS_OCC_FIRST;
+                break;
+            case 0b01:
+                occ = UICC_FS_OCC_LAST;
+                break;
+            case 0b10:
+                occ = UICC_FS_OCC_NEXT;
+                break;
+            case 0b11:
+                occ = UICC_FS_OCC_PREV;
+                break;
+            }
+        }
+    }
+
+    /* Perform the requested operation. */
+    {
+        /**
+         * Operation "P1 set to '00' and one or more record handling
+         * DO'7F76' in the command data field", selection by ID is not
+         * supported, reading many records is not supported.
+         */
+        if (cmd->hdr->p2 == 0b11111000 || meth == METH_RCRD_ID ||
+            trgt == TRGT_MANY)
+        {
+            res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+            res->sw2 = 0x81; /* "Function not supported" */
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
+
+        /**
+         * RFU values should never be received.
+         * P1 = 0x00 is used for "special purposes" and P1 = 0xFF is RFU per
+         * ISO 7816-4:2020 p.82 sec.11.4.2.
+         */
+        if ((p2_val == 0b11111 && meth == METH_RCRD_ID) ||
+            (p2_val == 0b11111 && meth == METH_RCRD_NUM) || what == WHAT_RFU ||
+            cmd->hdr->p1 == 0x00 || cmd->hdr->p1 == 0xFF)
+        {
+            res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+            res->sw2 = 0x86; /* "Incorrect parameters P1-P2" */
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
+
+        if (meth == METH_RCRD_NUM)
+        {
+            /* Safe cast because P1 is >0. */
+            uicc_fs_rcrd_idx_kt const rcrd_idx = (uint8_t)(cmd->hdr->p1 - 1U);
+
+            uicc_fs_file_hdr_st ef_cur;
+            uicc_ret_et ret_ef = UICC_RET_ERROR;
+            switch (trgt)
+            {
+            case TRGT_EF_CUR: {
+                ef_cur = uicc_state->internal.fs.va.cur_ef;
+                ret_ef = UICC_RET_SUCCESS;
+                break;
+            }
+            case TRGT_EF_SID: {
+                uicc_fs_sid_kt const sid = p2_val;
+                ret_ef = uicc_disk_lutsid_lookup(
+                    uicc_state->internal.fs.va.cur_adf, sid, &ef_cur);
+                break;
+            }
+            default:
+                /* Already rejected 'many' operation before. */
+                __builtin_unreachable();
+            }
+
+            if (ret_ef == UICC_RET_FS_NOT_FOUND)
+            {
+                res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+                res->sw2 = 0x82; /* "File or application not found" */
+                res->data.len = 0U;
+                return UICC_RET_SUCCESS;
+            }
+            else if (ret_ef == UICC_RET_SUCCESS)
+            {
+                /* Got the target EF, can read the record now. */
+                uint8_t *rcrd_buf;
+                uint8_t rcrd_len;
+                uicc_ret_et const ret_rcrd = uicc_disk_file_rcrd(
+                    uicc_state->internal.fs.va.cur_adf, &ef_cur, rcrd_idx,
+                    &rcrd_buf, &rcrd_len);
+                if (ret_rcrd == UICC_RET_FS_NOT_FOUND)
+                {
+                    res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+                    res->sw2 = 0x83; /* "Record not found" */
+                    res->data.len = 0U;
+                    return UICC_RET_SUCCESS;
+                }
+                else if (ret_rcrd == UICC_RET_SUCCESS)
+                {
+                    /* Check if the expected response length is as expected. */
+                    if (*cmd->p3 != rcrd_len)
+                    {
+                        /**
+                         * Asking the interface to retry the command but this
+                         * time with correct expected response length.
+                         */
+                        res->sw1 = UICC_APDU_SW1_CHER_LE;
+                        res->sw2 = rcrd_len;
+                        res->data.len = 0U;
+                        return UICC_RET_SUCCESS;
+                    }
+
+                    /**
+                     * Have to select the file on success (only if EF was
+                     * selected by SID).
+                     * @warning If this fails, something weird is going on.
+                     */
+                    uicc_ret_et const ret_file_select =
+                        trgt == TRGT_EF_SID
+                            ? uicc_va_select_file_sid(&uicc_state->internal.fs,
+                                                      ef_cur.sid)
+                            : UICC_RET_SUCCESS;
+                    if (ret_file_select == UICC_RET_SUCCESS)
+                    {
+                        /**
+                         * In any case, have to select the record.
+                         * @warning If this fails, something weird is going on.
+                         */
+                        uicc_ret_et const ret_rcrd_select =
+                            uicc_va_select_record_idx(&uicc_state->internal.fs,
+                                                      rcrd_idx);
+                        if (ret_rcrd_select == UICC_RET_SUCCESS)
+                        {
+                            res->sw1 = UICC_APDU_SW1_NORM_NONE;
+                            res->sw2 = 0U;
+                            res->data.len = rcrd_len;
+                            memcpy(res->data.b, rcrd_buf, rcrd_len);
+                            return UICC_RET_SUCCESS;
+                        }
+                    }
+                }
+            }
+        }
+    }
     res->sw1 = UICC_APDU_SW1_CHER_UNK;
     res->sw2 = 0U;
     res->data.len = 0U;

@@ -36,7 +36,8 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         return UICC_RET_BUFFER_TOO_SHORT;
     }
     ret = snprintf(buf_str + bytes_written,
-                   *buf_str_len - (uint32_t)bytes_written, "(ATR ");
+                   *buf_str_len - (uint32_t)bytes_written,
+                   "(" CLR_KND("ATR") " ");
     if (ret < 0)
     {
         return UICC_RET_BUFFER_TOO_SHORT;
@@ -50,7 +51,8 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
             return UICC_RET_BUFFER_TOO_SHORT;
         }
         ret = snprintf(buf_str + bytes_written,
-                       *buf_str_len - (uint32_t)bytes_written, "??\?)\n");
+                       *buf_str_len - (uint32_t)bytes_written,
+                       CLR_VAL("??\?") ")\n");
         if (ret < 0)
         {
             return UICC_RET_BUFFER_TOO_SHORT;
@@ -90,14 +92,14 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         {
             ret = snprintf(buf_str + bytes_written,
                            *buf_str_len - (uint32_t)bytes_written,
-                           "\n  (T%02u ", chunk_idx);
+                           "\n  (" CLR_KND("T%02u") " ", chunk_idx);
         }
         else
         {
             /* TI = Interface byte. */
             ret = snprintf(buf_str + bytes_written,
-                           *buf_str_len - (uint32_t)bytes_written, "\n  (TI%u ",
-                           chunk_idx - 1U);
+                           *buf_str_len - (uint32_t)bytes_written,
+                           "\n  (" CLR_KND("Ti%u") " ", chunk_idx - 1U);
         }
         if (ret < 0)
         {
@@ -185,10 +187,11 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
                     {
                         return UICC_RET_BUFFER_TOO_SHORT;
                     }
-                    ret = snprintf(buf_str + bytes_written,
-                                   *buf_str_len - (uint32_t)bytes_written,
-                                   "\n    (T%c%u 0x%02X)", 'A' + y_idx,
-                                   chunk_idx, chunk.tabcd[y_idx]);
+                    ret = snprintf(
+                        buf_str + bytes_written,
+                        *buf_str_len - (uint32_t)bytes_written,
+                        "\n    (" CLR_KND("T%c%u") " " CLR_VAL("0x%02X") ")",
+                        'A' + y_idx, chunk_idx, chunk.tabcd[y_idx]);
                     if (ret < 0)
                     {
                         return UICC_RET_BUFFER_TOO_SHORT;
@@ -223,7 +226,9 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         {
             ret = snprintf(
                 buf_str + bytes_written, *buf_str_len - (uint32_t)bytes_written,
-                "\n    (Y%u (A '%s') (B '%s') (C '%s') (D '%s'))",
+                // clang-format off
+                "\n    (" CLR_KND("Y%u") " (" CLR_KND("A") " " CLR_VAL("'%s'") ") (" CLR_KND("B") " " CLR_VAL("'%s'") ") (" CLR_KND("C") " " CLR_VAL("'%s'") ") (" CLR_KND("D") " " CLR_VAL("'%s'") "))",
+                // clang-format on
                 chunk_idx + 1U, uicc_dbg_table_str_indicator[chunk.y[0U]],
                 uicc_dbg_table_str_indicator[chunk.y[1U]],
                 uicc_dbg_table_str_indicator[chunk.y[2U]],
@@ -251,13 +256,15 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
             {
                 ret = snprintf(buf_str + bytes_written,
                                *buf_str_len - (uint32_t)bytes_written,
-                               "\n    (T%u %u))", chunk_idx + 1U, chunk.t);
+                               "\n    (" CLR_KND("T%u") " " CLR_VAL("%u") "))",
+                               chunk_idx + 1U, chunk.t);
             }
             else
             {
                 ret = snprintf(buf_str + bytes_written,
                                *buf_str_len - (uint32_t)bytes_written,
-                               "\n    (K %u))", chunk.k);
+                               "\n    (" CLR_KND("K") " " CLR_VAL("%u") "))",
+                               chunk.k);
             }
         }
         if (ret < 0)
@@ -283,10 +290,11 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         {
             return UICC_RET_BUFFER_TOO_SHORT;
         }
-        ret = snprintf(
-            buf_str + bytes_written, *buf_str_len - (uint32_t)bytes_written,
-            "\n  (T%02u 0x%02X)", hist_idx + 1U /* T0 is the format byte */,
-            buf_atr[buf_atr_idx + hist_idx]);
+        ret = snprintf(buf_str + bytes_written,
+                       *buf_str_len - (uint32_t)bytes_written,
+                       "\n  (" CLR_KND("T%02u") " " CLR_VAL("0x%02X") ")",
+                       hist_idx + 1U /* T0 is the format byte */,
+                       buf_atr[buf_atr_idx + hist_idx]);
         if (ret < 0)
         {
             return UICC_RET_BUFFER_TOO_SHORT;
@@ -311,9 +319,9 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         if (buf_atr_idx >= buf_atr_len)
         {
             /* ATR does not contain a TCK when it should. */
-            ret = snprintf(buf_str + bytes_written,
-                           *buf_str_len - (uint32_t)bytes_written,
-                           "\n  (TCK 'missing'))");
+            ret = snprintf(
+                buf_str + bytes_written, *buf_str_len - (uint32_t)bytes_written,
+                "\n  (" CLR_KND("TCK") " " CLR_VAL("'missing'") "))");
             return UICC_RET_ATR_INVALID;
         }
         else
@@ -323,7 +331,10 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
                                          (uint8_t)(buf_atr_len - 1U));
             ret = snprintf(buf_str + bytes_written,
                            *buf_str_len - (uint32_t)bytes_written,
-                           "\n  (TCK '%s'))", tck != 0 ? "invalid" : "valid");
+                           // clang-format off
+                           "\n  (" CLR_KND("TCK") " " CLR_VAL("'%s'") "))",
+                           // clang-format on
+                           tck != 0 ? "invalid" : "valid");
         }
     }
     else
