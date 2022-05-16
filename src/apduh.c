@@ -579,6 +579,148 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
         return UICC_RET_SUCCESS;
     }
 
+    uint8_t const len_expected = *cmd->p3;
+    uint16_t offset;
+    uicc_fs_file_hdr_st file;
+
+    /**
+     * Indicates if P1 contains a SID thus leading to a lookup and change in
+     * current EF in VA on successful read.
+     */
+    bool const sid_use = cmd->hdr->p1 & 0b10000000;
+    uicc_fs_sid_kt sid;
+
+    /**
+     * Parse P1 and P2.
+     * @note The standard refers to b1 of INS which essentially differentiates
+     * between the even B0 and odd B1 instructions. The latter is not supported.
+     */
+    if (sid_use)
+    {
+        /**
+         * b7 and b6 of P1 must be set to 00, b5 to b1 of P1 encodes SFI and P2
+         * encodes an offset from 0 to 255 in the EF referenced by command.
+         */
+        /* b6 and b7 of P1 must be 0. */
+        if ((cmd->hdr->p1 & 0b01100000) != 0)
+        {
+            res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+            res->sw2 = 0x86; /* "Incorrect parameters P1-P2" */
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
+
+        sid = cmd->hdr->p1 & 0b00011111;
+        offset = cmd->hdr->p2;
+
+        uicc_ret_et const ret_lookup = uicc_disk_lutsid_lookup(
+            uicc_state->internal.fs.va.cur_adf, sid, &file);
+        if (ret_lookup == UICC_RET_FS_NOT_FOUND)
+        {
+            res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+            res->sw2 = 0x82; /* "File or application not found" */
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
+        else if (ret_lookup != UICC_RET_SUCCESS)
+        {
+            /* Not sure what went wrong. */
+            res->sw1 = UICC_APDU_SW1_CHER_UNK;
+            res->sw2 = 0U;
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
+    }
+    else
+    {
+        /**
+         * P1-P2 (15 bits) encodes an offset in the EF
+         * referenced by curEF from 0 to 32767.
+         */
+        /* Safe cast since just concatentating 2 bytes into short. */
+        offset = (uint16_t)(((0b01111111 & cmd->hdr->p1) << 8U) | cmd->hdr->p2);
+
+        file = uicc_state->internal.fs.va.cur_ef;
+        if (file.item.type == UICC_FS_ITEM_TYPE_INVALID)
+        {
+            res->sw1 = UICC_APDU_SW1_CHER_CMD;
+            res->sw2 = 0x86; /* "Command not allowed (curEF not set)" */
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
+    }
+
+    if (file.item.type == UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT)
+    {
+        if (offset >= file.item.size - sizeof(uicc_fs_file_hdr_raw_st))
+        {
+            /**
+             * Requested an offset which is outside the bounds of the
+             * file.
+             */
+            res->sw1 = UICC_APDU_SW1_CHER_P1P2;
+            res->sw2 = 0U;
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
+
+        /* Read data into response. */
+        /* Safe cast due to the check against offset. */
+        uint8_t const len_readable =
+            (uint8_t)(file.item.size - sizeof(uicc_fs_file_hdr_raw_st) -
+                      offset);
+        uint8_t const len_read =
+            len_expected > len_readable ? len_readable : len_expected;
+        memcpy(res->data.b,
+               &uicc_state->internal.fs.va.cur_adf
+                    ->buf[file.item.offset_trel +
+                          sizeof(uicc_fs_file_hdr_raw_st) + offset],
+               len_read);
+        res->data.len = len_read;
+        if (len_read < len_expected)
+        {
+            /* Read fewer bytes than were requested. */
+            res->sw1 = UICC_APDU_SW1_WARN_NVM_CHGN;
+            res->sw2 = 0x82; /* "End of file, record or DO reached before
+                                reading Ne bytes, or unsuccessful search" */
+        }
+        else
+        {
+            /* Read exactly the number of bytes requested. */
+            res->sw1 = UICC_APDU_SW1_NORM_NONE;
+            res->sw2 = 0U;
+        }
+
+        if (sid_use)
+        {
+            /**
+             * Select the file by SID now that the command is known to
+             * succeed.
+             */
+            if (uicc_va_select_file_sid(&uicc_state->internal.fs, sid) ==
+                UICC_RET_SUCCESS)
+            {
+                return UICC_RET_SUCCESS;
+            }
+            /**
+             * Selection should not fail since the lookup worked just fine.
+             * This will fall-through to the unknown error.
+             */
+        }
+        else
+        {
+            /* Nothing extra to be done on simple read by offset. */
+            return UICC_RET_SUCCESS;
+        }
+    }
+    else
+    {
+        res->sw1 = UICC_APDU_SW1_CHER_CMD;
+        res->sw2 = 0x81; /* "Command incompatible with file structure" */
+        res->data.len = 0U;
+        return UICC_RET_SUCCESS;
+    }
+
     res->sw1 = UICC_APDU_SW1_CHER_UNK;
     res->sw2 = 0U;
     res->data.len = 0U;
