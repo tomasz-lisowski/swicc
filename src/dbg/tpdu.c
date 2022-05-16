@@ -6,10 +6,6 @@ uicc_ret_et uicc_dbg_tpdu_cmd_str(char *const buf_str,
                                   uicc_tpdu_cmd_st const *const tpdu_cmd)
 {
 #ifdef DEBUG
-    if (tpdu_cmd->data.len < 1U)
-    {
-        return UICC_RET_TPDU_HDR_TOO_SHORT;
-    }
     int bytes_written = snprintf(
         buf_str, *buf_str_len,
         // clang-format off

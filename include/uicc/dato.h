@@ -2,6 +2,9 @@
 /**
  * DATO = Data Object. In standards just DO but 'do' is reserved in C so 'dato'
  * is used to avoid problems.
+ *
+ * @note At the root, there must be exactly one DO i.e. {T-L-V}{T-L-V}... is not
+ * supported but inside constructed DOs this is possible.
  */
 
 #include "uicc/common.h"
@@ -11,13 +14,13 @@
  * The limit on the number of bytes in the tag (=3) is mentioned in ISO
  * 7816-4:2020 p.20 sec.6.3.
  */
-#define UICC_DATO_BERTLV_TAG_LEN_MAX 3U
+#define UICC_DATO_BERTLV_TAG_LEN_MAX 3U /* In bytes. */
 
 /**
  * ISO 7816-4:2020 p.20 sec.6.3 states that length fields longer than 5 bytes
  * (including the initial byte b0) are RFU.
  */
-#define UICC_DATO_BERTLV_LEN_LEN_MAX 5U
+#define UICC_DATO_BERTLV_LEN_LEN_MAX 5U /* In bytes. */
 
 typedef enum uicc_dato_bertlv_tag_cla_e
 {

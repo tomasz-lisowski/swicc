@@ -227,7 +227,8 @@ static uicc_ret_et jsitem_prs_demux(cJSON const *const item_json,
  * avoid duplicating code.
  * @param item_json The whole folder item (not the 'contents' attribute).
  * @param buf
- * @param buf_len
+ * @param buf_len Shall contain the length of the buffer. It will receive the
+ * size of the parsed representation.
  * @return Return code.
  */
 static jsitem_prs_ft jsitem_prs_file_folder;
@@ -285,6 +286,17 @@ static uicc_ret_et jsitem_prs_file_folder(cJSON const *const item_json,
     return ret;
 }
 
+/**
+ * @brief Given an item encoded as a JSON object, parse it as a MF and write
+ * the parsed representation into the buffer.
+ * @param item_json
+ * @param offset_prel
+ * @param buf
+ * @param buf_len Shall contain the length of the buffer. It will receive the
+ * size of the parsed representation.
+ * @return Return code.
+ */
+static jsitem_prs_ft jsitem_prs_file_mf;
 static uicc_ret_et jsitem_prs_file_mf(cJSON const *const item_json,
                                       uint32_t const offset_prel,
                                       uint8_t *const buf,
@@ -308,6 +320,18 @@ static uicc_ret_et jsitem_prs_file_mf(cJSON const *const item_json,
     }
     return ret;
 }
+
+/**
+ * @brief Given an item encoded as a JSON object, parse it as a ADF and write
+ * the parsed representation into the buffer.
+ * @param item_json
+ * @param offset_prel
+ * @param buf
+ * @param buf_len Shall contain the length of the buffer. It will receive the
+ * size of the parsed representation.
+ * @return Return code.
+ */
+static jsitem_prs_ft jsitem_prs_file_adf;
 static uicc_ret_et jsitem_prs_file_adf(cJSON const *const item_json,
                                        uint32_t const offset_prel,
                                        uint8_t *const buf,
@@ -389,6 +413,18 @@ static uicc_ret_et jsitem_prs_file_adf(cJSON const *const item_json,
     }
     return ret;
 }
+
+/**
+ * @brief Given an item encoded as a JSON object, parse it as a DF and write the
+ * parsed representation into the buffer.
+ * @param item_json
+ * @param offset_prel
+ * @param buf
+ * @param buf_len Shall contain the length of the buffer. It will receive the
+ * size of the parsed representation.
+ * @return Return code.
+ */
+static jsitem_prs_ft jsitem_prs_file_df;
 static uicc_ret_et jsitem_prs_file_df(cJSON const *const item_json,
                                       uint32_t const offset_prel,
                                       uint8_t *const buf,
@@ -438,6 +474,18 @@ static uicc_ret_et jsitem_prs_file_df(cJSON const *const item_json,
     }
     return ret;
 }
+
+/**
+ * @brief Given an item encoded as a JSON object, parse it as a transparent EF
+ * and write the parsed representation into the buffer.
+ * @param item_json
+ * @param offset_prel
+ * @param buf
+ * @param buf_len Shall contain the length of the buffer. It will receive the
+ * size of the parsed representation.
+ * @return Return code.
+ */
+static jsitem_prs_ft jsitem_prs_file_ef_transparent;
 static uicc_ret_et jsitem_prs_file_ef_transparent(cJSON const *const item_json,
                                                   uint32_t const offset_prel,
                                                   uint8_t *const buf,
@@ -512,6 +560,18 @@ static uicc_ret_et jsitem_prs_file_ef_transparent(cJSON const *const item_json,
     }
     return ret;
 }
+
+/**
+ * @brief Given an item encoded as a JSON object, parse it as a linear-fixed EF
+ * and write the parsed representation into the buffer.
+ * @param item_json
+ * @param offset_prel
+ * @param buf
+ * @param buf_len Shall contain the length of the buffer. It will receive the
+ * size of the parsed representation.
+ * @return Return code.
+ */
+static jsitem_prs_ft jsitem_prs_file_ef_linearfixed;
 static uicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
                                                   uint32_t const offset_prel,
                                                   uint8_t *const buf,
@@ -608,6 +668,18 @@ static uicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
     }
     return ret;
 }
+
+/**
+ * @brief Given an item encoded as a JSON object, parse it as a cyclic EF and
+ * write the parsed representation into the buffer.
+ * @param item_json
+ * @param offset_prel
+ * @param buf
+ * @param buf_len Shall contain the length of the buffer. It will receive the
+ * size of the parsed representation.
+ * @return Return code.
+ */
+static jsitem_prs_ft jsitem_prs_file_ef_cyclic;
 static uicc_ret_et jsitem_prs_file_ef_cyclic(cJSON const *const item_json,
                                              uint32_t const offset_prel,
                                              uint8_t *const buf,
@@ -616,17 +688,254 @@ static uicc_ret_et jsitem_prs_file_ef_cyclic(cJSON const *const item_json,
     return jsitem_prs[UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED](
         item_json, offset_prel, buf, buf_len);
 }
+
+/**
+ * @brief A helper for parsing BER-TLV DO items. This will parse (recursively),
+ * all the DOs contained in the JSON-encoded BER-TLV DO and write the parsed
+ * representation into the buffer.
+ * @param bertlv_json This should be the object contained in the 'contents' of
+ * a DO BER-TLV item or object in the 'val' field of a BER-TLV DO.
+ * @param enc
+ * @return Return code.
+ */
+static uicc_ret_et prs_bertlv(cJSON const *const bertlv_json,
+                              uicc_dato_bertlv_enc_st *const enc)
+{
+    if (bertlv_json != NULL && cJSON_IsObject(bertlv_json) == true)
+    {
+        cJSON *const tag_obj =
+            cJSON_GetObjectItemCaseSensitive(bertlv_json, "tag");
+        cJSON *const val_obj =
+            cJSON_GetObjectItemCaseSensitive(bertlv_json, "val");
+        if (tag_obj != NULL && cJSON_IsObject(tag_obj) && val_obj != NULL &&
+            (cJSON_IsString(val_obj) == true || cJSON_IsNull(val_obj) == true ||
+             cJSON_IsArray(val_obj) == true))
+        {
+            cJSON *const tag_class_obj =
+                cJSON_GetObjectItemCaseSensitive(tag_obj, "class");
+            cJSON *const tag_number_obj =
+                cJSON_GetObjectItemCaseSensitive(tag_obj, "number");
+            if (tag_class_obj != NULL &&
+                cJSON_IsNumber(tag_class_obj) == true &&
+                tag_number_obj != NULL &&
+                cJSON_IsNumber(tag_number_obj) == true)
+            {
+                bool const dato_constr = cJSON_IsArray(val_obj) == true;
+
+                /* Make sure the class number is in a valid range. */
+                double const cla_raw = cJSON_GetNumberValue(tag_class_obj);
+                if (cla_raw > UINT32_MAX || cla_raw < 0)
+                {
+                    return UICC_RET_ERROR;
+                }
+
+                /* Safe casr since it was checked to be. */
+                uicc_dato_bertlv_tag_cla_et cla;
+                switch ((uint32_t)cla_raw)
+                {
+                case 0:
+                    cla = UICC_DATO_BERTLV_TAG_CLA_UNIVERSAL;
+                    break;
+                case 1:
+                    cla = UICC_DATO_BERTLV_TAG_CLA_APPLICATION;
+                    break;
+                case 2:
+                    cla = UICC_DATO_BERTLV_TAG_CLA_CONTEXT_SPECIFIC;
+                    break;
+                case 3:
+                    cla = UICC_DATO_BERTLV_TAG_CLA_PRIVATE;
+                    break;
+                default:
+                    cla = UICC_DATO_BERTLV_TAG_CLA_INVALID;
+                    break;
+                }
+                uicc_dato_bertlv_tag_st const tag = {
+                    .cla = cla,
+                    .num = (uint32_t)cJSON_GetNumberValue(tag_number_obj),
+                    .pc = dato_constr,
+                };
+                if (dato_constr)
+                {
+                    /**
+                     * For constructed DOs, parse nested items backwards (from
+                     * the last to the first) then encode header and return.
+                     */
+                    uicc_dato_bertlv_enc_st enc_nstd;
+
+                    if (uicc_dato_bertlv_enc_nstd_start(enc, &enc_nstd) ==
+                        UICC_RET_SUCCESS)
+                    {
+                        uicc_ret_et ret_env = UICC_RET_ERROR;
+                        int32_t const val_obj_cnt = cJSON_GetArraySize(val_obj);
+                        if (val_obj_cnt < 0)
+                        {
+                            /* Length of the value should never be negative. */
+                            return UICC_RET_ERROR;
+                        }
+
+                        /* Iterate from the last to the first element. */
+                        /* Safe cast since count was checked to be positive. */
+                        for (int32_t val_obj_idx = val_obj_cnt - 1;
+                             val_obj_idx >= 0; --val_obj_idx)
+                        {
+                            /**
+                             * Safe cast since the idx will never surpass a
+                             * value of int32.
+                             */
+                            cJSON *const val_obj_nstd = cJSON_GetArrayItem(
+                                val_obj, (int32_t)val_obj_idx);
+                            ret_env = prs_bertlv(val_obj_nstd, &enc_nstd);
+                            if (ret_env != UICC_RET_SUCCESS)
+                            {
+                                break;
+                            }
+                        }
+                        if (ret_env == UICC_RET_SUCCESS)
+                        {
+                            if (uicc_dato_bertlv_enc_nstd_end(enc, &enc_nstd) ==
+                                    UICC_RET_SUCCESS &&
+                                uicc_dato_bertlv_enc_hdr(enc, &tag) ==
+                                    UICC_RET_SUCCESS)
+                            {
+                                return UICC_RET_SUCCESS;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    /**
+                     * For primitive DOs, encode that data then header and
+                     * return.
+                     */
+                    if (cJSON_IsString(val_obj) == true)
+                    {
+                        char *const val_str = cJSON_GetStringValue(val_obj);
+                        uint64_t const val_str_len = strlen(val_str);
+                        if (val_str_len > UINT32_MAX)
+                        {
+                            /* Value length should never be this large. */
+                            return UICC_RET_ERROR;
+                        }
+                        uicc_ret_et ret_enc = UICC_RET_ERROR;
+                        /* Safe cast since len was checked to fit in uint32. */
+                        uint32_t bytearr_len = (uint32_t)val_str_len / 2U;
+                        uint8_t *bytearr = malloc(bytearr_len);
+                        if (bytearr != NULL)
+                        {
+                            /* Safe cast since val len was checked. */
+                            if (uicc_hexstr_bytearr(
+                                    val_str, (uint32_t)val_str_len, bytearr,
+                                    &bytearr_len) == UICC_RET_SUCCESS)
+                            {
+                                if (uicc_dato_bertlv_enc_data(enc, bytearr,
+                                                              bytearr_len) ==
+                                        UICC_RET_SUCCESS &&
+                                    uicc_dato_bertlv_enc_hdr(enc, &tag) ==
+                                        UICC_RET_SUCCESS)
+                                {
+                                    ret_enc = UICC_RET_SUCCESS;
+                                }
+                            }
+                            free(bytearr);
+                        }
+                        if (ret_enc == UICC_RET_SUCCESS)
+                        {
+                            return ret_enc;
+                        }
+                    }
+                    else
+                    {
+                        /**
+                         * If value is NULL, it just means the value has length
+                         * 0.
+                         */
+                        if (uicc_dato_bertlv_enc_hdr(enc, &tag) ==
+                            UICC_RET_SUCCESS)
+                        {
+                            return UICC_RET_SUCCESS;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return UICC_RET_ERROR;
+}
+
+/**
+ * @brief Given an item encoded as a JSON object, parse the contents as a
+ * BER-TLV DO and write the parsed representation into the buffer.
+ * @param item_json
+ * @param offset_prel
+ * @param buf
+ * @param buf_len Shall contain the length of the buffer. It will receive the
+ * size of the parsed representation.
+ * @return Return code.
+ */
+static jsitem_prs_ft jsitem_prs_item_dato_bertlv;
 static uicc_ret_et jsitem_prs_item_dato_bertlv(cJSON const *const item_json,
                                                uint32_t const offset_prel,
                                                uint8_t *const buf,
                                                uint32_t *const buf_len)
 {
-    /**
-     * TODO: Implement this.
-     */
+    if (item_json != NULL && cJSON_IsObject(item_json) == true)
+    {
+        cJSON *const contents_obj =
+            cJSON_GetObjectItemCaseSensitive(item_json, "contents");
+        if (contents_obj != NULL && cJSON_IsObject(contents_obj) == true)
+        {
+            uicc_dato_bertlv_enc_st enc;
+            uint8_t *enc_buf;
+            uint32_t enc_buf_len;
+            uicc_ret_et ret_enc = UICC_RET_ERROR;
+            for (bool dry_run = true;; dry_run = false)
+            {
+                if (dry_run)
+                {
+                    enc_buf = NULL;
+                    enc_buf_len = 0U;
+                }
+                else
+                {
+                    enc_buf = buf;
+                    enc_buf_len = enc.len;
+                }
+                uicc_dato_bertlv_enc_init(&enc, enc_buf, enc_buf_len);
+                ret_enc = prs_bertlv(contents_obj, &enc);
+                if (ret_enc != UICC_RET_SUCCESS)
+                {
+                    break;
+                }
+
+                if (!dry_run)
+                {
+                    ret_enc = UICC_RET_SUCCESS;
+                    break;
+                }
+            }
+            if (ret_enc == UICC_RET_SUCCESS)
+            {
+                *buf_len = enc_buf_len;
+            }
+            return ret_enc;
+        }
+    }
     *buf_len = 0;
-    return UICC_RET_SUCCESS;
+    return UICC_RET_ERROR;
 }
+
+/**
+ * @brief Given an item encoded as a JSON object, parse the contents into the
+ * given buffer by converting the hex string into a byte array.
+ * @param item_json
+ * @param offset_prel
+ * @param buf
+ * @param buf_len Shall contain the length of the buffer. It will receive the
+ * size of the parsed representation.
+ * @return Return code.
+ */
+static jsitem_prs_ft jsitem_prs_item_hex;
 static uicc_ret_et jsitem_prs_item_hex(cJSON const *const item_json,
                                        uint32_t const offset_prel,
                                        uint8_t *const buf,
@@ -665,6 +974,18 @@ static uicc_ret_et jsitem_prs_item_hex(cJSON const *const item_json,
     }
     return ret;
 }
+
+/**
+ * @brief Given an item encoded as a JSON object, write the ASCII text contained
+ * in the contents, into the buffer.
+ * @param item_json
+ * @param offset_prel
+ * @param buf
+ * @param buf_len Shall contain the length of the buffer. It will receive the
+ * size of the parsed representation.
+ * @return Return code.
+ */
+static jsitem_prs_ft jsitem_prs_item_ascii;
 static uicc_ret_et jsitem_prs_item_ascii(cJSON const *const item_json,
                                          uint32_t const offset_prel,
                                          uint8_t *const buf,

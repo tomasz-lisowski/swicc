@@ -34,6 +34,7 @@ static uicc_ret_et apduh_unk(uicc_st *const uicc_state,
  * @param res
  * @return Return code.
  * @note As described in ISO 7816-4:2020 p.74 sec.11.2.2.
+ * @todo Handle special (reserved) IDs.
  */
 static uicc_apduh_ft apduh_select;
 static uicc_ret_et apduh_select(uicc_st *const uicc_state,
@@ -402,7 +403,7 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             uint32_t bertlv_len;
             uicc_ret_et ret_bertlv = UICC_RET_ERROR;
             uicc_dato_bertlv_enc_st enc;
-            for (bool dry_run = true;;)
+            for (bool dry_run = true;; dry_run = false)
             {
                 if (dry_run)
                 {
@@ -527,14 +528,11 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                     enc = enc_nstd;
                 }
 
+                /* Stop when finished with the real run (i.e. not dry run). */
                 if (!dry_run)
                 {
                     ret_bertlv = UICC_RET_SUCCESS;
                     break;
-                }
-                else
-                {
-                    dry_run = !dry_run;
                 }
             }
             if (ret_bertlv == UICC_RET_SUCCESS)
