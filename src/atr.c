@@ -97,10 +97,10 @@ uint8_t const uicc_atr[] = {
                  */
     0x67,       /**
                  * Tag = 4 (pre-issuing data)
-                 * Len = 8
+                 * Len = 7
                  */
 
-    's', 'w', 's', 'i', 'm', '.', '0',
+    'l', 'i', 'b', 'u', 'i', 0xCC, 0x00,
 
     0x73,       /**
                  * Tag = 7 (card capabilities)
@@ -142,7 +142,7 @@ uint8_t const uicc_atr[] = {
                  * 't', 'z', 'y' with: 4y + 2z + t + 1 (when not all =1, else it
                  * means 8 or more)
                  */
-    0x41,       /**
+    0x9B,       /**
                  * Check byte (TCK)
                  *  = XOR of all bytes (with TCK=0)
                  */
