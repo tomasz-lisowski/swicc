@@ -18,6 +18,8 @@ static char const *const uicc_dbg_table_str_ret[] = {
         "wait for state change before running the FSM again",
     [UICC_RET_FSM_TRANSITION_NOW] =
         "run the FSM again without waiting for anything",
+    [UICC_RET_FSM_TRANSITION_REPEAT] =
+        "run the FSM again without waiting and without changing user data",
 
     [UICC_RET_PPS_INVALID] = "invalid PPS",
     [UICC_RET_PPS_FAILED] = "PPS is valid but the parameters are not accepted",
@@ -47,6 +49,7 @@ uicc_ret_et uicc_dbg_ret_str(char *const buf_str, uint16_t *const buf_str_len,
         return UICC_RET_SUCCESS;
     }
 #else
+    *buf_str_len = 0U;
     return UICC_RET_SUCCESS;
 #endif
 }

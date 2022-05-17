@@ -1192,7 +1192,7 @@ uicc_ret_et uicc_diskjs_disk_create(uicc_disk_st *const disk,
                                     char const *const disk_json_path)
 {
     uicc_ret_et ret = UICC_RET_ERROR;
-    FILE *f = fopen(disk_json_path, "r");
+    FILE *f = fopen(disk_json_path, "rb");
     if (f != NULL)
     {
         /* Seek to end. */

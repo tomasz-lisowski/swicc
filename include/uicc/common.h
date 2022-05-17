@@ -29,6 +29,9 @@ typedef enum uicc_ret_e
 
     UICC_RET_FSM_TRANSITION_WAIT, /* Wait for I/O state change then run FSM. */
     UICC_RET_FSM_TRANSITION_NOW,  /* Without waiting, let the FSM run again. */
+    UICC_RET_FSM_TRANSITION_REPEAT, /* Without waiting, and without changing any
+                                       user controlled data (e.g. RX, TX buffers
+                                       and contacts) let the FSM run again. */
 
     UICC_RET_PPS_INVALID, /* E.g. the check byte is incorrect etc... */
     UICC_RET_PPS_FAILED,  /* Request is handled but params are not accepted */
@@ -42,17 +45,11 @@ typedef enum uicc_ret_e
 } uicc_ret_et;
 
 /**
- * Since many modules will need this, it is typedef'd here to avoid circular
- * includes.
+ * Typedef these to avoid including and creating circular deps.
  */
 typedef struct uicc_s uicc_st;
-
-/**
- * Need it here to declaring it.
- * @warning It's important this is updated or removed if it's no longer needed
- * or if the struct changed definition.
- */
 typedef struct uicc_fs_file_hdr_s uicc_fs_file_hdr_st;
+typedef enum uicc_fsm_state_e uicc_fsm_state_et;
 
 /**
  * @brief Compute the elementary time unit (ETU) as described in ISO 7816-3:2006
@@ -136,3 +133,10 @@ uicc_ret_et uicc_file_descr(uicc_fs_file_hdr_st const *const file,
  */
 uicc_ret_et uicc_file_data_coding(uicc_fs_file_hdr_st const *const file,
                                   uint8_t *const data_coding);
+
+/**
+ * @brief Gets the current state of the FSM.
+ * @param uicc_state
+ * @param state
+ */
+void uicc_fsm_state(uicc_st *const uicc_state, uicc_fsm_state_et *const state);

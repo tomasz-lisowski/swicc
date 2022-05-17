@@ -352,6 +352,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         (uint16_t)bytes_written; /* Safe cast due to args of snprintf. */
     return UICC_RET_SUCCESS;
 #else
+    *buf_str_len = 0U;
     return UICC_RET_SUCCESS;
 #endif
 }

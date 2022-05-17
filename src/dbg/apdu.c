@@ -378,6 +378,7 @@ uicc_ret_et uicc_dbg_apdu_cmd_str(char *const buf_str,
         return UICC_RET_SUCCESS;
     }
 #else
+    *buf_str_len = 0U;
     return UICC_RET_SUCCESS;
 #endif
 }

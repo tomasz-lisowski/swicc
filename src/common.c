@@ -184,3 +184,8 @@ uicc_ret_et uicc_file_data_coding(uicc_fs_file_hdr_st const *const file,
     *data_coding = 0b00100001;
     return UICC_RET_SUCCESS;
 }
+
+void uicc_fsm_state(uicc_st *const uicc_state, uicc_fsm_state_et *const state)
+{
+    *state = uicc_state->internal.fsm_state;
+}

@@ -113,8 +113,7 @@ static uicc_ret_et fsm_handle_s_atr_res(uicc_st *const uicc_state)
         if (uicc_state->buf_rx[0] == UICC_PPS_PPSS)
         {
             uicc_state->internal.fsm_state = UICC_FSM_STATE_PPS_REQ;
-            uicc_state->buf_tx_len = 0;
-            return UICC_RET_FSM_TRANSITION_NOW;
+            return UICC_RET_FSM_TRANSITION_REPEAT;
         }
         else
         {
@@ -138,7 +137,9 @@ static uicc_ret_et fsm_handle_s_reset_warm(uicc_st *const uicc_state)
         uicc_state->buf_tx_len = 0;
         return UICC_RET_FSM_TRANSITION_WAIT;
     }
-    // TODO
+    /**
+     * @todo Implement warm reset
+     */
     uicc_state->buf_tx_len = 0;
     return UICC_RET_FSM_TRANSITION_WAIT;
 }
@@ -171,7 +172,7 @@ static uicc_ret_et fsm_handle_s_pps_req(uicc_st *const uicc_state)
                      uicc_state->internal.tp.di, uicc_state->internal.tp.fmax);
             return UICC_RET_FSM_TRANSITION_WAIT;
         }
-        else if (UICC_RET_PPS_FAILED)
+        else if (ret == UICC_RET_PPS_FAILED)
         {
             /**
              * The interface must send another PPS request and again check if

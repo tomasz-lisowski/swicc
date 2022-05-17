@@ -359,6 +359,7 @@ uicc_ret_et uicc_dbg_disk_str(char *const buf_str, uint16_t *const buf_str_len,
     *buf_str_len = (uint16_t)(buf_size - (buf_unused_len - 3));
     return UICC_RET_SUCCESS;
 #else
+    *buf_str_len = 0U;
     return UICC_RET_SUCCESS;
 #endif
 }
