@@ -104,9 +104,8 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
     }
     *buf_raw_len = res->data.len;
     memcpy(buf_raw, res->data.b, res->data.len);
-    uint16_t *const status =
-        (uint16_t *)&buf_raw[res->data.len]; /* Safe cast because size of raw
-                                                buffer was checked. */
+    /* Unsafe cast because if  */
+    uint8_t *const status = &buf_raw[res->data.len];
 
     static uint8_t const sw1_raw[] = {
         [UICC_APDU_SW1_NORM_NONE] = 0x90,
@@ -152,7 +151,8 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
     case UICC_APDU_SW1_CHER_P1P2_INFO:
     case UICC_APDU_SW1_CHER_LE:
         /* Safe cast since just concatenating 2 bytes into a short. */
-        *status = (uint16_t)(sw1_raw[res->sw1] | (res->sw2 << 8U));
+        status[0U] = sw1_raw[res->sw1];
+        status[1U] = res->sw2;
         *buf_raw_len = (uint16_t)(*buf_raw_len +
                                   2U); /* Safe cast due to check at the
                                           start that ensures res will fit. */

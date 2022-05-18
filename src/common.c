@@ -84,6 +84,7 @@ uicc_ret_et uicc_reset(uicc_st *const uicc_state)
     uicc_etu(&uicc_state->internal.tp.etu, uicc_io_fi[UICC_TP_CONF_DEFAULT],
              uicc_io_di[UICC_TP_CONF_DEFAULT],
              uicc_io_fmax[UICC_TP_CONF_DEFAULT]);
+    memset(&uicc_state->internal.res, 0U, sizeof(uicc_state->internal.res));
     return UICC_RET_SUCCESS;
 }
 

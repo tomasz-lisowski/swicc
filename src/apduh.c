@@ -1,4 +1,5 @@
 #include "uicc.h"
+#include "uicc/apdu.h"
 #include <byteswap.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -412,12 +413,17 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                 }
                 else
                 {
-                    bertlv_buf = res->data.b;
-                    if (enc.len > sizeof(res->data.b))
+                    /* Make sure the encoded DO can fit in the buffer. */
+                    if (enc.len > sizeof(uicc_state->internal.res.b) ||
+                        enc.len > sizeof(res->data.b))
                     {
                         break;
                     }
+                    /* Safe cast due to the check of encoded len. */
+                    uicc_state->internal.res.len = (uint16_t)enc.len;
+                    uicc_state->internal.res.offset = 0U;
                     bertlv_len = enc.len;
+                    bertlv_buf = uicc_state->internal.res.b;
                 }
 
                 uicc_dato_bertlv_enc_init(&enc, bertlv_buf, bertlv_len);
@@ -537,14 +543,37 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             }
             if (ret_bertlv == UICC_RET_SUCCESS)
             {
-                res->sw1 = UICC_APDU_SW1_NORM_NONE;
-                res->sw2 = 0U;
-                /* Safe cast due check inside the BER-TLV loop. */
-                res->data.len = (uint16_t)bertlv_len;
+                if (bertlv_len > 0)
+                {
+                    res->sw1 = UICC_APDU_SW1_NORM_BYTES_AVAILABLE;
+                    /**
+                     * @todo What happens when extended APDUs are supported and
+                     * length of response does not fit in SW2? For now work
+                     * around is to static assert that only short APDUs are
+                     * used.
+                     */
+                    static_assert(UICC_DATA_MAX == UICC_DATA_MAX_SHRT,
+                                  "Response buffer length might not fit in SW2 "
+                                  "if SW1 is 0x61");
+                    /* Safe cast due check inside the BER-TLV loop. */
+                    res->sw2 = (uint8_t)bertlv_len;
+                }
+                else
+                {
+                    res->sw1 = UICC_APDU_SW1_NORM_NONE;
+                }
+                res->data.len = 0U;
                 return UICC_RET_SUCCESS;
             }
             else
             {
+                /**
+                 * Reset the response buffer just to be sure the next call to
+                 * retrieve this data will get no bytes.
+                 */
+                uicc_state->internal.res.len = 0U;
+                uicc_state->internal.res.offset = 0U;
+
                 res->sw1 = UICC_APDU_SW1_CHER_UNK;
                 res->sw2 = 0U;
                 res->data.len = 0U;
@@ -971,6 +1000,97 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
     return UICC_RET_SUCCESS;
 }
 
+/**
+ * @brief Handle the GET RESPONSE command in the interindustry class.
+ * @param uicc_state
+ * @param cmd
+ * @param res
+ * @return Return code.
+ * @note As described in ISO 7816-4:2020 p.82 sec.11.4.3.
+ */
+static uicc_apduh_ft apduh_res_get;
+static uicc_ret_et apduh_res_get(uicc_st *const uicc_state,
+                                 uicc_apdu_cmd_st const *const cmd,
+                                 uicc_apdu_res_st *const res)
+{
+    /* P1 and P2 need to be 0, other values are RFU. */
+    if (cmd->hdr->p1 != 0U || cmd->hdr->p2 != 0U)
+    {
+        res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+        res->sw2 = 0x86; /* "Incorrect parameters P1-P2" */
+        res->data.len = 0U;
+        return UICC_RET_SUCCESS;
+    }
+
+    /* Did not request any data. */
+    if (*cmd->p3 == 0U)
+    {
+        res->sw1 = UICC_APDU_SW1_NORM_NONE;
+        res->sw2 = 0U;
+        res->data.len = 0U;
+        return UICC_RET_SUCCESS;
+    }
+
+    /**
+     * Safe cast since will not overflow and len is always greater or equal to
+     * the offset.
+     */
+    uint16_t const res_len_available =
+        (uint16_t)(uicc_state->internal.res.len -
+                   uicc_state->internal.res.offset);
+
+    if (res_len_available < *cmd->p3)
+    {
+        res->sw1 = UICC_APDU_SW1_WARN_NVM_CHGN;
+        res->sw2 = 0x82; /* "End of file, record or DO reached before reading Ne
+                            bytes, or unsuccessful search" */
+        res->data.len = 0U;
+        return UICC_RET_SUCCESS;
+    }
+    else if (res_len_available == *cmd->p3)
+    {
+        res->sw1 = UICC_APDU_SW1_NORM_NONE;
+        res->sw2 = 0U;
+        res->data.len = *cmd->p3;
+        memcpy(res->data.b, uicc_state->internal.res.b, *cmd->p3);
+        /* Progress offset of response by num of bytes read. */
+        uicc_state->internal.res.offset = uicc_state->internal.res.len;
+        return UICC_RET_SUCCESS;
+    }
+    else
+    {
+        /* Safe cast since available len is greater than P3. */
+        uint16_t const res_len_remaining =
+            (uint16_t)(res_len_available - *cmd->p3);
+        if (res_len_remaining > UINT8_MAX)
+        {
+            /* Did not expect the remaining length to not fit in SW2. */
+            res->sw1 = UICC_APDU_SW1_CHER_UNK;
+            res->sw2 = 0U;
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
+        else
+        {
+            res->sw1 = UICC_APDU_SW1_NORM_BYTES_AVAILABLE;
+            /* Safe cast since if checks if leq uint8 max. */
+            res->sw2 = (uint8_t)(res_len_available - *cmd->p3);
+            res->data.len = *cmd->p3;
+            memcpy(res->data.b, uicc_state->internal.res.b, *cmd->p3);
+            /* Progress offset of response by num of bytes read. */
+            /**
+             * Safe cast since reading less than is available so this will not
+             * surpass length.
+             */
+            uicc_state->internal.res.offset =
+                (uint16_t)(uicc_state->internal.res.offset + *cmd->p3);
+            return UICC_RET_SUCCESS;
+        }
+    }
+
+    return UICC_RET_UNKNOWN;
+}
+
 uicc_ret_et uicc_apduh_pro_register(uicc_st *const uicc_state,
                                     uicc_apduh_ft *const handler)
 {
@@ -1082,7 +1202,7 @@ static uicc_apduh_ft *const uicc_apduh[0xFF + 1U] = {
     [0xB7] = apduh_unk,      [0xB8] = apduh_unk,       [0xB9] = apduh_unk,
     [0xBA] = apduh_unk,      [0xBB] = apduh_unk,       [0xBC] = apduh_unk,
     [0xBD] = apduh_unk,      [0xBE] = apduh_unk,       [0xBF] = apduh_unk,
-    [0xC0] = apduh_unk,      [0xC1] = apduh_unk,       [0xC2] = apduh_unk,
+    [0xC0] = apduh_res_get,  [0xC1] = apduh_unk,       [0xC2] = apduh_unk,
     [0xC3] = apduh_unk,      [0xC4] = apduh_unk,       [0xC5] = apduh_unk,
     [0xC6] = apduh_unk,      [0xC7] = apduh_unk,       [0xC8] = apduh_unk,
     [0xC9] = apduh_unk,      [0xCA] = apduh_unk,       [0xCB] = apduh_unk,

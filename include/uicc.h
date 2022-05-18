@@ -57,5 +57,20 @@ typedef struct uicc_s
         uicc_tp_st tp;
         uicc_fs_st fs;
         uicc_apduh_ft *apduh_pro; /* For all proprietary classes. */
+
+        /**
+         * Used for the GET RESPONSE instruction (part of transmission
+         * handling). All instructions write their data output to this buffer
+         * (if it does not fit in the response being sent back from that
+         * command).
+         */
+        struct
+        {
+            uint8_t b[UICC_DATA_MAX];
+            uint16_t len;
+
+            /* How much of the data was already returned to the interface. */
+            uint16_t offset;
+        } res;
     } internal;
 } uicc_st;

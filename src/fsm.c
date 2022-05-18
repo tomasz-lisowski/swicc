@@ -241,7 +241,7 @@ static uicc_ret_et fsm_handle_s_cmd_wait(uicc_st *const uicc_state)
                              * (or rejected early).
                              */
                             uicc_state->internal.fsm_state =
-                                UICC_FSM_STATE_CMD_WAIT;
+                                UICC_FSM_STATE_CMD_FULL;
                         }
                         return UICC_RET_FSM_TRANSITION_WAIT;
                     }
@@ -291,7 +291,7 @@ static uicc_ret_et fsm_handle_s_cmd_data(uicc_st *const uicc_state)
                                           &apdu_res) == UICC_RET_SUCCESS)
                 {
                     uicc_state->internal.fsm_state = UICC_FSM_STATE_CMD_FULL;
-                    return UICC_RET_FSM_TRANSITION_NOW;
+                    return UICC_RET_FSM_TRANSITION_REPEAT;
                 }
             }
         }
@@ -316,7 +316,10 @@ static uicc_ret_et fsm_handle_s_cmd_full(uicc_st *const uicc_state)
         /* Ensure the state of the SIM is ready to handle another command. */
         memset(&uicc_state->internal.apdu_cur, 0U,
                sizeof(uicc_state->internal.apdu_cur));
-        uicc_state->buf_tx_len = 0;
+        /**
+         * Not setting TX len to 0 because the response to APDU is assumed to be
+         * there.
+         */
         uicc_state->internal.fsm_state = UICC_FSM_STATE_CMD_WAIT;
         return UICC_RET_FSM_TRANSITION_WAIT;
     }
