@@ -1,0 +1,21 @@
+{
+    "type": "file_ef_linearfixed",
+    "name": "EmzLY6FFx70X1KHL",
+    "id": "942D",
+    "sid": "98",
+    "rcrd_size": 19,
+    "contents": [
+        {
+            "type": "hex",
+            "contents": "A87B490C0AC1CB98ECDFE561D9C0B68A5A4265"
+        },
+        {
+            "type": "ascii",
+            "contents": "dftvzIvPi"
+        },
+        {
+            "type": "hex",
+            "contents": ""
+        }
+    ]
+}

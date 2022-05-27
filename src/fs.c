@@ -1,4 +1,4 @@
-#include "uicc.h"
+#include <uicc/uicc.h>
 #include <string.h>
 
 uicc_ret_et uicc_fs_disk_mount(uicc_st *const uicc_state,

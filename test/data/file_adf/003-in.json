@@ -1,0 +1,29 @@
+{
+    "type": "file_adf",
+    "name": "PSWb1EgcQCqKJSYZ",
+    "id": "9E62",
+    "sid": "E2",
+    "aid": "636D50F3FD15CF7DC8163904B1304642",
+    "contents": [
+        {
+            "type": "file_ef_transparent",
+            "name": "QXEGpRfYXHuMyzCy",
+            "id": "79BD",
+            "sid": "D6",
+            "contents": {
+                "type": "hex",
+                "contents": "997F6CCF5E91A2C208178D65C190304C"
+            }
+        },
+        {
+            "type": "file_ef_transparent",
+            "name": "zT0iP1VHN97U2rWB",
+            "id": "F2EF",
+            "sid": "FB",
+            "contents": {
+                "type": "ascii",
+                "contents": "95hoQzX4eEL7VFnNmcH0DElMWBM9ImNm"
+            }
+        }
+    ]
+}

@@ -1,0 +1,34 @@
+{
+    "type": "dato_ber-tlv",
+    "contents": {
+        "tag": {
+            "class": 0,
+            "number": 0
+        },
+        "val": [
+            {
+                "tag": {
+                    "class": 1,
+                    "number": 30
+                },
+                "val": [
+                    {
+                        "tag": {
+                            "class": 2,
+                            "number": 31
+                        },
+                        "val": [
+                            {
+                                "tag": {
+                                    "class": 3,
+                                    "number": 600
+                                },
+                                "val": "C987EF27F119326DEFC4B136AE82BC69B387224AE725CBBD8A767EBC999E891C7024C2B7ED6C97DB8625F517B846137C15FECA3945C0AF7958EE8DD52A61C22FD16AE5C4754A187E1CFC59B3A6274526903BD6F3C30ECB4D3D40F328CBEC301D3B47C7C16CA415C713096CECA96198EFB713E2466C7E58000C41B18D89BBDCDCD38A7E1CCDB7C9B003FDCB01F11F21D5D3417E62EBD82E859D65C9B83E8830E469EB9705EF25F478AB55560454CE8A52AB7D8D3C133572FADBE9DEBB8F83487C256586205C85E852D8294ED54187AD64E3C97EFAA14850DCCC87CDE59F1CC208669F56ADF8391B0CA12802BADA9BE7B28FEA3A6B7B4694A9ABC3D1007350F31D0D90F068590CBC0B52878137C041380FA6E711BA9DB9F4051F3A8E80517715F3C0EBF796BA8C50A72530A758728F17C254113846DD354C4D2E8AF4272DF22D6171930EFF834D3DBB8BBD2E6C104A1CD6D699732C9F9E11B9425739AD3BBA97303C2427F1F6387D0E926B2556A8FA557561CEA05C0B4702E654AF664EFCC95C856820575E69A1117A023BD90E40FE317E"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

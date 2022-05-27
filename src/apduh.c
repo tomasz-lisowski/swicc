@@ -1,6 +1,5 @@
-#include "uicc.h"
+#include <uicc/uicc.h>
 #include "uicc/apdu.h"
-#include <byteswap.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -306,14 +305,14 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             return UICC_RET_SUCCESS;
         }
 
-        uicc_fs_file_hdr_st *file_selected = NULL;
+        uicc_fs_file_st *file_selected = NULL;
         bool file_selected_type_folder = false;
-        if (uicc_state->internal.fs.va.cur_ef.item.type !=
+        if (uicc_state->internal.fs.va.cur_ef.hdr_item.type !=
             UICC_FS_ITEM_TYPE_INVALID)
         {
             file_selected = &uicc_state->internal.fs.va.cur_ef;
         }
-        else if (uicc_state->internal.fs.va.cur_df.item.type !=
+        else if (uicc_state->internal.fs.va.cur_df.hdr_item.type !=
                  UICC_FS_ITEM_TYPE_INVALID)
         {
             file_selected_type_folder = true;
@@ -372,9 +371,7 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
              * Safe cast since size will at least 0 since size includes
              * the header length.
              */
-            uint32_t const data_size =
-                (uint32_t)(file_selected->item.size -
-                           sizeof(uicc_fs_file_hdr_raw_st));
+            uint32_t const data_size = file_selected->data_size;
             uint8_t const data_size_be[] = {
                 (uint8_t)((data_size & 0xFF000000) >> (3U * 8U)),
                 (uint8_t)((data_size & 0x00FF0000) >> (2U * 8U)),
@@ -382,10 +379,10 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                 (uint8_t)((data_size & 0x000000FF) >> (0U * 8U)),
             };
             uint8_t const data_id[] = {
-                (uint8_t)((file_selected->id & 0xFF00) >> 8U),
-                (uint8_t)(file_selected->id & 0x00FF),
+                (uint8_t)((file_selected->hdr_file.id & 0xFF00) >> 8U),
+                (uint8_t)(file_selected->hdr_file.id & 0x00FF),
             };
-            uint8_t const data_sid[] = {file_selected->sid};
+            uint8_t const data_sid[] = {file_selected->hdr_file.sid};
             uint8_t lcs_be[1U];
             uint8_t desc_be[2U];
             if (uicc_file_lcs(file_selected, &lcs_be[0U]) != UICC_RET_SUCCESS ||
@@ -464,7 +461,7 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                             UICC_RET_SUCCESS ||
                         uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[4U]) !=
                             UICC_RET_SUCCESS ||
-                        (file_selected->id != 0
+                        (file_selected->hdr_file.id != 0
                              ? uicc_dato_bertlv_enc_data(
                                    &enc_fcp, data_id,
                                    sizeof(data_id) / sizeof(data_id[0U])) !=
@@ -475,13 +472,15 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                              : false) ||
                         (file_selected_type_folder
                              ? uicc_dato_bertlv_enc_data(
-                                   &enc_fcp, (uint8_t *)file_selected->name,
+                                   &enc_fcp,
+                                   (uint8_t *)file_selected->hdr_file.name,
                                    UICC_FS_NAME_LEN_MAX) != UICC_RET_SUCCESS ||
                                    uicc_dato_bertlv_enc_hdr(&enc_fcp,
                                                             &bertlv_tags[6U]) !=
                                        UICC_RET_SUCCESS
                              : false) ||
-                        (!file_selected_type_folder && file_selected->sid != 0
+                        (!file_selected_type_folder &&
+                                 file_selected->hdr_file.sid != 0
                              ? uicc_dato_bertlv_enc_data(
                                    &enc_fcp, data_sid,
                                    sizeof(data_sid) / sizeof(data_sid[0U])) !=
@@ -610,7 +609,7 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
 
     uint8_t const len_expected = *cmd->p3;
     uint16_t offset;
-    uicc_fs_file_hdr_st file;
+    uicc_fs_file_st file;
 
     /**
      * Indicates if P1 contains a SID thus leading to a lookup and change in
@@ -643,7 +642,7 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
         offset = cmd->hdr->p2;
 
         uicc_ret_et const ret_lookup = uicc_disk_lutsid_lookup(
-            uicc_state->internal.fs.va.cur_adf, sid, &file);
+            uicc_state->internal.fs.va.cur_tree, sid, &file);
         if (ret_lookup == UICC_RET_FS_NOT_FOUND)
         {
             res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
@@ -670,7 +669,7 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
         offset = (uint16_t)(((0b01111111 & cmd->hdr->p1) << 8U) | cmd->hdr->p2);
 
         file = uicc_state->internal.fs.va.cur_ef;
-        if (file.item.type == UICC_FS_ITEM_TYPE_INVALID)
+        if (file.hdr_item.type == UICC_FS_ITEM_TYPE_INVALID)
         {
             res->sw1 = UICC_APDU_SW1_CHER_CMD;
             res->sw2 = 0x86; /* "Command not allowed (curEF not set)" */
@@ -679,9 +678,9 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
         }
     }
 
-    if (file.item.type == UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT)
+    if (file.hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT)
     {
-        if (offset >= file.item.size - sizeof(uicc_fs_file_hdr_raw_st))
+        if (offset >= file.data_size)
         {
             /**
              * Requested an offset which is outside the bounds of the
@@ -695,15 +694,10 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
 
         /* Read data into response. */
         /* Safe cast due to the check against offset. */
-        uint8_t const len_readable =
-            (uint8_t)(file.item.size - sizeof(uicc_fs_file_hdr_raw_st) -
-                      offset);
+        uint8_t const len_readable = (uint8_t)(file.data_size - offset);
         uint8_t const len_read =
             len_expected > len_readable ? len_readable : len_expected;
-        memcpy(res->data.b,
-               &uicc_state->internal.fs.va.cur_adf
-                    ->buf[file.item.offset_trel +
-                          sizeof(uicc_fs_file_hdr_raw_st) + offset],
+        memcpy(res->data.b, &uicc_state->internal.fs.va.cur_root.data[offset],
                len_read);
         res->data.len = len_read;
         if (len_read < len_expected)
@@ -905,7 +899,7 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
             /* Safe cast because P1 is >0. */
             uicc_fs_rcrd_idx_kt const rcrd_idx = (uint8_t)(cmd->hdr->p1 - 1U);
 
-            uicc_fs_file_hdr_st ef_cur;
+            uicc_fs_file_st ef_cur;
             uicc_ret_et ret_ef = UICC_RET_ERROR;
             switch (trgt)
             {
@@ -917,7 +911,7 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
             case TRGT_EF_SID: {
                 uicc_fs_sid_kt const sid = p2_val;
                 ret_ef = uicc_disk_lutsid_lookup(
-                    uicc_state->internal.fs.va.cur_adf, sid, &ef_cur);
+                    uicc_state->internal.fs.va.cur_tree, sid, &ef_cur);
                 break;
             }
             default:
@@ -938,7 +932,7 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
                 uint8_t *rcrd_buf;
                 uint8_t rcrd_len;
                 uicc_ret_et const ret_rcrd = uicc_disk_file_rcrd(
-                    uicc_state->internal.fs.va.cur_adf, &ef_cur, rcrd_idx,
+                    uicc_state->internal.fs.va.cur_tree, &ef_cur, rcrd_idx,
                     &rcrd_buf, &rcrd_len);
                 if (ret_rcrd == UICC_RET_FS_NOT_FOUND)
                 {
@@ -970,7 +964,7 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
                     uicc_ret_et const ret_file_select =
                         trgt == TRGT_EF_SID
                             ? uicc_va_select_file_sid(&uicc_state->internal.fs,
-                                                      ef_cur.sid)
+                                                      ef_cur.hdr_file.sid)
                             : UICC_RET_SUCCESS;
                     if (ret_file_select == UICC_RET_SUCCESS)
                     {

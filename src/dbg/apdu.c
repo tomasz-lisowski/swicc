@@ -1,4 +1,4 @@
-#include "uicc.h"
+#include <uicc/uicc.h>
 #include <stdio.h>
 
 #ifdef DEBUG

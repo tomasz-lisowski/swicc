@@ -1,4 +1,4 @@
-#include "uicc.h"
+#include <uicc/uicc.h>
 #include <string.h>
 
 uicc_apdu_cla_st uicc_apdu_cmd_cla_parse(uint8_t const cla_raw)
@@ -137,7 +137,7 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
         {
             return UICC_RET_APDU_RES_INVALID;
         }
-        /* Only the above SW1 bytes need a check of SW2 begin 0. */
+        /* Only the above SW1 bytes need a check that SW2 equals 0. */
         __attribute__((fallthrough));
     case UICC_APDU_SW1_NORM_BYTES_AVAILABLE:
     case UICC_APDU_SW1_WARN_NVM_CHGN:
@@ -172,8 +172,8 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
         }
         /**
          * @note Can also be INS XOR 0xFF to get the next (one) byte but this is
-         * not supported in this implementation. Older 7816-3 standard editions
-         * defined two other ways that have been deprecated now.
+         * not supported in this implementation. Older ISO 7816-3 standard
+         * editions defined two other ways that have been deprecated now.
          */
         buf_raw[0U] = cmd->hdr->ins; /* The raw INS byte. */
         *buf_raw_len = 1U;

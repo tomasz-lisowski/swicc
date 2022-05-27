@@ -1,4 +1,4 @@
-#include "uicc.h"
+#include <uicc/uicc.h>
 #include <stdio.h>
 
 #ifdef DEBUG
@@ -31,25 +31,23 @@ static char const *const uicc_dbg_table_str_ret[] = {
 };
 #endif
 
-uicc_ret_et uicc_dbg_ret_str(char *const buf_str, uint16_t *const buf_str_len,
-                             uicc_ret_et const ret)
+char const *uicc_dbg_ret_str(uicc_ret_et const ret)
 {
 #ifdef DEBUG
-    int bytes_written = snprintf(buf_str, *buf_str_len,
-                                 "(" CLR_KND("RET") " " CLR_VAL("'%s'") ")",
-                                 uicc_dbg_table_str_ret[ret]);
-    if (bytes_written < 0)
+    /**
+     * There are not that many return value and none of them will be negative by
+     * convention.
+     */
+    if ((uint32_t)ret <
+        sizeof(uicc_dbg_table_str_ret) / sizeof(uicc_dbg_table_str_ret[0U]))
     {
-        return UICC_RET_BUFFER_TOO_SHORT;
+        return uicc_dbg_table_str_ret[ret];
     }
     else
     {
-        *buf_str_len =
-            (uint16_t)bytes_written; /* Safe cast due to args of snprintf */
-        return UICC_RET_SUCCESS;
+        return "???";
     }
 #else
-    *buf_str_len = 0U;
-    return UICC_RET_SUCCESS;
+    return NULL;
 #endif
 }

@@ -1,4 +1,4 @@
-#include "uicc.h"
+#include <uicc/uicc.h>
 #include <string.h>
 
 static uint8_t pps_pck(uint8_t const *const buf_rx, uint16_t const buf_rx_len)

@@ -1,7 +1,7 @@
-#include "uicc.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <uicc/uicc.h>
 
 void uicc_etu(uint32_t *const etu, uint16_t const fi, uint8_t const di,
               uint32_t const fmax)
@@ -93,14 +93,13 @@ void uicc_terminate(uicc_st *const uicc_state)
     uicc_disk_unload(&uicc_state->internal.fs.disk);
 }
 
-uicc_ret_et uicc_file_lcs(uicc_fs_file_hdr_st const *const file,
-                          uint8_t *const lcs)
+uicc_ret_et uicc_file_lcs(uicc_fs_file_st const *const file, uint8_t *const lcs)
 {
-    if (file->item.type == UICC_FS_ITEM_TYPE_INVALID)
+    if (file->hdr_item.type == UICC_FS_ITEM_TYPE_INVALID)
     {
         return UICC_RET_PARAM_BAD;
     }
-    switch (file->item.lcs)
+    switch (file->hdr_item.lcs)
     {
     // case UICC_FS_LCS_NINFO:
     //     *lcs = 0b00000000;
@@ -124,10 +123,10 @@ uicc_ret_et uicc_file_lcs(uicc_fs_file_hdr_st const *const file,
     return UICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_file_descr(uicc_fs_file_hdr_st const *const file,
+uicc_ret_et uicc_file_descr(uicc_fs_file_st const *const file,
                             uint8_t *const file_descr)
 {
-    if (file->item.type == UICC_FS_ITEM_TYPE_INVALID)
+    if (file->hdr_item.type == UICC_FS_ITEM_TYPE_INVALID)
     {
         return UICC_RET_PARAM_BAD;
     }
@@ -138,9 +137,9 @@ uicc_ret_et uicc_file_descr(uicc_fs_file_hdr_st const *const file,
      *      xxx = 0 for DF or EF structure
      */
     *file_descr = 0b00000000;
-    if (file->item.type == UICC_FS_ITEM_TYPE_FILE_MF ||
-        file->item.type == UICC_FS_ITEM_TYPE_FILE_ADF ||
-        file->item.type == UICC_FS_ITEM_TYPE_FILE_DF)
+    if (file->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_MF ||
+        file->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_ADF ||
+        file->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_DF)
     {
         *file_descr |= 0b00111000;
     }
@@ -151,7 +150,7 @@ uicc_ret_et uicc_file_descr(uicc_fs_file_hdr_st const *const file,
          * to "internal EF" i.e. EF for storring data interpreted by the card.
          */
         *file_descr |= 0b00001000;
-        switch (file->item.type)
+        switch (file->hdr_item.type)
         {
         case UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
             *file_descr |= 0b00000001;
@@ -169,10 +168,10 @@ uicc_ret_et uicc_file_descr(uicc_fs_file_hdr_st const *const file,
     return UICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_file_data_coding(uicc_fs_file_hdr_st const *const file,
+uicc_ret_et uicc_file_data_coding(uicc_fs_file_st const *const file,
                                   uint8_t *const data_coding)
 {
-    if (file->item.type == UICC_FS_ITEM_TYPE_INVALID)
+    if (file->hdr_item.type == UICC_FS_ITEM_TYPE_INVALID)
     {
         return UICC_RET_PARAM_BAD;
     }

@@ -48,7 +48,7 @@ typedef enum uicc_ret_e
  * Typedef these to avoid including and creating circular deps.
  */
 typedef struct uicc_s uicc_st;
-typedef struct uicc_fs_file_hdr_s uicc_fs_file_hdr_st;
+typedef struct uicc_fs_file_s uicc_fs_file_st;
 typedef enum uicc_fsm_state_e uicc_fsm_state_et;
 
 /**
@@ -110,7 +110,7 @@ void uicc_terminate(uicc_st *const uicc_state);
  * @return Return code.
  * @note Done according to ISO 7816-4:2020 p.31 sec.7.4.10 table.15.
  */
-uicc_ret_et uicc_file_lcs(uicc_fs_file_hdr_st const *const file,
+uicc_ret_et uicc_file_lcs(uicc_fs_file_st const *const file,
                           uint8_t *const lcs);
 
 /**
@@ -120,7 +120,7 @@ uicc_ret_et uicc_file_lcs(uicc_fs_file_hdr_st const *const file,
  * @return Return code.
  * @note Done according to ISO 7816-4:2020 p.29 sec.7.4.5 table.12.
  */
-uicc_ret_et uicc_file_descr(uicc_fs_file_hdr_st const *const file,
+uicc_ret_et uicc_file_descr(uicc_fs_file_st const *const file,
                             uint8_t *const file_descr);
 
 /**
@@ -131,7 +131,7 @@ uicc_ret_et uicc_file_descr(uicc_fs_file_hdr_st const *const file,
  * @note Done according to second software function table described in ISO
  * 7816-4:2020 p.123 sec.12.2.2.9 table.126.
  */
-uicc_ret_et uicc_file_data_coding(uicc_fs_file_hdr_st const *const file,
+uicc_ret_et uicc_file_data_coding(uicc_fs_file_st const *const file,
                                   uint8_t *const data_coding);
 
 /**

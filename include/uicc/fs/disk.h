@@ -70,7 +70,7 @@ typedef struct uicc_disk_tree_iter_s
  * @return Return code.
  */
 typedef uicc_ret_et fs_file_foreach_cb(uicc_disk_tree_st *const tree,
-                                       uicc_fs_file_hdr_st *const file,
+                                       uicc_fs_file_st *const file,
                                        void *const userdata);
 /**
  * @brief For every file in a tree, perform some operation.
@@ -159,7 +159,7 @@ void uicc_disk_lutid_empty(uicc_disk_st *const disk);
  */
 uicc_ret_et uicc_disk_lutsid_lookup(uicc_disk_tree_st *const tree,
                                     uicc_fs_sid_kt const sid,
-                                    uicc_fs_file_hdr_st *const file);
+                                    uicc_fs_file_st *const file);
 
 /**
  * @brief Perform a lookup in the ID LUT of a given disk.
@@ -173,7 +173,7 @@ uicc_ret_et uicc_disk_lutsid_lookup(uicc_disk_tree_st *const tree,
 uicc_ret_et uicc_disk_lutid_lookup(uicc_disk_st *const disk,
                                    uicc_disk_tree_st **const tree,
                                    uicc_fs_id_kt const id,
-                                   uicc_fs_file_hdr_st *const file);
+                                   uicc_fs_file_st *const file);
 
 /**
  * @brief Save the disk as a UICC FS file to a specified file.
@@ -210,7 +210,7 @@ uicc_ret_et uicc_disk_lutsid_rebuild(uicc_disk_st *const disk,
  * @return Return code.
  */
 uicc_ret_et uicc_disk_file_rcrd(uicc_disk_tree_st *const tree,
-                                uicc_fs_file_hdr_st *const file,
+                                uicc_fs_file_st *const file,
                                 uicc_fs_rcrd_idx_kt const idx,
                                 uint8_t **const buf, uint8_t *const len);
 
@@ -221,5 +221,16 @@ uicc_ret_et uicc_disk_file_rcrd(uicc_disk_tree_st *const tree,
  * @param rcrd_count Where the record count will be written.
  */
 uicc_ret_et uicc_disk_file_rcrd_cnt(uicc_disk_tree_st *const tree,
-                                    uicc_fs_file_hdr_st *const file,
+                                    uicc_fs_file_st *const file,
                                     uint32_t *const rcrd_cnt);
+
+/**
+ * @brief Get the ADF/MF at the root of a tree.
+ * @param tree
+ * @param file_adf
+ * @return Return code.
+ * @note The file written into the given file struct is guaranteed to be an ADF
+ * or MF on success.
+ */
+uicc_ret_et uicc_disk_tree_file_root(uicc_disk_tree_st *const tree,
+                                     uicc_fs_file_st *const file_root);

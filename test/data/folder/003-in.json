@@ -1,0 +1,51 @@
+{
+    "type": "file_adf",
+    "name": "YZrCzRKJFGFt99x3",
+    "aid": "9EE2E8B389CE90D814F1CBB0BC93BCBF",
+    "contents": [
+        {
+            "type": "file_ef_transparent",
+            "name": "re0s8jcwzkXd6byE",
+            "id": "8240",
+            "sid": "FC",
+            "contents": {
+                "type": "hex",
+                "contents": "23245323FEC6225F8EEF03BF867DC742"
+            }
+        },
+        {
+            "type": "file_ef_cyclic",
+            "name": "lmJGAQ8akx",
+            "id": "DF3F",
+            "sid": "E9",
+            "rcrd_size": 8,
+            "contents": [
+                {
+                    "type": "hex",
+                    "contents": "CBB0BC93BCBF"
+                },
+                {
+                    "type": "hex",
+                    "contents": "770096A7"
+                }
+            ]
+        },
+        {
+            "type": "file_ef_linear-fixed",
+            "name": "KjPoRUr0UI",
+            "id": "FCAB",
+            "sid": "9F",
+            "rcrd_size": 10,
+            "contents": [
+                {
+                    "type": "hex",
+                    "contents": "2BD4CB68D1B3BAC2BC09"
+                },
+                {
+                    "type": "hex",
+                    "contents": "A68E47E1"
+                }
+            ]
+        }
+    ]
+}

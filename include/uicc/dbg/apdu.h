@@ -1,7 +1,7 @@
+#pragma once
+
 #include "uicc/apdu.h"
 #include "uicc/common.h"
-
-#pragma once
 
 /**
  * @brief Generate a string which describes all fields of the parsed APDU

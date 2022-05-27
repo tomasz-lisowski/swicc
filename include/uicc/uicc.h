@@ -43,7 +43,9 @@ typedef struct uicc_s
     uint16_t buf_rx_len;
     uint8_t *buf_tx;
     uint16_t buf_tx_len;
-    struct uicc_internal_s
+
+    /* This shall not be modified by anything other than the UICC library. */
+    struct
     {
         /* Store the header of the actively handled APDU command. */
         struct

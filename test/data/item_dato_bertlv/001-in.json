@@ -1,0 +1,10 @@
+{
+    "type": "dato_ber-tlv",
+    "contents": {
+        "tag": {
+            "class": 1,
+            "number": 2
+        },
+        "val": "A37AD9A25C1E2943127D"
+    }
+}

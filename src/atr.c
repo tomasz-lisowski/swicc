@@ -1,4 +1,4 @@
-#include "uicc.h"
+#include <uicc/uicc.h>
 
 /**
  * ATR defined according to ISO 7816-3:2006 p.15-20 sec.8 and ISO 7816-4:2020
@@ -34,10 +34,10 @@ uint8_t const uicc_atr[] = {
                  * T00 =   4b K  = 15 (number of historical bytes)
                  *       + 4b Y1 = TA1, TC1, and TD1 are present
                  */
-    0b00010001, /**
+    0b10010110, /**
                  * LSB>MSB
-                 * TA1 =   4b Di = 1   (default)
-                 *       + 4b Fi = 372 (default)
+                 * TA1 =   4b Di = 32
+                 *       + 4b Fi = 512
                  */
     0b00000000, /**
                  * TC1 = N (extra guard time) = 0 (default)

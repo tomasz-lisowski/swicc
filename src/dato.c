@@ -1,5 +1,5 @@
-#include "uicc.h"
 #include <string.h>
+#include <uicc/uicc.h>
 
 /**
  * @brief Parse a BER-TLV-encoded tag.
@@ -214,18 +214,19 @@ static uicc_ret_et bertlv_hdr_deprs(
 
             for (; len_len < UICC_DATO_BERTLV_LEN_LEN_MAX; ++len_len)
             {
+                uint32_t const len_raw_idx =
+                    UICC_DATO_BERTLV_LEN_LEN_MAX - len_len;
                 /**
                  * Safe cast because the expression extracts exactly one byte.
                  */
-                len_raw[len_len] =
+                len_raw[len_raw_idx] =
                     (uint8_t)((bertlv_deprs->len.val >> (8U * (len_len - 1U))) &
                               0xFF);
-
                 /**
                  * Keep track of the number of trailing zeros at the end of the
                  * length so they can be trimmed from the final length field.
                  */
-                if (len_raw[len_len] == 0)
+                if (len_raw[len_raw_idx] == 0)
                 {
                     /* Safe cast due to range of loop. */
                     zero_cnt = (uint8_t)(zero_cnt + 1);
@@ -235,8 +236,17 @@ static uicc_ret_et bertlv_hdr_deprs(
                     zero_cnt = 0;
                 }
             }
+            /**
+             * Create first byte of length.
+             */
             /* Safe cast, this will never be negative. */
             len_len = (uint8_t)(len_len - zero_cnt);
+            /**
+             * Move up the non-zero bytes up to just after the first len byte.
+             */
+            memmove(&len_raw[1U],
+                    &len_raw[1U + (UICC_DATO_BERTLV_LEN_LEN_MAX - len_len)],
+                    len_len - 1U);
 
             /* Safe cast since this will only form a byte. */
             len_raw[0U] = (uint8_t)(0b10000000 | (len_len - 1U));
@@ -282,7 +292,7 @@ static uicc_ret_et bertlv_hdr_deprs(
         if (bertlv_deprs->tag.pc)
         {
             tag_raw[0U] |= 0b00100000;
-        } /* bit 3 is 0 for primitive BER-TLVs so no need to edit anything. */
+        } /* Bit 3 is 0 for primitive BER-TLVs so no need to edit anything. */
 
         /* If >30 then it's a long tag. */
         if (bertlv_deprs->tag.num > 30)
@@ -295,19 +305,20 @@ static uicc_ret_et bertlv_hdr_deprs(
 
             for (; tag_len < UICC_DATO_BERTLV_TAG_LEN_MAX; ++tag_len)
             {
+                uint32_t const tag_raw_idx =
+                    UICC_DATO_BERTLV_TAG_LEN_MAX - tag_len;
                 /**
                  * Safe cast because the expression extracts exactly one byte (7
                  * bits to be exact).
                  */
-                tag_raw[tag_len] =
+                tag_raw[tag_raw_idx] =
                     (uint8_t)((bertlv_deprs->tag.num >> (7U * (tag_len - 1U))) &
                               0x7F);
-
                 /**
                  * Keep track of the number of trailing zeros at the end of the
                  * tag so they can be trimmed from the final tag field.
                  */
-                if (tag_raw[tag_len] == 0)
+                if (tag_raw[tag_raw_idx] == 0)
                 {
                     /* Safe cast due to range of loop. */
                     zero_cnt = (uint8_t)(zero_cnt + 1);
@@ -319,6 +330,24 @@ static uicc_ret_et bertlv_hdr_deprs(
             }
             /* Safe cast, this will never be negative. */
             tag_len = (uint8_t)(tag_len - zero_cnt);
+            /**
+             * Move up the non-zero bytes up to just after the first tag byte.
+             */
+            memmove(&tag_raw[1U],
+                    &tag_raw[1U + (UICC_DATO_BERTLV_TAG_LEN_MAX - tag_len)],
+                    tag_len - 1U);
+            for (uint8_t tag_idx = 0U;
+                 tag_idx < tag_len - 1U /* Skip first tag byte. */ -
+                               1U /* Last byte have b8 set to 0. */;
+                 ++tag_idx)
+            {
+                /* First bit should never be 1. */
+                if (tag_raw[1U + tag_idx] & 0b10000000)
+                {
+                    return UICC_RET_ERROR;
+                }
+                tag_raw[1U + tag_idx] |= 0b10000000;
+            }
         }
         else
         {
@@ -466,8 +495,14 @@ uicc_ret_et uicc_dato_bertlv_enc_hdr(uicc_dato_bertlv_enc_st *const encoder,
         /* Value length can't exceed what can be stored in a 4 byte uint. */
         return UICC_RET_ERROR;
     }
-    uicc_dato_bertlv_st const bertlv = {.tag = *tag,
-                                        .len = {.val = len, .form = len_form}};
+    uicc_dato_bertlv_st const bertlv = {
+        .tag = *tag,
+        .len =
+            {
+                .val = len,
+                .form = len_form,
+            },
+    };
     uint32_t len_hdr = encoder->size - encoder->len;
     uicc_ret_et const ret_deprs =
         bertlv_hdr_deprs(&bertlv, encoder->buf, &len_hdr);

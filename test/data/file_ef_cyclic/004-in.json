@@ -1,0 +1,21 @@
+{
+    "type": "file_ef_cyclic",
+    "name": "6kCAz2Tek5Dau3wk",
+    "id": "369F",
+    "sid": "A9",
+    "rcrd_size": 27,
+    "contents": [
+        {
+            "type": "hex",
+            "contents": "A33AD5517B195157A6E2C331387BBFE98D87F6700A6D8D3207EA8C"
+        },
+        {
+            "type": "ascii",
+            "contents": "bP6W3"
+        },
+        {
+            "type": "hex",
+            "contents": ""
+        }
+    ]
+}

@@ -4,3 +4,6 @@
 [submodule "lib/cjson"]
 	path = lib/cjson
 	url = https://github.com/DaveGamble/cJSON.git
+[submodule "lib/tau"]
+	path = lib/tau
+	url = https://github.com/jasmcaus/tau.git

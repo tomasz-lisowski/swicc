@@ -1,4 +1,4 @@
-#include "uicc.h"
+#include <uicc/uicc.h>
 #include <stdio.h>
 
 uicc_ret_et uicc_dbg_tpdu_cmd_str(char *const buf_str,

@@ -5,6 +5,7 @@
 
 /* It is typedef'd here to avoid circular includes. */
 typedef struct uicc_fs_s uicc_fs_st;
+typedef struct uicc_disk_tree_s uicc_disk_tree_st;
 
 #define UICC_FS_NAME_LEN_MAX 16U
 #define UICC_FS_DEPTH_MAX 3U
@@ -77,9 +78,7 @@ typedef uint8_t
     uicc_fs_rcrd_idx_kt; /* Record index (NOT the record number whose indexing
                             begins at 1, the IDX begins at 0). */
 
-/**
- * A represenatation of a header of any item in the UICC FS.
- */
+/* A header of any item in the UICC FS. */
 typedef struct uicc_fs_item_hdr_s
 {
     uint32_t size;
@@ -103,27 +102,39 @@ typedef struct uicc_fs_item_hdr_raw_s
     uint32_t offset_prel;
 } __attribute__((packed)) uicc_fs_item_hdr_raw_st;
 
-/**
- * Common header for all files (MF, EF, ADF, DF).
- */
+/* Common header for all files (MF, EF, ADF, DF). */
 typedef struct uicc_fs_file_hdr_s
 {
-    uicc_fs_item_hdr_st item;
     uicc_fs_id_kt id;
     uicc_fs_sid_kt sid;
     char name[UICC_FS_NAME_LEN_MAX + 1U]; /* +1U for null-terminator */
 } uicc_fs_file_hdr_st;
 typedef struct uicc_fs_file_hdr_raw_s
 {
-    uicc_fs_item_hdr_raw_st item;
     uicc_fs_id_kt id;
     uicc_fs_sid_kt sid;
     char name[UICC_FS_NAME_LEN_MAX + 1U]; /* +1U for null-terminator */
 } __attribute__((packed)) uicc_fs_file_hdr_raw_st;
 
+/* Extra header data of a MF. */
+typedef struct uicc_fs_mf_hdr_s
+{
+} uicc_fs_mf_hdr_st;
+typedef struct uicc_fs_mf_hdr_raw_s
+{
+} __attribute__((packed)) uicc_fs_mf_hdr_raw_st;
+
+/* Extra header data of a DF. */
+typedef struct uicc_fs_df_hdr_s
+{
+} uicc_fs_df_hdr_st;
+typedef struct uicc_fs_df_hdr_raw_s
+{
+} __attribute__((packed)) uicc_fs_df_hdr_raw_st;
+
+/* Extra header data of a ADF. */
 typedef struct uicc_fs_adf_hdr_s
 {
-    uicc_fs_file_hdr_st file;
     /**
      * This is for the Application IDentifier which is present ONLY for ADFs.
      * ETSI TS 101 220 v15.2.0.
@@ -139,7 +150,6 @@ typedef struct uicc_fs_adf_hdr_s
 } uicc_fs_adf_hdr_st;
 typedef struct uicc_fs_adf_hdr_raw_s
 {
-    uicc_fs_file_hdr_raw_st file;
     struct
     {
         uint8_t rid[UICC_FS_ADF_AID_RID_LEN];
@@ -149,48 +159,39 @@ typedef struct uicc_fs_adf_hdr_raw_s
 static_assert(sizeof((uicc_fs_adf_hdr_raw_st){0U}.aid) == UICC_FS_ADF_AID_LEN,
               "AID has an unexpected size in the raw header struct of ADF");
 
-/**
- * Header of a linear fixed EF.
- */
+/* Extra header data of a transparent EF. */
+typedef struct uicc_fs_ef_transparent_hdr_s
+{
+} uicc_fs_ef_transparent_hdr_st;
+typedef struct uicc_fs_ef_transparent_hdr_raw_s
+{
+} __attribute__((packed)) uicc_fs_ef_transparent_hdr_raw_st;
+
+/* Extra header data of a linear-fixed EF. */
 typedef struct uicc_fs_ef_linearfixed_hdr_s
 {
-    uicc_fs_file_hdr_st file;
     uint8_t rcrd_size;
 } uicc_fs_ef_linearfixed_hdr_st;
 typedef struct uicc_fs_ef_linearfixed_hdr_raw_s
 {
-    uicc_fs_file_hdr_raw_st file;
     uint8_t rcrd_size;
 } __attribute__((packed)) uicc_fs_ef_linearfixed_hdr_raw_st;
 
-/**
- * Header of a cyclic EF is the same as for a linear fixed EF.
- */
-typedef uicc_fs_ef_linearfixed_hdr_st uicc_fs_ef_cyclic_hdr_st;
-typedef uicc_fs_ef_linearfixed_hdr_raw_st uicc_fs_ef_cyclic_hdr_raw_st;
+/* Extra header data of a cyclic EF. */
+typedef struct uicc_fs_ef_cyclic_hdr_s
+{
+    uint8_t rcrd_size;
+} uicc_fs_ef_cyclic_hdr_st;
+typedef struct uicc_fs_ef_cyclic_hdr_raw_s
+{
+    uint8_t rcrd_size;
+} __attribute__((packed)) uicc_fs_ef_cyclic_hdr_raw_st;
 
 /* Describes a record of an EF. */
 typedef struct uicc_fs_rcrd_s
 {
     uicc_fs_rcrd_idx_kt idx;
 } uicc_fs_rcrd_st;
-
-/* Describes a transparent buffer. */
-typedef struct uicc_fs_data_s
-{
-    uint32_t size;
-    uint32_t parent_offset_trel;
-    uint32_t offset_prel;
-    uint32_t offset_select;
-} uicc_fs_data_st;
-
-/* Describes a data object or a part of one. */
-typedef struct uicc_fs_do_s
-{
-    uint32_t size;
-    uint32_t parent_offset_trel;
-    uint32_t offset_prel_start;
-} uicc_fs_do_st;
 
 typedef struct uicc_fs_path_s
 {
@@ -200,24 +201,113 @@ typedef struct uicc_fs_path_s
 } uicc_fs_path_st;
 
 /**
- * @brief Parse an item header.
- * @param item_hdr_raw Item header to parse.
- * @param item_hdr Where to store the parsed item header.
- * @return Return code.
- * @note The tree offset field of the parsed item will not be populated. The
- * offset to the parent will be parsed.
+ * Outside of the disk and diskjs modules, this shall be the struct that
+ * abstract away the implementation of files on disk.
  */
-uicc_ret_et uicc_fs_item_hdr_prs(
-    uicc_fs_item_hdr_raw_st const *const item_hdr_raw,
-    uicc_fs_item_hdr_st *const item_hdr);
+typedef struct uicc_fs_file_s
+{
+    uicc_fs_item_hdr_st hdr_item;
+    uicc_fs_file_hdr_st hdr_file;
+    union {
+        uicc_fs_mf_hdr_st mf;
+        uicc_fs_df_hdr_st df;
+        uicc_fs_adf_hdr_st adf;
+        uicc_fs_ef_transparent_hdr_st ef_transparent;
+        uicc_fs_ef_linearfixed_hdr_st ef_linearfixed;
+        uicc_fs_ef_cyclic_hdr_st ef_cyclic;
+    } hdr_spec;
+    uint32_t data_size;
+    uint8_t *data;
+
+    /* No module other than the FS should access this. */
+    struct
+    {
+        uint8_t *hdr_raw;
+    } internal;
+} uicc_fs_file_st;
+typedef struct uicc_fs_file_raw_s
+{
+    uicc_fs_item_hdr_raw_st hdr_item;
+    uicc_fs_file_hdr_raw_st hdr_file;
+    uint8_t data[];
+} __attribute__((packed)) uicc_fs_file_raw_st;
+
+extern uint32_t const uicc_fs_item_hdr_raw_size[];
+
+/**
+ * @brief Convert a raw item header to big endian.
+ * @param item_hdr_raw
+ */
+void uicc_fs_item_hdr_raw_be(uicc_fs_item_hdr_raw_st *const item_hdr_raw);
+
+/**
+ * @brief Convert a raw file header to big endian.
+ * @param file_hdr_raw
+ */
+void uicc_fs_file_hdr_raw_be(uicc_fs_file_hdr_raw_st *const file_hdr_raw);
+
+/**
+ * @brief Convert a raw MF header to big endian.
+ * @param mf_hdr_raw
+ */
+void uicc_fs_mf_hdr_raw_be(uicc_fs_mf_hdr_raw_st *const mf_hdr_raw);
+
+/**
+ * @brief Convert a raw DF header to big endian.
+ * @param df_hdr_raw
+ */
+void uicc_fs_df_hdr_raw_be(uicc_fs_df_hdr_raw_st *const df_hdr_raw);
+
+/**
+ * @brief Convert a raw transparent EF header to big endian.
+ * @param ef_transparent_hdr_raw
+ */
+void uicc_fs_ef_transparent_hdr_raw_be(
+    uicc_fs_ef_transparent_hdr_raw_st *const ef_transparent_hdr_raw);
+
+/**
+ * @brief Convert a raw linear-fixed EF header to big endian.
+ * @param ef_linearfixed_hdr_raw
+ */
+void uicc_fs_ef_linearfixed_hdr_raw_be(
+    uicc_fs_ef_linearfixed_hdr_raw_st *const ef_linearfixed_hdr_raw);
+
+/**
+ * @brief Convert a raw cyclic EF header to big endian.
+ * @param ef_cyclic_hdr_raw
+ */
+void uicc_fs_ef_cyclic_hdr_raw_be(
+    uicc_fs_ef_cyclic_hdr_raw_st *const ef_cyclic_hdr_raw);
+
+/**
+ * @brief Convert a raw ADF header to big endian.
+ * @param adf_hdr_raw
+ */
+void uicc_fs_adf_hdr_raw_be(uicc_fs_adf_hdr_raw_st *const adf_hdr_raw);
+
+/**
+ * @brief Parse an item header.
+ * @param item_hdr_raw Pointer to the raw item header.
+ * @param item_hdr Where to store the parsed item header.
+ */
+void uicc_fs_item_hdr_prs(uicc_fs_item_hdr_raw_st const *const item_hdr_raw,
+                          uint32_t const offset_trel,
+                          uicc_fs_item_hdr_st *const item_hdr);
 
 /**
  * @brief Parse a file header.
- * @param file_hdr_raw File header to parse.
+ * @param file_hdr_raw Pointer to the raw file header.
  * @param file_hdr Where to store the parsed file header.
- * @return Return code.
- * @note The item portion of the header will not be parsed.
  */
-uicc_ret_et uicc_fs_file_hdr_prs(
-    uicc_fs_file_hdr_raw_st const *const file_hdr_raw,
-    uicc_fs_file_hdr_st *const file_hdr);
+void uicc_fs_file_hdr_prs(uicc_fs_file_hdr_raw_st const *const file_hdr_raw,
+                          uicc_fs_file_hdr_st *const file_hdr);
+
+/**
+ * @brief Parse a buffer as a file.
+ * @param file_raw Pointer to a buffer containing the raw file.
+ * @param file Where the parsed file will be written.
+ * @return Return code.
+ */
+uicc_ret_et uicc_fs_file_prs(uicc_disk_tree_st const *const tree,
+                             uint32_t const offset_trel,
+                             uicc_fs_file_st *const file);

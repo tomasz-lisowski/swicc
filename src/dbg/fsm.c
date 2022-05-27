@@ -1,4 +1,4 @@
-#include "uicc.h"
+#include <uicc/uicc.h>
 #include <stdio.h>
 
 #ifdef DEBUG
@@ -18,7 +18,7 @@ static char const *const uicc_dbg_table_str_fsm_state[] = {
 
 uicc_ret_et uicc_dbg_fsm_state_str(char *const buf_str,
                                    uint16_t *const buf_str_len,
-                                   uicc_fsm_state_et fsm_state)
+                                   uicc_fsm_state_et const fsm_state)
 {
 #ifdef DEBUG
     int bytes_written = snprintf(

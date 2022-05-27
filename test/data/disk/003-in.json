@@ -1,0 +1,42 @@
+{
+    "disk": [
+        {
+            "type": "file_mf",
+            "name": "5Bd90e9jKJmb96zh",
+            "id": "CDE7",
+            "sid": "FC",
+            "contents": [
+                {
+                    "type": "file_ef_transparent",
+                    "name": "i8z1oaPvVmqLN2lq",
+                    "id": "7BD7",
+                    "sid": "EA",
+                    "contents": {
+                        "type": "hex",
+                        "contents": "2565F6F98ADA9F013686D339113DACFC"
+                    }
+                },
+                {
+                    "type": "file_ef_transparent",
+                    "name": "8U6khbMhX0HuLfjH",
+                    "id": "6184",
+                    "sid": "E5",
+                    "contents": {
+                        "type": "ascii",
+                        "contents": "ec2p9UVhrIfniBqz"
+                    }
+                },
+                {
+                    "type": "file_ef_transparent",
+                    "name": "GH13KH8doNkeG5Uf",
+                    "id": "C6B2",
+                    "sid": "8F",
+                    "contents": {
+                        "type": "hex",
+                        "contents": "CFC291D372DF871D582E57"
+                    }
+                }
+            ]
+        }
+    ]
+}

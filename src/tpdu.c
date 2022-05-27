@@ -1,4 +1,4 @@
-#include "uicc.h"
+#include <uicc/uicc.h>
 #include <string.h>
 
 uicc_ret_et uicc_tpdu_cmd_parse(uint8_t const *const buf_raw,

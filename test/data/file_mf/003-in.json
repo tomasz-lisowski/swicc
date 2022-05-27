@@ -1,0 +1,28 @@
+{
+    "type": "file_mf",
+    "name": "jTSgQOIkNTnBoftm",
+    "id": "D464",
+    "sid": "D3",
+    "contents": [
+        {
+            "type": "file_ef_transparent",
+            "name": "jtt08oDgT4pIlBWb",
+            "id": "3F97",
+            "sid": "F7",
+            "contents": {
+                "type": "hex",
+                "contents": "F8F2502551156D5222C1FB6C4C7ED5E3"
+            }
+        },
+        {
+            "type": "file_ef_transparent",
+            "name": "TXploG5rL5YfLSFu",
+            "id": "3B97",
+            "sid": "C8",
+            "contents": {
+                "type": "ascii",
+                "contents": "lqeoPE7rtELybBCmIgJ2lcvttCbIom3k"
+            }
+        }
+    ]
+}

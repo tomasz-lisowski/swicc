@@ -1,4 +1,4 @@
-#include "uicc.h"
+#include <uicc/uicc.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -56,6 +56,12 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
         buf_unused_len = (uint16_t)(buf_unused_len - dbg_str_len_tmp);
     }
 
+    uicc_fs_file_st file;
+    if (uicc_fs_file_prs(tree, item->offset_trel, &file) != UICC_RET_SUCCESS)
+    {
+        return ret;
+    }
+
     /* Create the common file header. */
     switch (item->type)
     {
@@ -65,13 +71,6 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
     case UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
     case UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
     case UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC: {
-        uicc_fs_file_hdr_st file;
-        if (uicc_fs_file_hdr_prs(
-                (uicc_fs_file_hdr_raw_st *)&tree->buf[item->offset_trel],
-                &file) != UICC_RET_SUCCESS)
-        {
-            return ret;
-        }
         dbg_str_len_tmp = snprintf(
             &buf_str[buf_size - buf_unused_len], buf_unused_len,
             // clang-format off
@@ -79,7 +78,8 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
             "\n%s  (" CLR_KND("SID") " " CLR_VAL("0x%02X") ")"
             "\n%s  (" CLR_KND("Name") " " CLR_VAL("'%s'") ")",
             // clang-format on
-            ds, file.id, ds, file.sid, ds, file.name);
+            ds, file.hdr_file.id, ds, file.hdr_file.sid, ds,
+            file.hdr_file.name);
         if (dbg_str_len_tmp < 0 ||
             (int64_t)buf_unused_len - dbg_str_len_tmp <= 0)
         {
@@ -93,35 +93,30 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
         break;
     }
     default:
-        break;
+        return UICC_RET_ERROR;
     }
 
     /* For EFs with records, also add the record length to the header. */
     {
         if (item->type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED)
         {
-            uicc_fs_ef_linearfixed_hdr_raw_st const *const ef_linearfixed =
-                (uicc_fs_ef_linearfixed_hdr_raw_st *)&tree
-                    ->buf[item->offset_trel];
             dbg_str_len_tmp =
                 snprintf(&buf_str[buf_size - buf_unused_len], buf_unused_len,
                          // clang-format off
-                     "\n%s  (" CLR_KND("Record Length") " " CLR_VAL("%u") ")"
-                     "\n%s  (" CLR_KND("Contents"),
+                         "\n%s  (" CLR_KND("Record Length") " " CLR_VAL("%u") ")"
+                         "\n%s  (" CLR_KND("Contents"),
                          // clang-format on
-                         ds, ef_linearfixed->rcrd_size, ds);
+                         ds, file.hdr_spec.ef_linearfixed.rcrd_size, ds);
         }
         else if (item->type == UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
         {
-            uicc_fs_ef_cyclic_hdr_raw_st const *const ef_cyclic =
-                (uicc_fs_ef_cyclic_hdr_raw_st *)&tree->buf[item->offset_trel];
             dbg_str_len_tmp =
                 snprintf(&buf_str[buf_size - buf_unused_len], buf_unused_len,
                          // clang-format off
-                     "\n%s  (" CLR_KND("Record Length") " " CLR_VAL("%u") ")"
-                     "\n%s  (" CLR_KND("Contents"),
+                         "\n%s  (" CLR_KND("Record Length") " " CLR_VAL("%u") ")"
+                         "\n%s  (" CLR_KND("Contents"),
                          // clang-format on
-                         ds, ef_cyclic->rcrd_size, ds);
+                         ds, file.hdr_spec.ef_cyclic.rcrd_size, ds);
         }
         else
         {
@@ -167,17 +162,12 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
         uint32_t data_idx = 0U;
         while (data_idx < data_len)
         {
-            uicc_fs_item_hdr_raw_st *const data_item_hdr =
-                (uicc_fs_item_hdr_raw_st *)&tree
-                    ->buf[data_offset_start + data_idx];
-
-            uicc_fs_item_hdr_st data_item;
-            ret_item = uicc_fs_item_hdr_prs(data_item_hdr, &data_item);
-            if (ret_item != UICC_RET_SUCCESS)
+            uicc_fs_file_st file_nstd;
+            if (uicc_fs_file_prs(tree, data_offset_start + data_idx,
+                                 &file_nstd) != UICC_RET_SUCCESS)
             {
                 break;
             }
-            data_item.offset_trel = data_offset_start + data_idx;
 
             /* Length the buffer length that is still unused. */
             uint16_t buf_str_len_nested = buf_unused_len;
@@ -187,7 +177,7 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
              * deep.
              */
             ret_item = fs_item_str(&buf_str[buf_size - buf_unused_len],
-                                   &buf_str_len_nested, tree, &data_item,
+                                   &buf_str_len_nested, tree, &file.hdr_item,
                                    (uint8_t)(depth + 1U));
             if (ret_item != UICC_RET_SUCCESS)
             {
@@ -202,7 +192,7 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
             /* Safe case because checked that it won't become negative. */
             buf_unused_len = (uint16_t)(buf_unused_len - buf_str_len_nested);
 
-            data_idx += data_item.size;
+            data_idx += file_nstd.hdr_item.size;
             ret_item = UICC_RET_SUCCESS;
         }
         ret = ret_item;
@@ -212,10 +202,10 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
     case UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC:
     case UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT: {
         uint8_t const ef_hdr_extra =
-            item->type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED ||
-                    item->type == UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC
-                ? sizeof(uicc_fs_ef_linearfixed_hdr_raw_st) -
-                      sizeof(uicc_fs_file_hdr_raw_st)
+            item->type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED
+                ? sizeof(uicc_fs_ef_linearfixed_hdr_raw_st)
+            : item->type == UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC
+                ? sizeof(uicc_fs_ef_cyclic_hdr_raw_st)
                 : 0U;
         /* Safe cast since size is guaranteed to have at least a header. */
         uint32_t const data_len =
@@ -312,23 +302,18 @@ uicc_ret_et uicc_dbg_disk_str(char *const buf_str, uint16_t *const buf_str_len,
     uicc_disk_tree_st *tree = disk->root;
     while (tree != NULL)
     {
-        uint32_t disk_idx = 0U;
-        while (disk_idx < tree->len)
+        uint32_t tree_idx = 0U;
+        while (tree_idx < tree->len)
         {
-            uicc_fs_item_hdr_raw_st *const item_hdr =
-                (uicc_fs_item_hdr_raw_st *)&tree->buf[disk_idx];
-
-            uicc_fs_item_hdr_st item;
-            if (uicc_fs_item_hdr_prs(item_hdr, &item) != UICC_RET_SUCCESS)
+            uicc_fs_file_st file;
+            if (uicc_fs_file_prs(tree, tree_idx, &file) != UICC_RET_SUCCESS)
             {
                 return UICC_RET_ERROR;
             }
-            item.offset_trel = disk_idx;
-
             uint16_t dbg_str_len = buf_unused_len;
             uicc_ret_et ret_item =
                 fs_item_str(&buf_str[buf_size - buf_unused_len], &dbg_str_len,
-                            tree, &item, 1U);
+                            tree, &file.hdr_item, 1U);
             if (ret_item != UICC_RET_SUCCESS)
             {
                 return ret_item;
@@ -341,7 +326,7 @@ uicc_ret_et uicc_dbg_disk_str(char *const buf_str, uint16_t *const buf_str_len,
             /* Safe cast because was checked and won't become negative. */
             buf_unused_len = (uint16_t)(buf_unused_len - dbg_str_len);
 
-            disk_idx += item.size;
+            tree_idx += file.hdr_item.size;
         }
         tree = tree->next;
     }
@@ -361,5 +346,26 @@ uicc_ret_et uicc_dbg_disk_str(char *const buf_str, uint16_t *const buf_str_len,
 #else
     *buf_str_len = 0U;
     return UICC_RET_SUCCESS;
+#endif
+}
+
+char const *uicc_dbg_item_type_str(uicc_fs_item_type_et const item_type)
+{
+#ifdef DEBUG
+    /**
+     * Safe cast since there arent that many types and none of them will ever be
+     * negative by convention.
+     */
+    if ((uint32_t)item_type <=
+        sizeof(item_type_str) / sizeof(item_type_str[0U]))
+    {
+        return item_type_str[item_type];
+    }
+    else
+    {
+        return "???";
+    }
+#else
+    return NULL;
 #endif
 }

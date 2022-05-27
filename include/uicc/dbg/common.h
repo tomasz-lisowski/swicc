@@ -15,5 +15,4 @@
 #define CLR_VAL(txt) CLR_CYN txt CLR_DEF
 #define CLR_KND(txt) CLR_GRN txt CLR_DEF
 
-uicc_ret_et uicc_dbg_ret_str(char *const buf_str, uint16_t *const buf_str_len,
-                             uicc_ret_et const ret);
+char const *uicc_dbg_ret_str(uicc_ret_et const ret);
