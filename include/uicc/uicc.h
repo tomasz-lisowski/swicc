@@ -29,6 +29,7 @@ typedef struct uicc_tp_s
     uint8_t di;
 } uicc_tp_st;
 
+/* Anything that is part of the file system is held here. */
 typedef struct uicc_fs_s
 {
     uicc_va_st va;
@@ -37,22 +38,66 @@ typedef struct uicc_fs_s
 
 typedef struct uicc_s
 {
-    uint32_t cont_state_rx; /* State of contacts as they are now */
-    uint32_t cont_state_tx; /* State of the contacts as they need to be */
+    /**
+     * State of the contacts as seen by the SIM.
+     */
+    uint32_t cont_state_rx;
+    /**
+     * Expected state of contacts as requested by UICC.
+     */
+    uint32_t cont_state_tx;
+    /**
+     * Receive data into this buffer.
+     */
     uint8_t *buf_rx;
+    /**
+     * Before call to IO, shall hold the length of the RX buffer. After IO it
+     * will receive the next length of data that should be read next.
+     */
     uint16_t buf_rx_len;
+    /**
+     * UICC may request transmission of data to the interface. This buffer
+     * receives that data.
+     */
     uint8_t *buf_tx;
+    /**
+     * Length of the TX buffer. It must contain the maximum size of the TX
+     * buffer before calling IO and it will receive the len requested to be
+     * transmitted.
+     */
     uint16_t buf_tx_len;
 
     /* This shall not be modified by anything other than the UICC library. */
     struct
     {
-        /* Store the header of the actively handled APDU command. */
-        struct
-        {
-            uicc_apdu_cmd_hdr_st hdr;
-            uint8_t p3;
-        } apdu_cur;
+        /**
+         * Store the actively handled APDU command. Seems like there is no way
+         * to handle APDUs without copying from the RX buffer...
+         */
+        uicc_tpdu_cmd_st tpdu_cur;
+        uicc_apdu_cmd_st apdu_cur;
+
+        /**
+         * Receiving the header in parts is possible and while incomplete, is
+         * held in this temporary buffer. This is cleared only after the command
+         * is completely processed and another one is expected to arrive.
+         */
+        uint8_t tpdu_hdr[sizeof(uicc_apdu_cmd_hdr_raw_st) +
+                         1U /* P3 (only part of TPDU header) */];
+        uint8_t tpdu_hdr_len;
+
+        /* True when the 'current' TPDU has already been processed. */
+        bool tpdu_processed;
+
+        /* Keep track of the received PPS. */
+        uint8_t pps[UICC_PPS_LEN_MAX];
+        uint8_t pps_len;
+
+        /**
+         * How many procedure bytes have been sent since receiving the header
+         * (i.e. since the SIM started handling this command).
+         */
+        uint32_t procedure_count;
 
         uicc_fsm_state_et fsm_state;
 

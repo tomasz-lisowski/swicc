@@ -1,7 +1,7 @@
-#include <uicc/uicc.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <uicc/uicc.h>
 
 typedef struct uicc_atr_chunk
 {
@@ -327,12 +327,12 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         else
         {
             /* Safe cast since at this point the length of ATR will be >= 1. */
-            uint8_t const tck = uicc_tck(buf_atr + 1U /* Skip TS */,
-                                         (uint8_t)(buf_atr_len - 1U));
+            uint8_t const tck = uicc_ck(buf_atr + 1U /* Skip TS */,
+                                        (uint8_t)(buf_atr_len - 1U));
             ret = snprintf(buf_str + bytes_written,
                            *buf_str_len - (uint32_t)bytes_written,
                            // clang-format off
-                           "\n  (" CLR_KND("TCK") " " CLR_VAL("'%s'") "))",
+                           "\n  (" CLR_KND("TCK") " " CLR_VAL("'%s'") "))\n",
                            // clang-format on
                            tck != 0 ? "invalid" : "valid");
         }

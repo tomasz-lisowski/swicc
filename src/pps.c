@@ -1,16 +1,5 @@
-#include <uicc/uicc.h>
 #include <string.h>
-
-static uint8_t pps_pck(uint8_t const *const buf_rx, uint16_t const buf_rx_len)
-{
-    assert(buf_rx_len <= UINT8_MAX);
-    uint8_t pck = 0U;
-    for (uint8_t rx_idx = 0U; rx_idx < buf_rx_len; ++rx_idx)
-    {
-        pck ^= buf_rx[rx_idx];
-    }
-    return pck;
-}
+#include <uicc/uicc.h>
 
 static uicc_ret_et pps_xchg_success(uint8_t const *const buf_rx,
                                     uint16_t const buf_rx_len,
@@ -35,8 +24,8 @@ static uicc_ret_et pps_parse(uicc_pps_params_st *const pps_params,
                              uint8_t const *const buf_rx,
                              uint16_t const buf_rx_len)
 {
-    if (buf_rx_len < 2U || buf_rx_len > 6U || buf_rx[0U] != UICC_PPS_PPSS ||
-        pps_pck(buf_rx, buf_rx_len) != 0U)
+    if (buf_rx_len < 2U || buf_rx_len > UICC_PPS_LEN_MAX ||
+        buf_rx[0U] != UICC_PPS_PPSS || uicc_ck(buf_rx, buf_rx_len) != 0U)
     {
         return UICC_RET_PPS_INVALID;
     }
@@ -51,6 +40,10 @@ static uicc_ret_et pps_parse(uicc_pps_params_st *const pps_params,
 
     uint8_t buf_rx_idx_next = 2U;
     uint8_t pps_mask = 0b00010000;
+
+    /**
+     * @todo Use 'uicc_pps_len'.
+     */
 
     for (uint8_t pps_idx = 1U; pps_idx <= 3U; ++pps_idx)
     {
@@ -86,7 +79,7 @@ static uicc_ret_et pps_parse(uicc_pps_params_st *const pps_params,
             {
                 /**
                  * PPS0 indicated presence of the PPSi byte but RX buf is too
-                 * short to contain it.
+                 * short to contain them.
                  */
                 return UICC_RET_PPS_INVALID;
             }
@@ -151,7 +144,7 @@ static uicc_ret_et pps_deparse(uicc_pps_params_st *const pps_params,
     else
     {
         /* Compute check byte for the PPS response */
-        ppsi[ppsi_next] = pps_pck(ppsi, ppsi_next);
+        ppsi[ppsi_next] = uicc_ck(ppsi, ppsi_next);
         ppsi_next++;
 
         memcpy(buf_tx, ppsi, ppsi_next);
@@ -181,5 +174,20 @@ uicc_ret_et uicc_pps(uicc_pps_params_st *const pps_params,
     {
         return ret;
     }
+    return UICC_RET_SUCCESS;
+}
+
+uicc_ret_et uicc_pps_len(uint8_t const *const pps, uint8_t const pps_len,
+                         uint8_t *const pps_len_exp)
+{
+    if (pps_len < 2 || pps[0U] != UICC_PPS_PPSS)
+    {
+        return UICC_RET_PPS_INVALID;
+    }
+    uint8_t const pps0 = pps[1U];
+    /* Safe cast since this will be at most 6. */
+    *pps_len_exp =
+        (uint8_t)(3U + ((pps0 & 0b00010000) > 0U) + ((pps0 & 0b00100000) > 0U) +
+                  ((pps0 & 0b01000000) > 0U));
     return UICC_RET_SUCCESS;
 }

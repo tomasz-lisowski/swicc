@@ -21,17 +21,10 @@ typedef enum uicc_ret_e
 
     UICC_RET_APDU_HDR_TOO_SHORT,
     UICC_RET_APDU_UNHANDLED,
-    UICC_RET_APDU_DATA_WAIT, /* There will be (more) data coming for the current
-                                command. */
+
     UICC_RET_APDU_RES_INVALID,
     UICC_RET_TPDU_HDR_TOO_SHORT,
     UICC_RET_BUFFER_TOO_SHORT,
-
-    UICC_RET_FSM_TRANSITION_WAIT, /* Wait for I/O state change then run FSM. */
-    UICC_RET_FSM_TRANSITION_NOW,  /* Without waiting, let the FSM run again. */
-    UICC_RET_FSM_TRANSITION_REPEAT, /* Without waiting, and without changing any
-                                       user controlled data (e.g. RX, TX buffers
-                                       and contacts) let the FSM run again. */
 
     UICC_RET_PPS_INVALID, /* E.g. the check byte is incorrect etc... */
     UICC_RET_PPS_FAILED,  /* Request is handled but params are not accepted */
@@ -69,7 +62,7 @@ void uicc_etu(uint32_t *const etu, uint16_t const fi, uint8_t const di,
  * @param buf_raw_len Length of the data in the buffer.
  * @return XOR of all bytes in the buffer.
  */
-uint8_t uicc_tck(uint8_t const *const buf_raw, uint8_t const buf_raw_len);
+uint8_t uicc_ck(uint8_t const *const buf_raw, uint16_t const buf_raw_len);
 
 /**
  * @brief Converts a string of hex nibbles (encoded as ASCII), into a byte

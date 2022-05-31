@@ -3,6 +3,7 @@
 #include "uicc/dbg/common.h"
 #include "uicc/dbg/fs.h"
 #include "uicc/dbg/fsm.h"
+#include "uicc/dbg/io.h"
 #include "uicc/dbg/pps.h"
 #include "uicc/dbg/tpdu.h"
 

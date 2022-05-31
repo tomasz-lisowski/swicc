@@ -1,5 +1,5 @@
-#include <uicc/uicc.h>
 #include <string.h>
+#include <uicc/uicc.h>
 
 uicc_ret_et uicc_tpdu_cmd_parse(uint8_t const *const buf_raw,
                                 uint16_t const buf_raw_len,

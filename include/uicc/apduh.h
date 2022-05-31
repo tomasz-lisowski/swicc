@@ -8,10 +8,19 @@
 #include "uicc/apdu.h"
 #include "uicc/common.h"
 
-/* APDU handler. */
+/**
+ * @brief APDU handler.
+ * @param uicc_state
+ * @param cmd Command to handle.
+ * @param res Response to the command.
+ * @param procedure_count Informs the handler about the number of procedure
+ * bytes already sent.
+ * @return Return code.
+ */
 typedef uicc_ret_et uicc_apduh_ft(uicc_st *const uicc_state,
                                   uicc_apdu_cmd_st const *const cmd,
-                                  uicc_apdu_res_st *const res);
+                                  uicc_apdu_res_st *const res,
+                                  uint32_t const procedure_count);
 
 /**
  * @brief All APDUs in the proprietary class require non-interindusry
@@ -28,11 +37,13 @@ uicc_ret_et uicc_apduh_pro_register(uicc_st *const uicc_state,
 /**
  * @brief Handle all APDUs.
  * @param uicc_state
- * @param cmd Command to handle.
- * @param res Response to the command.
+ * @param cmd
+ * @param res
+ * @param procedure_count
  * @return Return code.
  */
 uicc_apduh_ft uicc_apduh_demux;
 uicc_ret_et uicc_apduh_demux(uicc_st *const uicc_state,
                              uicc_apdu_cmd_st const *const cmd,
-                             uicc_apdu_res_st *const res);
+                             uicc_apdu_res_st *const res,
+                             uint32_t const procedure_count);

@@ -61,9 +61,11 @@ typedef enum uicc_apdu_sw1_e
     UICC_APDU_SW1_CHER_UNK,       /* No diagnosis. */
 
     /* Procedure byte. ISO 7816-3:2006 p.23 sec.10.3.3 table.11. */
-    UICC_APDU_SW1_PROC_NULL, /* Request no action on data transfer */
-    UICC_APDU_SW1_PROC_ACK,  /* Acknowledgement leading to transfer of rest of
-                                data. */
+    UICC_APDU_SW1_PROC_NULL,    /* Request no action on data transfer */
+    UICC_APDU_SW1_PROC_ACK_ONE, /* Acknowledgement leading to transfer of one
+                                   more byte of data.  */
+    UICC_APDU_SW1_PROC_ACK_ALL, /* Acknowledgement leading to transfer of the
+                                   rest of data.  */
     /**
      * The case where procedure byte is a regular SW1 is handled like the other
      * SW1 values.

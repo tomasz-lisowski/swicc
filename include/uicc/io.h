@@ -1,10 +1,13 @@
 #include "uicc/common.h"
 
 #pragma once
+/**
+ * @todo Verify that the expected number of RX'd bytes is the actual number
+ * provided by the user.
+ */
 
 /**
  * Number of unique configurations of the transmission protocol.
- *
  * ISO 7816-3:2006 p.18-19 sec.8.3
  */
 #define UICC_TP_CONF_NUM 16U
@@ -80,8 +83,7 @@ extern uint32_t const uicc_io_fmax[UICC_TP_CONF_NUM];
  * circuit state of the UICC.
  * @param uicc_state
  * @return Return code.
- * @note This should be called if the state of any of the contacts changes or if
- * data is received in which case receive it all into a buffer in the I/O
- * struct and then call this function.
+ * @note Shall be called when any of the contacts change state or if the
+ * requested amount of data has been received.
  */
-uicc_ret_et uicc_io(uicc_st *const uicc_state);
+void uicc_io(uicc_st *const uicc_state);

@@ -1,7 +1,7 @@
-#include <uicc/uicc.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <uicc/uicc.h>
 
 #ifdef DEBUG
 static char const *const item_type_str[] = {
@@ -332,16 +332,17 @@ uicc_ret_et uicc_dbg_disk_str(char *const buf_str, uint16_t *const buf_str_len,
     }
 
     /* End the disk expression and add a null-terminator after the string. */
-    if (buf_unused_len - 3 < 0)
+    if (buf_unused_len - 4 < 0)
     {
         return UICC_RET_BUFFER_TOO_SHORT;
     }
     buf_str[buf_size - (buf_unused_len - 0)] = ')';
     buf_str[buf_size - (buf_unused_len - 1)] = ')';
-    buf_str[buf_size - (buf_unused_len - 2)] = '\0';
+    buf_str[buf_size - (buf_unused_len - 2)] = '\n';
+    buf_str[buf_size - (buf_unused_len - 3)] = '\0';
 
     /* Safe case because unused len is never larger than size. */
-    *buf_str_len = (uint16_t)(buf_size - (buf_unused_len - 3));
+    *buf_str_len = (uint16_t)(buf_size - (buf_unused_len - 4U));
     return UICC_RET_SUCCESS;
 #else
     *buf_str_len = 0U;

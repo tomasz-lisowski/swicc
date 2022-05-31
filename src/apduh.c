@@ -1,8 +1,8 @@
-#include <uicc/uicc.h>
 #include "uicc/apdu.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <uicc/uicc.h>
 
 /**
  * Store pointers to handlers for every instruction in the interindustry class.
@@ -14,12 +14,14 @@ static uicc_apduh_ft *const uicc_apduh[0xFF + 1U];
  * @param uicc_state
  * @param cmd
  * @param res
+ * @param procedure_count
  * @return Return code.
  */
 static uicc_apduh_ft apduh_unk;
 static uicc_ret_et apduh_unk(uicc_st *const uicc_state,
                              uicc_apdu_cmd_st const *const cmd,
-                             uicc_apdu_res_st *const res)
+                             uicc_apdu_res_st *const res,
+                             uint32_t const procedure_count)
 {
     res->sw1 = UICC_APDU_SW1_CHER_INS;
     res->sw2 = 0;
@@ -32,6 +34,7 @@ static uicc_ret_et apduh_unk(uicc_st *const uicc_state,
  * @param uicc_state
  * @param cmd
  * @param res
+ * @param procedure_count
  * @return Return code.
  * @note As described in ISO 7816-4:2020 p.74 sec.11.2.2.
  * @todo Handle special (reserved) IDs.
@@ -39,30 +42,61 @@ static uicc_ret_et apduh_unk(uicc_st *const uicc_state,
 static uicc_apduh_ft apduh_select;
 static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                                 uicc_apdu_cmd_st const *const cmd,
-                                uicc_apdu_res_st *const res)
+                                uicc_apdu_res_st *const res,
+                                uint32_t const procedure_count)
 {
+    /**
+     * ISO 7816-4:2020 pg.75 sec.11.2.2 table.63 states any value with not all
+     * 0's at start is RFU.
+     */
+    if ((cmd->hdr->p2 & 0b11110000) != 0)
+    {
+        res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+        res->sw2 = 0x86; /* "Incorrect parameters P1-P2" */
+        res->data.len = 0U;
+        return UICC_RET_SUCCESS;
+    }
+
     /**
      * Check if we only got Lc which means we need to send back a procedure
      * byte.
      */
-    if (cmd->data->len == 0U)
+    if (procedure_count == 0U)
     {
         /**
-         * If Lc is 0 it means data is absent so we can process what we got.
+         * Unexpected because before sending a procedure, no data should have
+         * been received.
          */
-        if (*cmd->p3 > 0)
+        if (cmd->data->len != 0U)
         {
-            res->sw1 = UICC_APDU_SW1_PROC_ACK;
+            res->sw1 = UICC_APDU_SW1_CHER_UNK;
             res->sw2 = 0U;
             res->data.len = 0U;
             return UICC_RET_SUCCESS;
         }
+
+        /**
+         * If Lc is 0 it means data is absent so we can process what we got,
+         * otherwise we need more from the interface.
+         */
+        if (*cmd->p3 > 0)
+        {
+            res->sw1 = UICC_APDU_SW1_PROC_ACK_ALL;
+            res->sw2 = 0U;
+            res->data.len = *cmd->p3; /* Length of expected data. */
+            return UICC_RET_SUCCESS;
+        }
     }
-    uint8_t const lc = *cmd->p3;
-    if (lc != cmd->data->len || (cmd->hdr->p2 & 0b11110000) != 0)
+
+    /**
+     * The ACK ALL procedure was sent and we expected to receive all the data
+     * (length of which was given in P3) but did not receive the expected amount
+     * of data.
+     */
+    if (cmd->data->len != *cmd->p3 && procedure_count >= 1U)
     {
-        res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
-        res->sw2 = 0x80; /* "Incorrect parameters in the command data field" */
+        res->sw1 = UICC_APDU_SW1_CHER_LEN;
+        res->sw2 = 0x02; /* The value of Lc is not the one expected. */
         res->data.len = 0U;
         return UICC_RET_SUCCESS;
     }
@@ -587,13 +621,15 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
  * @param uicc_state
  * @param cmd
  * @param res
+ * @param procedure_count
  * @return Return code.
  * @note As described in ISO 7816-4:2020 p.74 sec.11.3.3.
  */
 static uicc_apduh_ft apduh_bin_read;
 static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
                                   uicc_apdu_cmd_st const *const cmd,
-                                  uicc_apdu_res_st *const res)
+                                  uicc_apdu_res_st *const res,
+                                  uint32_t const procedure_count)
 {
     /**
      * Odd instruction (B1) not supported. It would have the data field encoded
@@ -605,6 +641,32 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
         res->sw2 = 0U;
         res->data.len = 0U;
         return UICC_RET_SUCCESS;
+    }
+
+    /**
+     * This command does not take any data so sent a procedure to get all data
+     * but set expected data length to be 0.
+     */
+    if (procedure_count == 0U)
+    {
+        res->sw1 = UICC_APDU_SW1_PROC_ACK_ALL;
+        res->sw2 = 0U;
+        res->data.len = 0U; /* 0 bytes expected. */
+        return UICC_RET_SUCCESS;
+    }
+    else
+    {
+        /**
+         * We sent an ACK ALL procedure and expected 0 bytes but got more than 0
+         * bytes from the interface.
+         */
+        if (cmd->data->len != 0)
+        {
+            res->sw1 = UICC_APDU_SW1_CHER_LEN;
+            res->sw2 = 0x02; /* The value of Lc is not the one expected. */
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
     }
 
     uint8_t const len_expected = *cmd->p3;
@@ -755,13 +817,15 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
  * @param uicc_state
  * @param cmd
  * @param res
+ * @param procedure_count
  * @return Return code.
  * @note As described in ISO 7816-4:2020 p.82 sec.11.4.3.
  */
 static uicc_apduh_ft apduh_rcrd_read;
 static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
                                    uicc_apdu_cmd_st const *const cmd,
-                                   uicc_apdu_res_st *const res)
+                                   uicc_apdu_res_st *const res,
+                                   uint32_t const procedure_count)
 {
     /**
      * Odd instruction (B3) not supported. It would have the data field encoded
@@ -773,6 +837,32 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
         res->sw2 = 0U;
         res->data.len = 0U;
         return UICC_RET_SUCCESS;
+    }
+
+    /**
+     * This command does not take any data so sent a procedure to get all data
+     * but set expected data length to be 0.
+     */
+    if (procedure_count == 0U)
+    {
+        res->sw1 = UICC_APDU_SW1_PROC_ACK_ALL;
+        res->sw2 = 0U;
+        res->data.len = 0U; /* 0 bytes expected. */
+        return UICC_RET_SUCCESS;
+    }
+    else
+    {
+        /**
+         * We sent an ACK ALL procedure and expected 0 bytes but got more than 0
+         * bytes from the interface.
+         */
+        if (cmd->data->len != 0)
+        {
+            res->sw1 = UICC_APDU_SW1_CHER_LEN;
+            res->sw2 = 0x02; /* The value of Lc is not the one expected. */
+            res->data.len = 0U;
+            return UICC_RET_SUCCESS;
+        }
     }
 
     /* Where to read records from. */
@@ -999,14 +1089,37 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
  * @param uicc_state
  * @param cmd
  * @param res
+ * @param procedure_count
  * @return Return code.
  * @note As described in ISO 7816-4:2020 p.82 sec.11.4.3.
  */
 static uicc_apduh_ft apduh_res_get;
 static uicc_ret_et apduh_res_get(uicc_st *const uicc_state,
                                  uicc_apdu_cmd_st const *const cmd,
-                                 uicc_apdu_res_st *const res)
+                                 uicc_apdu_res_st *const res,
+                                 uint32_t const procedure_count)
 {
+    if (procedure_count == 0U)
+    {
+        res->sw1 = UICC_APDU_SW1_PROC_ACK_ALL;
+        res->sw2 = 0U;
+        res->data.len = 0U; /* 0 bytes expected. */
+        return UICC_RET_SUCCESS;
+    }
+    else if (cmd->data->len != 0U)
+    {
+        /**
+         * @note Lc field is not present in the command which implies data is
+         * not present so if it sends data then the command is malformed since
+         * Lc should have been present.
+         */
+        res->sw1 = UICC_APDU_SW1_CHER_LEN;
+        res->sw2 =
+            0x01; /* "Command APDU format not compliant with this standard" */
+        res->data.len = 0U;
+        return UICC_RET_SUCCESS;
+    }
+
     /* P1 and P2 need to be 0, other values are RFU. */
     if (cmd->hdr->p1 != 0U || cmd->hdr->p2 != 0U)
     {
@@ -1094,7 +1207,8 @@ uicc_ret_et uicc_apduh_pro_register(uicc_st *const uicc_state,
 
 uicc_ret_et uicc_apduh_demux(uicc_st *const uicc_state,
                              uicc_apdu_cmd_st const *const cmd,
-                             uicc_apdu_res_st *const res)
+                             uicc_apdu_res_st *const res,
+                             uint32_t const procedure_count)
 {
     uicc_ret_et ret = UICC_RET_APDU_UNHANDLED;
     switch (cmd->hdr->cla.type)
@@ -1107,7 +1221,7 @@ uicc_ret_et uicc_apduh_demux(uicc_st *const uicc_state,
         ret = UICC_RET_SUCCESS;
         break;
     case UICC_APDU_CLA_TYPE_INTERINDUSTRY:
-        ret = uicc_apduh[cmd->hdr->ins](uicc_state, cmd, res);
+        ret = uicc_apduh[cmd->hdr->ins](uicc_state, cmd, res, procedure_count);
         break;
     case UICC_APDU_CLA_TYPE_PROPRIETARY:
         if (uicc_state->internal.apduh_pro == NULL)
@@ -1115,7 +1229,8 @@ uicc_ret_et uicc_apduh_demux(uicc_st *const uicc_state,
             ret = UICC_RET_APDU_UNHANDLED;
             break;
         }
-        return uicc_state->internal.apduh_pro(uicc_state, cmd, res);
+        return uicc_state->internal.apduh_pro(uicc_state, cmd, res,
+                                              procedure_count);
     default:
         ret = UICC_RET_APDU_UNHANDLED;
         break;

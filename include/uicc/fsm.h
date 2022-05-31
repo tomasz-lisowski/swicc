@@ -7,6 +7,16 @@
  * ISO 7816-3:2006 p.11 sec.6
  */
 
+/**
+ * @brief A FSM state handler is defined as this function it must handle the
+ * incoming RX/TX data/contact state then respond by writing to the RX and TX
+ * buffer (and setting their lengths) and setting contact states.
+ * @param uicc_state
+ * @note These functions always succeed. Failures/errors while handling lead to
+ * just another transition.
+ */
+typedef void uicc_fsmh_ft(uicc_st *const uicc_state);
+
 typedef enum uicc_fsm_state_e
 {
     /**
@@ -105,22 +115,24 @@ typedef enum uicc_fsm_state_e
     UICC_FSM_STATE_CMD_WAIT,
 
     /**
-     * Received message header and sent a response that requests the rest
-     * of the data. This state is not reached for messages without data or if
-     * the message failed early after just the header.
+     * Send a procedure byte to the interface. This can occur after the header
+     * has been received and handled or when data of a command is requested in
+     * parts thus leading to a back and forth exchange of data and procedure
+     * bytes that request more data.
      */
-    UICC_FSM_STATE_CMD_DATA,
+    UICC_FSM_STATE_CMD_PROCEDURE,
 
     /**
-     * Received the full TPDU message.
+     * When data is expected from the interface, this state is reached so it is
+     * not reached for messages without data or if the message failed early
+     * after just the header.
      */
-    UICC_FSM_STATE_CMD_FULL,
+    UICC_FSM_STATE_CMD_DATA,
 } uicc_fsm_state_et;
 
 /**
  * @brief Given an IO state update, perform the correct state transition or
  * remain in the same one.
  * @param uicc_state
- * @return Return code.
  */
-uicc_ret_et uicc_fsm(uicc_st *const uicc_state);
+void uicc_fsm(uicc_st *const uicc_state);

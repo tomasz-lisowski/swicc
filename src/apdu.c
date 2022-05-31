@@ -1,5 +1,5 @@
-#include <uicc/uicc.h>
 #include <string.h>
+#include <uicc/uicc.h>
 
 uicc_apdu_cla_st uicc_apdu_cmd_cla_parse(uint8_t const cla_raw)
 {
@@ -91,7 +91,8 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
     /* Ensure there is space in the raw buffers for the whole response. */
     if (*buf_raw_len <
         res->data.len + (res->sw1 == UICC_APDU_SW1_PROC_NULL ||
-                                 res->sw1 == UICC_APDU_SW1_PROC_ACK
+                                 res->sw1 == UICC_APDU_SW1_PROC_ACK_ONE ||
+                                 res->sw1 == UICC_APDU_SW1_PROC_ACK_ALL
                              ? 1U
                              : 2U))
     {
@@ -100,15 +101,15 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
     if (res->data.len > UICC_DATA_MAX)
     {
         /* Unexpected. */
-        return UICC_RET_UNKNOWN;
+        return UICC_RET_ERROR;
     }
     *buf_raw_len = res->data.len;
     memcpy(buf_raw, res->data.b, res->data.len);
-    /* Unsafe cast because if  */
     uint8_t *const status = &buf_raw[res->data.len];
 
     static uint8_t const sw1_raw[] = {
         [UICC_APDU_SW1_NORM_NONE] = 0x90,
+        [UICC_APDU_SW1_PROC_NULL] = 0x60,
         [UICC_APDU_SW1_NORM_BYTES_AVAILABLE] = 0x61,
         [UICC_APDU_SW1_WARN_NVM_CHGN] = 0x62,
         [UICC_APDU_SW1_WARN_NVM_CHGM] = 0x63,
@@ -150,34 +151,44 @@ uicc_ret_et uicc_apdu_res_deparse(uint8_t *const buf_raw,
     case UICC_APDU_SW1_CHER_CMD:
     case UICC_APDU_SW1_CHER_P1P2_INFO:
     case UICC_APDU_SW1_CHER_LE:
-        /* Safe cast since just concatenating 2 bytes into a short. */
         status[0U] = sw1_raw[res->sw1];
         status[1U] = res->sw2;
-        *buf_raw_len = (uint16_t)(*buf_raw_len +
-                                  2U); /* Safe cast due to check at the
-                                          start that ensures res will fit. */
+        /* Safe cast due to check at the start that ensures res will fit. */
+        *buf_raw_len = (uint16_t)(*buf_raw_len + 2U);
         return UICC_RET_SUCCESS;
     case UICC_APDU_SW1_PROC_NULL:
         if (res->data.len != 0 || res->sw2 != 0)
         {
             return UICC_RET_APDU_RES_INVALID;
         }
-        buf_raw[0U] = 0x60;
+        buf_raw[0U] = sw1_raw[res->sw1];
         *buf_raw_len = 1U;
         return UICC_RET_SUCCESS;
-    case UICC_APDU_SW1_PROC_ACK:
-        if (res->data.len != 0 || res->sw2 != 0)
+    case UICC_APDU_SW1_PROC_ACK_ALL:
+    case UICC_APDU_SW1_PROC_ACK_ONE:
+        /**
+         * In this case the response data length indicates the expected data
+         * length and not the actual data length that is sent back.
+         */
+        if (res->sw2 != 0)
         {
             return UICC_RET_APDU_RES_INVALID;
         }
         /**
-         * @note Can also be INS XOR 0xFF to get the next (one) byte but this is
-         * not supported in this implementation. Older ISO 7816-3 standard
-         * editions defined two other ways that have been deprecated now.
+         * @note Older ISO 7816-3 standard editions defined two other ways of
+         * getting more data that have been deprecated now.
          */
-        buf_raw[0U] = cmd->hdr->ins; /* The raw INS byte. */
+        if (res->sw1 == UICC_APDU_SW1_PROC_ACK_ONE)
+        {
+            buf_raw[0U] = cmd->hdr->ins ^ 0xFF;
+        }
+        else
+        {
+            buf_raw[0U] = cmd->hdr->ins;
+        }
         *buf_raw_len = 1U;
-        return UICC_RET_APDU_DATA_WAIT;
+        return UICC_RET_SUCCESS;
     }
-    return UICC_RET_SUCCESS;
+    /* All cases shall be handled in the switch. */
+    __builtin_unreachable();
 }

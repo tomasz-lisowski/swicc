@@ -1,5 +1,5 @@
-#include <uicc/uicc.h>
 #include <stdio.h>
+#include <uicc/uicc.h>
 
 #ifdef DEBUG
 static char const *const uicc_dbg_table_str_fsm_state[] = {
@@ -9,10 +9,10 @@ static char const *const uicc_dbg_table_str_fsm_state[] = {
     [UICC_FSM_STATE_ATR_REQ] = "ATR requested",
     [UICC_FSM_STATE_ATR_RES] = "ATR sent",
     [UICC_FSM_STATE_RESET_WARM] = "warm reset",
-    [UICC_FSM_STATE_PPS_REQ] = "PPS request came in",
+    [UICC_FSM_STATE_PPS_REQ] = "PPS request coming in",
     [UICC_FSM_STATE_CMD_WAIT] = "waiting for command",
+    [UICC_FSM_STATE_CMD_PROCEDURE] = "handling APDU and sending procedure",
     [UICC_FSM_STATE_CMD_DATA] = "waiting for data",
-    [UICC_FSM_STATE_CMD_FULL] = "received full/complete message",
 };
 #endif
 
@@ -23,8 +23,10 @@ uicc_ret_et uicc_dbg_fsm_state_str(char *const buf_str,
 #ifdef DEBUG
     int bytes_written = snprintf(
         buf_str, *buf_str_len,
-
-        "(" CLR_KND("FSM") "\n  (" CLR_KND("State") " " CLR_VAL("'%s'") "))",
+        // clang-format off
+        "(" CLR_KND("FSM")
+        "\n  (" CLR_KND("State") " " CLR_VAL("'%s'") "))\n",
+        // clang-format on
         uicc_dbg_table_str_fsm_state[fsm_state]);
     if (bytes_written < 0)
     {

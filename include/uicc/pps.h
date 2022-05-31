@@ -45,3 +45,14 @@ typedef struct uicc_pps_params_s
 uicc_ret_et uicc_pps(uicc_pps_params_st *const pps_params,
                      uint8_t const *const buf_rx, uint16_t const buf_rx_len,
                      uint8_t *const buf_tx, uint16_t *const buf_tx_len);
+
+/**
+ * @brief Compute the expected length of the PPS message.
+ * @param pps A complete or partial PPS message. This must be at least 2 bytes
+ * and the first byte must be a PPSS for this function to work.
+ * @param pps_len Length of the given PPS.
+ * @param pps_len_exp Where the expected PPS length will be written.
+ * @return Return code.
+ */
+uicc_ret_et uicc_pps_len(uint8_t const *const pps, uint8_t const pps_len,
+                         uint8_t *const pps_len_exp);

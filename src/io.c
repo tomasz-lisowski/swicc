@@ -1,5 +1,5 @@
-#include <uicc/uicc.h>
 #include <string.h>
+#include <uicc/uicc.h>
 
 /**
  * A lookup table for the Fi (clock rate conversion integer) parameter.
@@ -40,8 +40,7 @@ uint32_t const uicc_io_fmax[UICC_TP_CONF_NUM] = {
     [0b1111] = 0 /* RFU */,
 };
 
-uicc_ret_et uicc_io(uicc_st *const uicc_state)
+void uicc_io(uicc_st *const uicc_state)
 {
-    uicc_ret_et ret = uicc_fsm(uicc_state);
-    return ret;
+    uicc_fsm(uicc_state);
 }

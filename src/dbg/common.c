@@ -1,5 +1,5 @@
-#include <uicc/uicc.h>
 #include <stdio.h>
+#include <uicc/uicc.h>
 
 #ifdef DEBUG
 static char const *const uicc_dbg_table_str_ret[] = {
@@ -13,13 +13,6 @@ static char const *const uicc_dbg_table_str_ret[] = {
     [UICC_RET_APDU_RES_INVALID] = "APDU response invalid",
     [UICC_RET_TPDU_HDR_TOO_SHORT] = "TPDU header is too short",
     [UICC_RET_BUFFER_TOO_SHORT] = "provided buffer is too short",
-
-    [UICC_RET_FSM_TRANSITION_WAIT] =
-        "wait for state change before running the FSM again",
-    [UICC_RET_FSM_TRANSITION_NOW] =
-        "run the FSM again without waiting for anything",
-    [UICC_RET_FSM_TRANSITION_REPEAT] =
-        "run the FSM again without waiting and without changing user data",
 
     [UICC_RET_PPS_INVALID] = "invalid PPS",
     [UICC_RET_PPS_FAILED] = "PPS is valid but the parameters are not accepted",
