@@ -147,7 +147,7 @@ uicc_ret_et uicc_file_descr(uicc_fs_file_st const *const file,
     {
         /**
          * TODO: Not sure what working and internal EFs are so just setting it
-         * to "internal EF" i.e. EF for storring data interpreted by the card.
+         * to "internal EF" i.e. EF for storing data interpreted by the card.
          */
         *file_descr |= 0b00001000;
         switch (file->hdr_item.type)

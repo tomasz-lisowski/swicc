@@ -1,4 +1,9 @@
 #pragma once
+/**
+ * @todo Handle the index rules for different file types somewhere.
+ * Linear-Fixed: indices begin at the first record in the array.
+ * Cyclic: indices begin at the last/selected record in the array.
+ */
 
 #include "uicc/common.h"
 #include "uicc/fs/common.h"
@@ -62,6 +67,31 @@ typedef struct uicc_disk_tree_iter_s
 } uicc_disk_tree_iter_st;
 
 /**
+ * @brief Load a disk file (into memory).
+ * @param disk
+ * @param disk_path Path to the disk file.
+ * @return Return code.
+ */
+uicc_ret_et uicc_disk_load(uicc_disk_st *const disk,
+                           char const *const disk_path);
+
+/**
+ * @brief Unload the in-memory disk and frees any memory used for storing the
+ * FS.
+ * @param uicc_state
+ */
+void uicc_disk_unload(uicc_disk_st *const disk);
+
+/**
+ * @brief Save the disk as a UICC FS file to a specified file.
+ * @param disk
+ * @param disk_path Path where to save the disk file.
+ * @return Return code.
+ */
+uicc_ret_et uicc_disk_save(uicc_disk_st *const disk,
+                           char const *const disk_path);
+
+/**
  * @brief A callback for the 'foreach' iterator.
  * @param tree The tree inside which is the file.
  * @param file A file in the tree.
@@ -110,26 +140,13 @@ uicc_ret_et uicc_disk_tree_iter_next(uicc_disk_tree_iter_st *const tree_iter,
  * @return Return code.
  * @note On failure, the iterator is left on the furthest reached element
  * (reached without any errors).
+ * @note When some index n is reached, there is no way to go to index n - 1
+ * without creating a new tree iterator, the current iterator will indicate that
+ * the tree was not found.
  */
 uicc_ret_et uicc_disk_tree_iter_idx(uicc_disk_tree_iter_st *const tree_iter,
                                     uint8_t const tree_idx,
                                     uicc_disk_tree_st **const tree);
-
-/**
- * @brief Load a disk file (into memory).
- * @param disk
- * @param disk_path Path to the disk file.
- * @return Return code.
- */
-uicc_ret_et uicc_disk_load(uicc_disk_st *const disk,
-                           char const *const disk_path);
-
-/**
- * @brief Unload the in-memory disk and frees any memory used for storing the
- * FS.
- * @param uicc_state
- */
-void uicc_disk_unload(uicc_disk_st *const disk);
 
 /**
  * @brief Dealloc all disk buffers that hold forest data.
@@ -148,6 +165,22 @@ void uicc_disk_lutsid_empty(uicc_disk_tree_st *const tree);
  * @param disk Disk for which to empty the ID LUT.
  */
 void uicc_disk_lutid_empty(uicc_disk_st *const disk);
+
+/**
+ * @brief Create the LUT for IDs on the disk.
+ * @param disk
+ * @return Return code.
+ */
+uicc_ret_et uicc_disk_lutid_rebuild(uicc_disk_st *const disk);
+
+/**
+ * @brief Create a LUT for SIDs for a tree.
+ * @param disk
+ * @param tree The tree for which to recreate the SID LUT.
+ * @return Return code.
+ */
+uicc_ret_et uicc_disk_lutsid_rebuild(uicc_disk_st *const disk,
+                                     uicc_disk_tree_st *const tree);
 
 /**
  * @brief Perform a lookup in the SID LUT of a given tree.
@@ -174,31 +207,6 @@ uicc_ret_et uicc_disk_lutid_lookup(uicc_disk_st *const disk,
                                    uicc_disk_tree_st **const tree,
                                    uicc_fs_id_kt const id,
                                    uicc_fs_file_st *const file);
-
-/**
- * @brief Save the disk as a UICC FS file to a specified file.
- * @param disk
- * @param disk_path Path where to save the disk file.
- * @return Return code.
- */
-uicc_ret_et uicc_disk_save(uicc_disk_st *const disk,
-                           char const *const disk_path);
-
-/**
- * @brief Create the LUT for IDs on the disk.
- * @param disk
- * @return Return code.
- */
-uicc_ret_et uicc_disk_lutid_rebuild(uicc_disk_st *const disk);
-
-/**
- * @brief Create a LUT for SIDs for a tree.
- * @param disk
- * @param tree The tree for which to recreate the SID LUT.
- * @return Return code.
- */
-uicc_ret_et uicc_disk_lutsid_rebuild(uicc_disk_st *const disk,
-                                     uicc_disk_tree_st *const tree);
 
 /**
  * @brief Obtain data contained in a record inside a file.

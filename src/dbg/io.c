@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <uicc/uicc.h>
 
+#ifdef DEBUG
 static char const *const cont_str[] = {"H", "L", "F"};
+#endif
 
 uicc_ret_et uicc_dbg_io_cont_str(char *const buf_str,
                                  uint16_t *const buf_str_len,

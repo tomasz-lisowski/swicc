@@ -288,6 +288,7 @@ void uicc_fs_adf_hdr_raw_be(uicc_fs_adf_hdr_raw_st *const adf_hdr_raw);
 /**
  * @brief Parse an item header.
  * @param item_hdr_raw Pointer to the raw item header.
+ * @param offset_trel Tree-relative offset of the file.
  * @param item_hdr Where to store the parsed item header.
  */
 void uicc_fs_item_hdr_prs(uicc_fs_item_hdr_raw_st const *const item_hdr_raw,
@@ -303,8 +304,10 @@ void uicc_fs_file_hdr_prs(uicc_fs_file_hdr_raw_st const *const file_hdr_raw,
                           uicc_fs_file_hdr_st *const file_hdr);
 
 /**
- * @brief Parse a buffer as a file.
- * @param file_raw Pointer to a buffer containing the raw file.
+ * @brief Parse some location of the tree as a file.
+ * @param tree The tree containing the file.
+ * @param offset_trel Offset (inside the tree buffer) to the beginning of the
+ * file.
  * @param file Where the parsed file will be written.
  * @return Return code.
  */

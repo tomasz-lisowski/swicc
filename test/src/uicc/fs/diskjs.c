@@ -12,7 +12,7 @@
         uint32_t path_prefix_len = strlen(path_prefix);                        \
         if (path_prefix_len > 128U)                                            \
         {                                                                      \
-            WARN(Path prefix is too long);                                     \
+            WARN("Path prefix is too long.");                                  \
         }                                                                      \
         else                                                                   \
         {                                                                      \
@@ -25,8 +25,9 @@
             memcpy(path_in, path_prefix, path_prefix_len);                     \
             memcpy(path_out, path_prefix, path_prefix_len);                    \
                                                                                \
-            uint8_t *buf_in = malloc(2048U);                                   \
-            uint8_t *buf_out = malloc(2048U);                                  \
+            uint32_t const buf_size = 16384U;                                  \
+            uint8_t *buf_in = malloc(buf_size);                                \
+            uint8_t *buf_out = malloc(buf_size);                               \
             uint32_t buf_in_len = 0U;                                          \
             uint32_t buf_out_len = 0U;                                         \
                                                                                \
@@ -51,11 +52,18 @@
                             if (fseek(file_in, 0U, SEEK_END) == 0 &&           \
                                 fseek(file_out, 0U, SEEK_END) == 0)            \
                             {                                                  \
+                                tauColouredPrintf(TAU_COLOUR_BRIGHTBLUE_,      \
+                                                  "[   INFO   ] ");            \
+                                tauColouredPrintf(                             \
+                                    TAU_COLOUR_DEFAULT_,                       \
+                                    "Data used: %s + (%03u-in.json, "          \
+                                    "%03u-out.bin)\n",                         \
+                                    path_prefix, file_idx, file_idx);          \
                                 int64_t const file_in_size = ftell(file_in);   \
                                 int64_t const file_out_size = ftell(file_out); \
                                 if (file_in_size >= 0 && file_out_size >= 0 && \
-                                    file_in_size <= 2048U &&                   \
-                                    file_out_size <= 2048U)                    \
+                                    file_in_size <= buf_size &&                \
+                                    file_out_size <= buf_size)                 \
                                 {                                              \
                                     if (fseek(file_in, 0U, SEEK_SET) == 0 &&   \
                                         fseek(file_out, 0U, SEEK_SET) == 0)    \
@@ -76,20 +84,15 @@
                                             buf_out_len =                      \
                                                 (uint32_t)file_out_size;       \
                                             failed = false;                    \
-                                            tauColouredPrintf(                 \
-                                                TAU_COLOUR_BRIGHTBLUE_,        \
-                                                "[   INFO   ] ");              \
-                                            tauColouredPrintf(                 \
-                                                TAU_COLOUR_DEFAULT_,           \
-                                                "Data used: %s + "             \
-                                                "(%03u-in.json, "              \
-                                                "%03u-out.bin)\n",             \
-                                                path_prefix, file_idx,         \
-                                                file_idx);                     \
                                             file_idx++;                        \
                                             {code};                            \
                                         }                                      \
                                     }                                          \
+                                }                                              \
+                                else                                           \
+                                {                                              \
+                                    WARN("File size is invalid or too large "  \
+                                         "to fit in pre-allocated buffers.");  \
                                 }                                              \
                             }                                                  \
                             fclose(file_out);                                  \
@@ -104,7 +107,7 @@
             }                                                                  \
             if (file_idx == 0U)                                                \
             {                                                                  \
-                WARN(No files were tested.);                                   \
+                WARN("No files were tested.");                                 \
             }                                                                  \
             free(buf_in);                                                      \
             free(buf_out);                                                     \
@@ -161,7 +164,7 @@ static cJSON *itemjs_create(cJSON *const item_json, bool const add_type,
     }
     if (base == NULL)
     {
-        WARN(Failed to create an item JSON object.);
+        WARN("Failed to create an item JSON object.");
     }
     else
     {
@@ -172,7 +175,7 @@ static cJSON *itemjs_create(cJSON *const item_json, bool const add_type,
                 cJSON *const obj = cJSON_AddStringToObject(base, "type", type);
                 if (obj == NULL)
                 {
-                    WARN(Failed to create and add a type object.);
+                    WARN("Failed to create and add a type object.");
                     break;
                 }
             }
@@ -199,7 +202,7 @@ static cJSON *filejs_create(cJSON *const item_json, bool const add_name,
     }
     if (base == NULL)
     {
-        WARN(Failed to create a file JSON object.);
+        WARN("Failed to create a file JSON object.");
     }
     else
     {
@@ -210,7 +213,7 @@ static cJSON *filejs_create(cJSON *const item_json, bool const add_name,
                 cJSON *const obj = cJSON_AddStringToObject(base, "name", name);
                 if (obj == NULL)
                 {
-                    WARN(Failed to create and add a name object.);
+                    WARN("Failed to create and add a name object.");
                     break;
                 }
             }
@@ -219,7 +222,7 @@ static cJSON *filejs_create(cJSON *const item_json, bool const add_name,
                 cJSON *const obj = cJSON_AddStringToObject(base, "id", id);
                 if (obj == NULL)
                 {
-                    WARN(Failed to create and add an ID object.);
+                    WARN("Failed to create and add an ID object.");
                     break;
                 }
             }
@@ -228,7 +231,7 @@ static cJSON *filejs_create(cJSON *const item_json, bool const add_name,
                 cJSON *const obj = cJSON_AddStringToObject(base, "sid", sid);
                 if (obj == NULL)
                 {
-                    WARN(Failed to create and add an SID object.);
+                    WARN("Failed to create and add an SID object.");
                     break;
                 }
             }
@@ -238,7 +241,7 @@ static cJSON *filejs_create(cJSON *const item_json, bool const add_name,
                     cJSON_AddStringToObject(base, "contents", contents);
                 if (obj == NULL)
                 {
-                    WARN(Failed to create and add a contents object.);
+                    WARN("Failed to create and add a contents object.");
                     break;
                 }
             }
@@ -266,7 +269,7 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_empty)
         filejs_create(NULL, false, NULL, false, NULL, false, NULL, false, NULL);
     if (file == NULL)
     {
-        WARN(Failed to create a file object.);
+        WARN("Failed to create a file object.");
     }
     else
     {
@@ -287,7 +290,7 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_name_max)
                                       NULL, false, NULL);
     if (file == NULL)
     {
-        WARN(Failed to create a file object.);
+        WARN("Failed to create a file object.");
     }
     else
     {
@@ -321,7 +324,7 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_name_toolong)
                                       NULL, false, NULL);
     if (file == NULL)
     {
-        WARN(Failed to create a file object.);
+        WARN("Failed to create a file object.");
     }
     else
     {
@@ -346,7 +349,7 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_id_name)
                                       NULL, false, NULL);
     if (file == NULL)
     {
-        WARN(Failed to create a file object.);
+        WARN("Failed to create a file object.");
     }
     else
     {
@@ -381,7 +384,7 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_sid_name)
                                       sid_str, false, NULL);
     if (file == NULL)
     {
-        WARN(Failed to create a file object.);
+        WARN("Failed to create a file object.");
     }
     else
     {
@@ -418,7 +421,7 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_id_sid_name)
                                       sid_str, false, NULL);
     if (file == NULL)
     {
-        WARN(Failed to create a file object.);
+        WARN("Failed to create a file object.");
     }
     else
     {
@@ -653,8 +656,8 @@ TEST(fs_diskjs, disk_json_prs__data)
 
             if (buf_out_idx + sizeof(disk.lutid.count) > buf_out_len)
             {
-                WARN(Test out file is too short to contain ID LUT item count(
-                    4B));
+                WARN("Test out file is too short to contain ID LUT item "
+                     "count (4B).");
                 CHECK_LE(buf_out_idx + sizeof(disk.lutid.count), buf_out_len);
             }
             else
@@ -680,7 +683,8 @@ TEST(fs_diskjs, disk_json_prs__data)
                                                      disk.lutid.size_item2) >
                     buf_out_len)
                 {
-                    WARN(Test out file is too short to contain ID LUT entries);
+                    WARN("Test out file is too short to contain ID LUT "
+                         "entries.");
                     CHECK_LE(buf_out_idx +
                                  lutid_count_exp * (disk.lutid.size_item1 +
                                                     disk.lutid.size_item2),

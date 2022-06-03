@@ -1,6 +1,6 @@
-#include <uicc/uicc.h>
 #include "uicc/fs/common.h"
 #include <string.h>
+#include <uicc/uicc.h>
 
 uicc_ret_et uicc_va_reset(uicc_fs_st *const fs)
 {
@@ -9,7 +9,7 @@ uicc_ret_et uicc_va_reset(uicc_fs_st *const fs)
     uicc_ret_et ret = uicc_disk_tree_iter(&fs->disk, &tree_iter);
     if (ret == UICC_RET_SUCCESS)
     {
-        ret = uicc_va_select_file_id(fs, 0x003F);
+        ret = uicc_va_select_file_id(fs, 0x3F00);
         if (ret == UICC_RET_SUCCESS)
         {
             return ret;

@@ -31,8 +31,7 @@ typedef enum uicc_ret_e
 
     UICC_RET_ATR_INVALID,  /* E.g. the ATR might not contain madatory fields or
                               is malformed. */
-    UICC_RET_FS_NOT_FOUND, /* E.g. SELECT with FID was done but a file with
-                            the given FID does not exist. */
+    UICC_RET_FS_NOT_FOUND, /* Requested FS item is not present. */
 
     UICC_RET_DATO_END, /* Reached end of buffer/data. */
 } uicc_ret_et;

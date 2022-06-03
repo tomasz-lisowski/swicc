@@ -1264,6 +1264,11 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
 uicc_ret_et uicc_diskjs_disk_create(uicc_disk_st *const disk,
                                     char const *const disk_json_path)
 {
+    /**
+     * @todo Check if a disk exists inside the given disk, if so, unload it or
+     * fail.
+     */
+    memset(disk, 0U, sizeof(*disk));
     uicc_ret_et ret = UICC_RET_ERROR;
     FILE *f = fopen(disk_json_path, "rb");
     if (f != NULL)

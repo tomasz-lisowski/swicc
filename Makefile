@@ -27,9 +27,8 @@ MAIN_CC_FLAGS:=\
 	-L$(DIR_LIB)/cjson/build \
 	-Wl,-whole-archive -lcjson -Wl,-no-whole-archive
 
-TEST_NAME:=test
-TEST_SRC:=$(wildcard $(DIR_TEST)/*.c) $(wildcard $(DIR_TEST)/fs/*.c)
-TEST_OBJ:=$(TEST_SRC:$(DIR_TEST)/%.c=$(DIR_BUILD)/$(TEST_NAME)/%.o)
+TEST_SRC:=$(wildcard $(DIR_TEST)/$(DIR_SRC)/*.c) $(wildcard $(DIR_TEST)/$(DIR_SRC)/$(MAIN_NAME)/*.c) $(wildcard $(DIR_TEST)/$(DIR_SRC)/$(MAIN_NAME)/fs/*.c)
+TEST_OBJ:=$(TEST_SRC:$(DIR_TEST)/$(DIR_SRC)/%.c=$(DIR_BUILD)/$(DIR_TEST)/%.o)
 TEST_DEP:=$(TEST_OBJ:%.o=%.d)
 TEST_CC_FLAGS:=\
 	-W \
@@ -41,6 +40,7 @@ TEST_CC_FLAGS:=\
 	-Wshadow \
 	-O2 \
 	-I$(DIR_INCLUDE) \
+	-Itest/$(DIR_INCLUDE) \
 	-I$(DIR_LIB)/cjson \
 	-I$(DIR_LIB)/tau \
 	-I.. \
@@ -55,7 +55,7 @@ main-dbg: MAIN_CC_FLAGS+=-g -DDEBUG -fsanitize=address
 main-dbg: main
 .PHONY: main main-dbg
 
-test: $(DIR_BUILD) $(DIR_BUILD)/$(TEST_NAME) $(DIR_BUILD)/$(TEST_NAME)/fs $(DIR_BUILD)/$(TEST_NAME).$(EXT_BIN)
+test: main-dbg $(DIR_BUILD) $(DIR_BUILD)/tmp $(DIR_BUILD)/$(DIR_TEST) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME)/fs $(DIR_BUILD)/$(DIR_TEST).$(EXT_BIN)
 test-dbg: TEST_CC_FLAGS+=-g -DDEBUG -fsanitize=address
 test-dbg: test
 .PHONY: test test-dbg
@@ -66,7 +66,7 @@ $(DIR_BUILD)/$(LIB_PREFIX)$(MAIN_NAME).$(EXT_LIB_STATIC): $(DIR_LIB)/cjson/build
 	$(AR) -rcs $(@) $(MAIN_OBJ) $(DIR_BUILD)/cjson/*
 
 # Create the test binary.
-$(DIR_BUILD)/$(TEST_NAME).$(EXT_BIN): $(DIR_BUILD)/$(LIB_PREFIX)$(MAIN_NAME).$(EXT_LIB_STATIC) $(TEST_OBJ)
+$(DIR_BUILD)/$(DIR_TEST).$(EXT_BIN): $(DIR_BUILD)/$(LIB_PREFIX)$(MAIN_NAME).$(EXT_LIB_STATIC) $(TEST_OBJ)
 	$(CC) $(TEST_OBJ) -o $(@) $(TEST_CC_FLAGS)
 
 # Build cjson lib.
@@ -82,14 +82,14 @@ $(DIR_LIB)/cjson/build/libcjson.a:
 # Compile source files to object files.
 $(DIR_BUILD)/$(MAIN_NAME)/%.o: $(DIR_SRC)/%.c
 	$(CC) $(<) -o $(@) $(MAIN_CC_FLAGS) -c -MMD
-$(DIR_BUILD)/$(TEST_NAME)/%.o: $(DIR_TEST)/%.c
+$(DIR_BUILD)/$(DIR_TEST)/%.o: $(DIR_TEST)/$(DIR_SRC)/%.c
 	$(CC) $(<) -o $(@) $(TEST_CC_FLAGS) -c -MMD
 
 # Recompile source files after a header they include changes.
 -include $(MAIN_DEP)
 -include $(TEST_DEP)
 
-$(DIR_BUILD) $(DIR_BUILD)/$(MAIN_NAME)/dbg $(DIR_BUILD)/$(MAIN_NAME)/fs $(DIR_BUILD)/cjson $(DIR_BUILD)/$(TEST_NAME) $(DIR_BUILD)/$(TEST_NAME)/fs:
+$(DIR_BUILD) $(DIR_BUILD)/$(MAIN_NAME)/dbg $(DIR_BUILD)/$(MAIN_NAME)/fs $(DIR_BUILD)/cjson $(DIR_BUILD)/tmp $(DIR_BUILD)/$(DIR_TEST) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME)/fs:
 	$(call pal_mkdir,$(@))
 clean:
 	$(call pal_rmdir,$(DIR_BUILD))

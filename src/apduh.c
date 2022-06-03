@@ -261,7 +261,8 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             else
             {
                 ret_select = uicc_va_select_file_id(
-                    &uicc_state->internal.fs, *(uicc_fs_id_kt *)cmd->data->b);
+                    &uicc_state->internal.fs,
+                    __builtin_bswap16(*(uicc_fs_id_kt *)cmd->data->b));
             }
             break;
         case METH_DF_NESTED:
@@ -401,21 +402,10 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             }
 
             /* Create data for BER-TLV DOs. */
-            /**
-             * Safe cast since size will at least 0 since size includes
-             * the header length.
-             */
-            uint32_t const data_size = file_selected->data_size;
-            uint8_t const data_size_be[] = {
-                (uint8_t)((data_size & 0xFF000000) >> (3U * 8U)),
-                (uint8_t)((data_size & 0x00FF0000) >> (2U * 8U)),
-                (uint8_t)((data_size & 0x0000FF00) >> (1U * 8U)),
-                (uint8_t)((data_size & 0x000000FF) >> (0U * 8U)),
-            };
-            uint8_t const data_id[] = {
-                (uint8_t)((file_selected->hdr_file.id & 0xFF00) >> 8U),
-                (uint8_t)(file_selected->hdr_file.id & 0x00FF),
-            };
+            uint32_t const data_size_be =
+                __builtin_bswap32(file_selected->data_size);
+            uint16_t const data_id =
+                __builtin_bswap16(file_selected->hdr_file.id);
             uint8_t const data_sid[] = {file_selected->hdr_file.sid};
             uint8_t lcs_be[1U];
             uint8_t desc_be[2U];
@@ -483,25 +473,13 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                     uicc_dato_bertlv_enc_st enc_fcp;
                     if (uicc_dato_bertlv_enc_nstd_start(&enc_nstd, &enc_fcp) !=
                             UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_data(
-                            &enc_fcp, data_size_be,
-                            sizeof(data_size_be) / sizeof(data_size_be[0U])) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[3U]) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_data(&enc_fcp, desc_be,
-                                                  sizeof(desc_be) /
-                                                      sizeof(desc_be[0U])) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[4U]) !=
-                            UICC_RET_SUCCESS ||
-                        (file_selected->hdr_file.id != 0
-                             ? uicc_dato_bertlv_enc_data(
-                                   &enc_fcp, data_id,
-                                   sizeof(data_id) / sizeof(data_id[0U])) !=
+                        (!file_selected_type_folder &&
+                                 file_selected->hdr_file.sid != 0
+                             ? uicc_dato_bertlv_enc_data(&enc_fcp, data_sid,
+                                                         sizeof(data_sid)) !=
                                        UICC_RET_SUCCESS ||
                                    uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                            &bertlv_tags[5U]) !=
+                                                            &bertlv_tags[7U]) !=
                                        UICC_RET_SUCCESS
                              : false) ||
                         (file_selected_type_folder
@@ -513,21 +491,28 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                                                             &bertlv_tags[6U]) !=
                                        UICC_RET_SUCCESS
                              : false) ||
-                        (!file_selected_type_folder &&
-                                 file_selected->hdr_file.sid != 0
-                             ? uicc_dato_bertlv_enc_data(
-                                   &enc_fcp, data_sid,
-                                   sizeof(data_sid) / sizeof(data_sid[0U])) !=
-                                       UICC_RET_SUCCESS ||
-                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                            &bertlv_tags[7U]) !=
-                                       UICC_RET_SUCCESS
-                             : false) ||
+                        uicc_dato_bertlv_enc_data(
+                            &enc_fcp, (uint8_t *)&data_size_be,
+                            sizeof(data_size_be)) != UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[3U]) !=
+                            UICC_RET_SUCCESS ||
                         uicc_dato_bertlv_enc_data(&enc_fcp, lcs_be,
-                                                  sizeof(lcs_be) /
-                                                      sizeof(lcs_be[0U])) !=
+                                                  sizeof(lcs_be)) !=
                             UICC_RET_SUCCESS ||
                         uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[8U]) !=
+                            UICC_RET_SUCCESS ||
+                        (file_selected->hdr_file.id != 0
+                             ? uicc_dato_bertlv_enc_data(
+                                   &enc_fcp, (uint8_t *)&data_id,
+                                   sizeof(data_id)) != UICC_RET_SUCCESS ||
+                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                            &bertlv_tags[5U]) !=
+                                       UICC_RET_SUCCESS
+                             : false) ||
+                        uicc_dato_bertlv_enc_data(&enc_fcp, desc_be,
+                                                  sizeof(desc_be)) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[4U]) !=
                             UICC_RET_SUCCESS ||
                         uicc_dato_bertlv_enc_nstd_end(&enc_nstd, &enc_fcp) !=
                             UICC_RET_SUCCESS ||
