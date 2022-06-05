@@ -94,8 +94,6 @@ void uicc_fs_file_hdr_prs(uicc_fs_file_hdr_raw_st const *const file_hdr_raw,
 {
     file_hdr->id = file_hdr_raw->id;
     file_hdr->sid = file_hdr_raw->sid;
-    memcpy((void *)file_hdr->name, file_hdr_raw->name, UICC_FS_NAME_LEN_MAX);
-    file_hdr->name[UICC_FS_NAME_LEN_MAX] = '\0';
 }
 
 uicc_ret_et uicc_fs_file_prs(uicc_disk_tree_st const *const tree,
@@ -126,9 +124,9 @@ uicc_ret_et uicc_fs_file_prs(uicc_disk_tree_st const *const tree,
     {
     case UICC_FS_ITEM_TYPE_FILE_MF:
         hdr_size_spec = sizeof(uicc_fs_mf_hdr_raw_st);
-        static_assert(sizeof(uicc_fs_mf_hdr_raw_st) == 0,
-                      "MF header is not 0 bytes so need to add parsing for "
-                      "extra fields into the file parser");
+        uicc_fs_mf_hdr_raw_st const *const mf_hdr_raw =
+            (uicc_fs_mf_hdr_raw_st *)&tree->buf[offset_trel_hdr_spec];
+        memcpy(file->hdr_spec.mf.name, mf_hdr_raw->name, UICC_FS_NAME_LEN);
         break;
     case UICC_FS_ITEM_TYPE_FILE_ADF:
         hdr_size_spec = sizeof(uicc_fs_adf_hdr_raw_st);
@@ -141,13 +139,13 @@ uicc_ret_et uicc_fs_file_prs(uicc_disk_tree_st const *const tree,
         break;
     case UICC_FS_ITEM_TYPE_FILE_DF:
         hdr_size_spec = sizeof(uicc_fs_df_hdr_raw_st);
-        static_assert(sizeof(uicc_fs_df_hdr_raw_st) == 0,
-                      "DF header is not 0 bytes so need to add parsing for "
-                      "extra fields into the file parser");
+        uicc_fs_df_hdr_raw_st const *const df_hdr_raw =
+            (uicc_fs_df_hdr_raw_st *)&tree->buf[offset_trel_hdr_spec];
+        memcpy(file->hdr_spec.df.name, df_hdr_raw->name, UICC_FS_NAME_LEN);
         break;
     case UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
         hdr_size_spec = sizeof(uicc_fs_ef_transparent_hdr_raw_st);
-        static_assert(sizeof(uicc_fs_df_hdr_raw_st) == 0,
+        static_assert(sizeof(uicc_fs_ef_transparent_hdr_raw_st) == 0,
                       "Transparent EF header is not 0 bytes so need to add "
                       "parsing for extra fields into the file parser");
         break;

@@ -75,11 +75,9 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
             &buf_str[buf_size - buf_unused_len], buf_unused_len,
             // clang-format off
             "\n%s  (" CLR_KND("ID") " " CLR_VAL("0x%04X") ")"
-            "\n%s  (" CLR_KND("SID") " " CLR_VAL("0x%02X") ")"
-            "\n%s  (" CLR_KND("Name") " " CLR_VAL("'%s'") ")",
+            "\n%s  (" CLR_KND("SID") " " CLR_VAL("0x%02X") ")",
             // clang-format on
-            ds, file.hdr_file.id, ds, file.hdr_file.sid, ds,
-            file.hdr_file.name);
+            ds, file.hdr_file.id, ds, file.hdr_file.sid);
         if (dbg_str_len_tmp < 0 ||
             (int64_t)buf_unused_len - dbg_str_len_tmp <= 0)
         {

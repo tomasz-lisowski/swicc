@@ -7,7 +7,7 @@
 /**
  * Store pointers to handlers for every instruction in the interindustry class.
  */
-static uicc_apduh_ft *const uicc_apduh[0xFF + 1U];
+static uicc_apduh_ft *const uicc_apduh[0x100];
 
 /**
  * @brief Handle both invalid and unknown instructions.
@@ -105,8 +105,8 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
     {
         METH_RFU,
 
-        METH_MF_DF_EF,  /* Select MF, DF, or EF. Data: file ID or absent.
-                         */
+        METH_MF_ADF_DF_EF, /* Select MF, DF, or EF. Data: file ID or absent.
+                            */
         METH_DF_NESTED, /* Select child DF. Data: file ID referencing a DF. */
         METH_EF_NESTED, /* Select EF under the DF referenced by 'current DF'.
                            Data: file ID referencing an EF. */
@@ -152,7 +152,7 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
         switch (cmd->hdr->p1)
         {
         case 0b00000000:
-            meth = METH_MF_DF_EF;
+            meth = METH_MF_ADF_DF_EF;
             break;
         case 0b00000001:
             meth = METH_DF_NESTED;
@@ -241,22 +241,11 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
         uicc_ret_et ret_select = UICC_RET_ERROR;
         switch (meth)
         {
-        case METH_MF_DF_EF:
+        case METH_MF_ADF_DF_EF:
             /* Must contain exactly 1 file ID. */
             if (cmd->data->len != sizeof(uicc_fs_id_kt))
             {
-                /* Check if maybe trying to select an ADF. */
-                if (cmd->data->len > UICC_FS_ADF_AID_LEN ||
-                    cmd->data->len < UICC_FS_ADF_AID_RID_LEN)
-                {
-                    ret_select = UICC_RET_ERROR;
-                }
-                else
-                {
-                    ret_select = uicc_va_select_adf(
-                        &uicc_state->internal.fs, cmd->data->b,
-                        cmd->data->len - UICC_FS_ADF_AID_RID_LEN);
-                }
+                ret_select = UICC_RET_ERROR;
             }
             else
             {
@@ -271,17 +260,30 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             ret_select = UICC_RET_ERROR;
             break;
         case METH_DF_NAME:
-            /* Name must be at least 1 char long. */
-            if (cmd->data->len == 0 || occ != UICC_FS_OCC_FIRST)
+            /* Check if maybe trying to select an ADF. */
+            if (cmd->data->len > UICC_FS_ADF_AID_LEN ||
+                cmd->data->len < UICC_FS_ADF_AID_RID_LEN ||
+                occ != UICC_FS_OCC_FIRST)
             {
-                ret_select = UICC_RET_ERROR;
+                /* Try to select by DF name at least. */
+                if (cmd->data->len == 0 || occ != UICC_FS_OCC_FIRST)
+                {
+                    ret_select = UICC_RET_ERROR;
+                }
+                else
+                {
+                    ret_select = uicc_va_select_file_dfname(
+                        &uicc_state->internal.fs, (char *)cmd->data->b,
+                        cmd->data->len);
+                }
             }
             else
             {
-                ret_select = uicc_va_select_file_dfname(
-                    &uicc_state->internal.fs, (char *)cmd->data->b,
-                    cmd->data->len);
+                ret_select = uicc_va_select_adf(
+                    &uicc_state->internal.fs, cmd->data->b,
+                    cmd->data->len - UICC_FS_ADF_AID_RID_LEN);
             }
+
             break;
         case METH_MF_PATH:
             /* Must contain at least 1 ID in the path. */
@@ -341,7 +343,6 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
         }
 
         uicc_fs_file_st *file_selected = NULL;
-        bool file_selected_type_folder = false;
         if (uicc_state->internal.fs.va.cur_ef.hdr_item.type !=
             UICC_FS_ITEM_TYPE_INVALID)
         {
@@ -350,7 +351,6 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
         else if (uicc_state->internal.fs.va.cur_df.hdr_item.type !=
                  UICC_FS_ITEM_TYPE_INVALID)
         {
-            file_selected_type_folder = true;
             file_selected = &uicc_state->internal.fs.va.cur_df;
         }
         else
@@ -360,6 +360,18 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             res->sw2 = 0U;
             res->data.len = 0U;
             return UICC_RET_SUCCESS;
+        }
+
+        bool file_selected_type_folder = false;
+        switch (file_selected->hdr_item.type)
+        {
+        case UICC_FS_ITEM_TYPE_FILE_MF:
+        case UICC_FS_ITEM_TYPE_FILE_DF:
+        case UICC_FS_ITEM_TYPE_FILE_ADF:
+            file_selected_type_folder = true;
+            break;
+        default:
+            break;
         }
 
         if (data_req == DATA_REQ_ABSENT)
@@ -473,6 +485,11 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                     uicc_dato_bertlv_enc_st enc_fcp;
                     if (uicc_dato_bertlv_enc_nstd_start(&enc_nstd, &enc_fcp) !=
                             UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_data(
+                            &enc_fcp, (uint8_t *)&data_size_be,
+                            sizeof(data_size_be)) != UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[3U]) !=
+                            UICC_RET_SUCCESS ||
                         (!file_selected_type_folder &&
                                  file_selected->hdr_file.sid != 0
                              ? uicc_dato_bertlv_enc_data(&enc_fcp, data_sid,
@@ -482,25 +499,48 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                                                             &bertlv_tags[7U]) !=
                                        UICC_RET_SUCCESS
                              : false) ||
-                        (file_selected_type_folder
-                             ? uicc_dato_bertlv_enc_data(
-                                   &enc_fcp,
-                                   (uint8_t *)file_selected->hdr_file.name,
-                                   UICC_FS_NAME_LEN_MAX) != UICC_RET_SUCCESS ||
-                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                            &bertlv_tags[6U]) !=
-                                       UICC_RET_SUCCESS
-                             : false) ||
-                        uicc_dato_bertlv_enc_data(
-                            &enc_fcp, (uint8_t *)&data_size_be,
-                            sizeof(data_size_be)) != UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[3U]) !=
+                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[9U]) !=
+                            UICC_RET_SUCCESS ||
+                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[10U]) !=
                             UICC_RET_SUCCESS ||
                         uicc_dato_bertlv_enc_data(&enc_fcp, lcs_be,
                                                   sizeof(lcs_be)) !=
                             UICC_RET_SUCCESS ||
                         uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[8U]) !=
                             UICC_RET_SUCCESS ||
+                        (file_selected->hdr_item.type ==
+                                 UICC_FS_ITEM_TYPE_FILE_MF
+                             ? uicc_dato_bertlv_enc_data(
+                                   &enc_fcp, file_selected->hdr_spec.mf.name,
+                                   UICC_FS_NAME_LEN) != UICC_RET_SUCCESS ||
+                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                            &bertlv_tags[6U]) !=
+                                       UICC_RET_SUCCESS
+                         : file_selected->hdr_item.type ==
+                                 UICC_FS_ITEM_TYPE_FILE_DF
+                             ? uicc_dato_bertlv_enc_data(
+                                   &enc_fcp, file_selected->hdr_spec.df.name,
+                                   UICC_FS_NAME_LEN) != UICC_RET_SUCCESS ||
+                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                            &bertlv_tags[6U]) !=
+                                       UICC_RET_SUCCESS
+                         : file_selected->hdr_item.type ==
+                                 UICC_FS_ITEM_TYPE_FILE_ADF
+                             ? uicc_dato_bertlv_enc_data(
+                                   &enc_fcp,
+                                   file_selected->hdr_spec.adf.aid.pix,
+                                   sizeof(
+                                       file_selected->hdr_spec.adf.aid.pix)) !=
+                                       UICC_RET_SUCCESS ||
+                                   uicc_dato_bertlv_enc_data(
+                                       &enc_fcp,
+                                       file_selected->hdr_spec.adf.aid.rid,
+                                       sizeof(file_selected->hdr_spec.adf.aid
+                                                  .rid)) != UICC_RET_SUCCESS ||
+                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                            &bertlv_tags[6U]) !=
+                                       UICC_RET_SUCCESS
+                             : false) ||
                         (file_selected->hdr_file.id != 0
                              ? uicc_dato_bertlv_enc_data(
                                    &enc_fcp, (uint8_t *)&data_id,
@@ -744,7 +784,7 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
         uint8_t const len_readable = (uint8_t)(file.data_size - offset);
         uint8_t const len_read =
             len_expected > len_readable ? len_readable : len_expected;
-        memcpy(res->data.b, &uicc_state->internal.fs.va.cur_root.data[offset],
+        memcpy(res->data.b, &uicc_state->internal.fs.va.cur_ef.data[offset],
                len_read);
         res->data.len = len_read;
         if (len_read < len_expected)

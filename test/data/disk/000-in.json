@@ -2,7 +2,10 @@
     "disk": [
         {
             "type": "file_mf",
-            "name": "N5R1uS030YsD8muS",
+            "name": {
+                "type": "ascii",
+                "contents": "N5R1uS030YsD8muS"
+            },
             "id": "A37A",
             "sid": "D9",
             "contents": null

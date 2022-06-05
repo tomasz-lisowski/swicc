@@ -1,6 +1,9 @@
 {
     "type": "file_df",
-    "name": "ybzGjmLcwNsuqUOd",
+    "name": {
+        "type": "ascii",
+        "contents": "ybzGjmLcwNsuqUOd"
+    },
     "id": "1279",
     "sid": "A8",
     "contents": null

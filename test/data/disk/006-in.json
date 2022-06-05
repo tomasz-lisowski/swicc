@@ -2,13 +2,15 @@
     "disk": [
         {
             "type": "file_mf",
-            "name": "salLJvEedfbpIT0M",
+            "name": {
+                "type": "ascii",
+                "contents": "salLJvEedfbpIT0M"
+            },
             "id": "E7C7",
             "sid": "71",
             "contents": [
                 {
                     "type": "file_ef_transparent",
-                    "name": "SKJuMyi5oQycjgjv",
                     "id": "F4F4",
                     "sid": "95",
                     "contents": {
@@ -18,7 +20,6 @@
                 },
                 {
                     "type": "file_ef_linear-fixed",
-                    "name": "qBowdMyhoePBK0Hc",
                     "id": "E99D",
                     "sid": "B0",
                     "rcrd_size": 16,
@@ -39,7 +40,6 @@
                 },
                 {
                     "type": "file_ef_cyclic",
-                    "name": "n9XpAArk0WMd3C6b",
                     "id": "5ABD",
                     "sid": "C7",
                     "rcrd_size": 16,
@@ -62,14 +62,15 @@
         },
         {
             "type": "file_adf",
-            "name": "zo8Ucx4jxT0d5FYP",
+            "name": {
+                "type": "hex",
+                "contents": "F618F6869D194BAD83D107622B920D04"
+            },
             "id": "1217",
             "sid": "44",
-            "aid": "F618F6869D194BAD83D107622B920D04",
             "contents": [
                 {
                     "type": "file_ef_transparent",
-                    "name": "SzOkY6F6qSD7TaaU",
                     "id": "862F",
                     "sid": "7E",
                     "contents": {
@@ -79,7 +80,6 @@
                 },
                 {
                     "type": "file_ef_cyclic",
-                    "name": "25aXDm0NjXJH7J9S",
                     "id": "5240",
                     "sid": "CD",
                     "rcrd_size": 16,
@@ -100,7 +100,6 @@
                 },
                 {
                     "type": "file_ef_linear-fixed",
-                    "name": "Hqw7HPUZmJanfLl1",
                     "id": "B1E9",
                     "sid": "77",
                     "rcrd_size": 16,
@@ -123,14 +122,15 @@
         },
         {
             "type": "file_adf",
-            "name": "eC82jbqOZvXSUZd0",
+            "name": {
+                "type": "hex",
+                "contents": "6A55A1758A7E2FF45801AA1513134051"
+            },
             "id": "40B1",
             "sid": "A9",
-            "aid": "6A55A1758A7E2FF45801AA1513134051",
             "contents": [
                 {
                     "type": "file_ef_cyclic",
-                    "name": "oFERagqoSbIFZEvV",
                     "id": "89E7",
                     "sid": "CF",
                     "rcrd_size": 16,
@@ -151,7 +151,6 @@
                 },
                 {
                     "type": "file_ef_linear-fixed",
-                    "name": "q1ywDIK8xID3xD5Z",
                     "id": "C24A",
                     "sid": "61",
                     "rcrd_size": 16,
@@ -172,7 +171,6 @@
                 },
                 {
                     "type": "file_ef_transparent",
-                    "name": "IC4UlN5Gj6x6lYQr",
                     "id": "1704",
                     "sid": "93",
                     "contents": {
@@ -184,14 +182,15 @@
         },
         {
             "type": "file_adf",
-            "name": "JXZN5JycpE6AFn4H",
+            "name": {
+                "type": "hex",
+                "contents": "070AB9E0CAE65B685B236270F7C4611F"
+            },
             "id": "C3C0",
             "sid": "AD",
-            "aid": "070AB9E0CAE65B685B236270F7C4611F",
             "contents": [
                 {
                     "type": "file_ef_linear-fixed",
-                    "name": "hDYWKohwYNxwhYb3",
                     "id": "8EB4",
                     "sid": "63",
                     "rcrd_size": 16,
@@ -212,7 +211,6 @@
                 },
                 {
                     "type": "file_ef_transparent",
-                    "name": "32qThnvbmyRPvAsY",
                     "id": "60D6",
                     "sid": "CF",
                     "contents": {
@@ -222,7 +220,6 @@
                 },
                 {
                     "type": "file_ef_cyclic",
-                    "name": "91Lh9HLTEa2liaWh",
                     "id": "AF09",
                     "sid": "DD",
                     "rcrd_size": 16,

@@ -32,6 +32,12 @@ static uicc_fs_item_type_et const item_type_enum[ITEM_TYPE_COUNT] = {
     UICC_FS_ITEM_TYPE_HEX,
     UICC_FS_ITEM_TYPE_ASCII,
 };
+static_assert(sizeof(item_type_str) / sizeof(item_type_str[0U]) ==
+                      sizeof(item_type_enum) / sizeof(item_type_enum[0U]) &&
+                  sizeof(item_type_str) / sizeof(item_type_str[0U]) ==
+                      ITEM_TYPE_COUNT,
+              "Item type string array and item type enumeration member array "
+              "length are not equal which may lead to errors in diskjs.");
 
 /**
  * Used when creating a UICC FS disk. The 'start' size is the initial buffer
@@ -76,85 +82,68 @@ static uicc_ret_et jsitem_prs_file_raw(cJSON const *const item_json,
      */
 
     uicc_ret_et ret = UICC_RET_ERROR;
-    cJSON *const name_obj = cJSON_GetObjectItemCaseSensitive(item_json, "name");
-    if (cJSON_IsObject(item_json) == true && name_obj != NULL &&
-        cJSON_IsString(name_obj) == true)
+    if (cJSON_IsObject(item_json) == true)
     {
         memset(file_raw, 0U, sizeof(*file_raw));
-        char *const name_str = cJSON_GetStringValue(name_obj);
-        if (name_str != NULL && strlen(name_str) <= UICC_FS_NAME_LEN_MAX)
+
+        uicc_ret_et ret_id = UICC_RET_ERROR;
+        cJSON *const id_obj = cJSON_GetObjectItemCaseSensitive(item_json, "id");
+        if (id_obj != NULL && cJSON_IsString(id_obj) == true)
         {
-            /* Make sure unused bytes of the name are all NULL. */
-            memset(file_raw->hdr_file.name, 0U,
-                   sizeof(file_raw->hdr_file.name));
-            memcpy(file_raw->hdr_file.name, name_str, strlen(name_str));
-            /**
-             * Null-terminate the name. Safe for any name upto the maximum name
-             * length because the buffer is +1 of that size.
-             */
-            file_raw->hdr_file.name[strlen(name_str)] = '\0';
-
-            uicc_ret_et ret_id = UICC_RET_ERROR;
-            cJSON *const id_obj =
-                cJSON_GetObjectItemCaseSensitive(item_json, "id");
-            if (id_obj != NULL && cJSON_IsString(id_obj) == true)
+            /* Has ID. */
+            char *const id_str = cJSON_GetStringValue(id_obj);
+            uicc_fs_id_kt id;
+            if (id_str != NULL && strlen(id_str) == sizeof(id) * 2U)
             {
-                /* Has ID. */
-                char *const id_str = cJSON_GetStringValue(id_obj);
-                uicc_fs_id_kt id;
-                if (id_str != NULL && strlen(id_str) == sizeof(id) * 2U)
+                uint32_t id_len = sizeof(id);
+                if (uicc_hexstr_bytearr(id_str, sizeof(id) * 2U, (uint8_t *)&id,
+                                        &id_len) == UICC_RET_SUCCESS &&
+                    id_len == sizeof(id))
                 {
-                    uint32_t id_len = sizeof(id);
-                    if (uicc_hexstr_bytearr(id_str, sizeof(id) * 2U,
-                                            (uint8_t *)&id,
-                                            &id_len) == UICC_RET_SUCCESS &&
-                        id_len == sizeof(id))
-                    {
-                        file_raw->hdr_file.id = be16toh(id);
-                        ret_id = UICC_RET_SUCCESS;
-                    }
+                    file_raw->hdr_file.id = be16toh(id);
+                    ret_id = UICC_RET_SUCCESS;
                 }
             }
-            else
-            {
-                /* Has no ID. */
-                file_raw->hdr_file.id = UICC_FS_ID_MISSING;
-                ret_id = UICC_RET_SUCCESS;
-            }
+        }
+        else
+        {
+            /* Has no ID. */
+            file_raw->hdr_file.id = UICC_FS_ID_MISSING;
+            ret_id = UICC_RET_SUCCESS;
+        }
 
-            uicc_ret_et ret_sid = UICC_RET_ERROR;
-            cJSON *const sid_obj =
-                cJSON_GetObjectItemCaseSensitive(item_json, "sid");
-            if (sid_obj != NULL && cJSON_IsString(sid_obj) == true)
+        uicc_ret_et ret_sid = UICC_RET_ERROR;
+        cJSON *const sid_obj =
+            cJSON_GetObjectItemCaseSensitive(item_json, "sid");
+        if (sid_obj != NULL && cJSON_IsString(sid_obj) == true)
+        {
+            /* Has SID. */
+            char *const sid_str = cJSON_GetStringValue(sid_obj);
+            uicc_fs_sid_kt sid;
+            if (sid_str != NULL && strlen(sid_str) == sizeof(sid) * 2U)
             {
-                /* Has SID. */
-                char *const sid_str = cJSON_GetStringValue(sid_obj);
-                uicc_fs_sid_kt sid;
-                if (sid_str != NULL && strlen(sid_str) == sizeof(sid) * 2U)
+                uint32_t sid_len = sizeof(sid);
+                if (uicc_hexstr_bytearr(sid_str, sizeof(sid) * 2U,
+                                        (uint8_t *)&sid,
+                                        &sid_len) == UICC_RET_SUCCESS &&
+                    sid_len == sizeof(sid))
                 {
-                    uint32_t sid_len = sizeof(sid);
-                    if (uicc_hexstr_bytearr(sid_str, sizeof(sid) * 2U,
-                                            (uint8_t *)&sid,
-                                            &sid_len) == UICC_RET_SUCCESS &&
-                        sid_len == sizeof(sid))
-                    {
-                        file_raw->hdr_file.sid = sid;
-                        ret_sid = UICC_RET_SUCCESS;
-                    }
+                    file_raw->hdr_file.sid = sid;
+                    ret_sid = UICC_RET_SUCCESS;
                 }
             }
-            else
-            {
-                /* Has no SID. */
-                file_raw->hdr_file.sid = UICC_FS_SID_MISSING;
-                ret_sid = UICC_RET_SUCCESS;
-            }
+        }
+        else
+        {
+            /* Has no SID. */
+            file_raw->hdr_file.sid = UICC_FS_SID_MISSING;
+            ret_sid = UICC_RET_SUCCESS;
+        }
 
-            if (ret_id == UICC_RET_SUCCESS && ret_sid == UICC_RET_SUCCESS)
-            {
-                file_raw->hdr_item.offset_prel = offset_prel;
-                ret = UICC_RET_SUCCESS;
-            }
+        if (ret_id == UICC_RET_SUCCESS && ret_sid == UICC_RET_SUCCESS)
+        {
+            file_raw->hdr_item.offset_prel = offset_prel;
+            ret = UICC_RET_SUCCESS;
         }
     }
     return ret;
@@ -372,34 +361,37 @@ static uicc_ret_et jsitem_prs_file_adf(cJSON const *const item_json,
     uicc_fs_file_raw_st *const file_raw = (uicc_fs_file_raw_st *)buf;
     uicc_fs_adf_hdr_raw_st *const adf_hdr_raw =
         (uicc_fs_adf_hdr_raw_st *)file_raw->data;
-    cJSON *const aid_obj = cJSON_GetObjectItemCaseSensitive(item_json, "aid");
-    if (aid_obj != NULL && cJSON_IsString(aid_obj) == true)
-    {
-        char *const aid_str = cJSON_GetStringValue(aid_obj);
-        uint64_t const aid_len = strlen(aid_str);
 
-        /* PIX can be 0 bytes long so the AID must only contain an RID. */
-        if (aid_len >=
-            UICC_FS_ADF_AID_RID_LEN * 2U /* Hex string 1 byte = 2 chars. */)
+    uint32_t const hdr_size =
+        uicc_fs_item_hdr_raw_size[UICC_FS_ITEM_TYPE_FILE_ADF];
+
+    cJSON *const aid_obj = cJSON_GetObjectItemCaseSensitive(item_json, "name");
+    if (aid_obj != NULL && cJSON_IsObject(aid_obj) == true)
+    {
+        if (*buf_len < hdr_size)
+        {
+            ret = UICC_RET_BUFFER_TOO_SHORT;
+        }
+        else
         {
             /* Excess bytes in the AID should be 0. */
             memset(&adf_hdr_raw->aid, 0U, sizeof(adf_hdr_raw->aid));
 
-            uint32_t bytearr_len = UICC_FS_ADF_AID_LEN;
-            /* Safe cast (to uint32) due to the boundary check. */
-            ret =
-                uicc_hexstr_bytearr(aid_str, (uint32_t)strlen(aid_str),
-                                    (uint8_t *)&adf_hdr_raw->aid, &bytearr_len);
-            if (ret == UICC_RET_SUCCESS &&
-                bytearr_len >= UICC_FS_ADF_AID_RID_LEN &&
-                bytearr_len <=
-                    UICC_FS_ADF_AID_RID_LEN + UICC_FS_ADF_AID_PIX_LEN)
+            uint32_t aid_len = sizeof(adf_hdr_raw->aid);
+            ret = jsitem_prs_demux(aid_obj, 0U /* Not used. */,
+                                   (uint8_t *)&adf_hdr_raw->aid, &aid_len);
+            if (ret == UICC_RET_SUCCESS)
             {
-                uint32_t const hdr_size =
-                    uicc_fs_item_hdr_raw_size[UICC_FS_ITEM_TYPE_FILE_ADF];
-                /* Check that ADF headers will fit inside the buffer. */
-                if (*buf_len >= hdr_size)
+                /**
+                 * PIX can be 0 bytes long so the AID must only contain an RID.
+                 */
+                if (aid_len < UICC_FS_ADF_AID_RID_LEN)
                 {
+                    ret = UICC_RET_ERROR;
+                }
+                else
+                {
+
                     ret = jsitem_prs_file_raw(item_json, file_raw, offset_prel);
                     if (ret == UICC_RET_SUCCESS)
                     {
@@ -425,10 +417,6 @@ static uicc_ret_et jsitem_prs_file_adf(cJSON const *const item_json,
                             ret = UICC_RET_SUCCESS;
                         }
                     }
-                }
-                else
-                {
-                    ret = UICC_RET_BUFFER_TOO_SHORT;
                 }
             }
         }
@@ -460,37 +448,54 @@ static uicc_ret_et jsitem_prs_file_df(cJSON const *const item_json,
 
     uicc_ret_et ret = UICC_RET_ERROR;
     uicc_fs_file_raw_st *const file_raw = (uicc_fs_file_raw_st *)buf;
-    __attribute__((unused)) uicc_fs_df_hdr_raw_st *const df_hdr_raw =
+    uicc_fs_df_hdr_raw_st *const df_hdr_raw =
         (uicc_fs_df_hdr_raw_st *)file_raw->data;
     uint32_t const hdr_size =
         uicc_fs_item_hdr_raw_size[UICC_FS_ITEM_TYPE_FILE_DF];
-    /* Check that DF headers will fit inside the buffer. */
-    if (*buf_len >= hdr_size)
+
+    cJSON *const name_obj = cJSON_GetObjectItemCaseSensitive(item_json, "name");
+    if (name_obj != NULL && cJSON_IsObject(name_obj) == true)
     {
-        ret = jsitem_prs_file_raw(item_json, file_raw, offset_prel);
-        if (ret == UICC_RET_SUCCESS)
+        /* Check that DF headers will fit inside the buffer. */
+        if (*buf_len >= hdr_size)
         {
-            /* Safe because buffer length is greater than header length. */
-            uint32_t items_len = (uint32_t)(*buf_len - hdr_size);
-            ret = jsitem_prs_file_folder(item_json, hdr_size, &buf[hdr_size],
-                                         &items_len);
+            /* Excess bytes in the AID should be 0. */
+            memset(&df_hdr_raw->name, 0U, sizeof(df_hdr_raw->name));
+
+            uint32_t name_len = sizeof(df_hdr_raw->name);
+            ret = jsitem_prs_demux(name_obj, 0U /* Not used. */,
+                                   df_hdr_raw->name, &name_len);
             if (ret == UICC_RET_SUCCESS)
             {
-                file_raw->hdr_item.lcs = UICC_FS_LCS_OPER_ACTIV;
-                file_raw->hdr_item.type = UICC_FS_ITEM_TYPE_FILE_DF;
-                /**
-                 * Safe cast because parsing would fail if there was not
-                 * enough buffer space.
-                 */
-                file_raw->hdr_item.size = (uint32_t)(hdr_size + items_len);
-                *buf_len = file_raw->hdr_item.size;
-                ret = UICC_RET_SUCCESS;
+                ret = jsitem_prs_file_raw(item_json, file_raw, offset_prel);
+                if (ret == UICC_RET_SUCCESS)
+                {
+                    /**
+                     * Safe because buffer length is greater than header length.
+                     */
+                    uint32_t items_len = (uint32_t)(*buf_len - hdr_size);
+                    ret = jsitem_prs_file_folder(item_json, hdr_size,
+                                                 &buf[hdr_size], &items_len);
+                    if (ret == UICC_RET_SUCCESS)
+                    {
+                        file_raw->hdr_item.lcs = UICC_FS_LCS_OPER_ACTIV;
+                        file_raw->hdr_item.type = UICC_FS_ITEM_TYPE_FILE_DF;
+                        /**
+                         * Safe cast because parsing would fail if there was not
+                         * enough buffer space.
+                         */
+                        file_raw->hdr_item.size =
+                            (uint32_t)(hdr_size + items_len);
+                        *buf_len = file_raw->hdr_item.size;
+                        ret = UICC_RET_SUCCESS;
+                    }
+                }
             }
         }
-    }
-    else
-    {
-        ret = UICC_RET_BUFFER_TOO_SHORT;
+        else
+        {
+            ret = UICC_RET_BUFFER_TOO_SHORT;
+        }
     }
     return ret;
 }

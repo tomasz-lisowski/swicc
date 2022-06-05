@@ -1,5 +1,8 @@
 {
     "type": "file_df",
-    "name": "Pv685ByXjDia2oVR",
+    "name": {
+        "type": "ascii",
+        "contents": "Pv685ByXjDia2oVR"
+    },
     "contents": null
 }

@@ -2,33 +2,42 @@
     "disk": [
         {
             "type": "file_mf",
-            "name": "1yE5uEawrFOzaYp5",
+            "name": {
+                "type": "ascii",
+                "contents": "1yE5uEawrFOzaYp5"
+            },
             "id": "124C",
             "sid": "1C",
             "contents": []
         },
         {
             "type": "file_adf",
-            "name": "SnF19bL5kyQqh1UK",
+            "name": {
+                "type": "hex",
+                "contents": "BD201632EBE599D9073A4318B6B786E9"
+            },
             "id": "7675",
             "sid": "B9",
-            "aid": "BD201632EBE599D9073A4318B6B786E9",
             "contents": []
         },
         {
             "type": "file_adf",
-            "name": "MrecDtr59mHkDqv1",
+            "name": {
+                "type": "hex",
+                "contents": "40F1D5956EEF04E0560CA84B6AEC22D8"
+            },
             "id": "75C9",
             "sid": "F3",
-            "aid": "40F1D5956EEF04E0560CA84B6AEC22D8",
             "contents": []
         },
         {
             "type": "file_adf",
-            "name": "bFPEOagRVMI2uBKU",
+            "name": {
+                "type": "hex",
+                "contents": "17D47F3EBDDE909A56E635066CA915CE"
+            },
             "id": "69C9",
             "sid": "EA",
-            "aid": "17D47F3EBDDE909A56E635066CA915CE",
             "contents": []
         }
     ]

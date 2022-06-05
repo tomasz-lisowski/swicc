@@ -2,17 +2,22 @@
     "disk": [
         {
             "type": "file_mf",
-            "name": "ERyLJAulntgYdItH",
+            "name": {
+                "type": "ascii",
+                "contents": "ERyLJAulntgYdItH"
+            },
             "id": "E2F9",
             "sid": "F9",
             "contents": []
         },
         {
             "type": "file_adf",
-            "name": "KdOf4ei1lhh7P3tT",
+            "name": {
+                "type": "hex",
+                "contents": "90D0C4E91B2CF7243F1EB73CA8BEEA00"
+            },
             "id": "0742",
             "sid": "05",
-            "aid": "90D0C4E91B2CF7243F1EB73CA8BEEA00",
             "contents": []
         }
     ]

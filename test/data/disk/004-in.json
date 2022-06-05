@@ -2,13 +2,15 @@
     "disk": [
         {
             "type": "file_mf",
-            "name": "HbviIoQeXWVoAnpN",
+            "name": {
+                "type": "ascii",
+                "contents": "HbviIoQeXWVoAnpN"
+            },
             "id": "64F3",
             "sid": "22",
             "contents": [
                 {
                     "type": "file_ef_transparent",
-                    "name": "4GaVfy4F44chXBFL",
                     "id": "15B4",
                     "sid": "CB",
                     "contents": {
@@ -18,7 +20,6 @@
                 },
                 {
                     "type": "file_ef_transparent",
-                    "name": "4x7mgH8L4m8HcRyG",
                     "id": "37CC",
                     "sid": "8D",
                     "contents": {
@@ -30,14 +31,15 @@
         },
         {
             "type": "file_adf",
-            "name": "jHNqpN6R0BL3GV5V",
+            "name": {
+                "type": "hex",
+                "contents": "66D46C00EB23AFFE905450583FFE580B"
+            },
             "id": "DA1F",
             "sid": "8A",
-            "aid": "66D46C00EB23AFFE905450583FFE580B",
             "contents": [
                 {
                     "type": "file_ef_transparent",
-                    "name": "6rCmCOuy2Jo83TIH",
                     "id": "B830",
                     "sid": "C0",
                     "contents": {
@@ -47,7 +49,6 @@
                 },
                 {
                     "type": "file_ef_transparent",
-                    "name": "KotDBcupjydNP8jt",
                     "id": "7CB9",
                     "sid": "AF",
                     "contents": {

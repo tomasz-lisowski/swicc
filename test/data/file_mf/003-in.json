@@ -1,12 +1,14 @@
 {
     "type": "file_mf",
-    "name": "jTSgQOIkNTnBoftm",
+    "name": {
+        "type": "ascii",
+        "contents": "jTSgQOIkNTnBoftm"
+    },
     "id": "D464",
     "sid": "D3",
     "contents": [
         {
             "type": "file_ef_transparent",
-            "name": "jtt08oDgT4pIlBWb",
             "id": "3F97",
             "sid": "F7",
             "contents": {
@@ -16,7 +18,6 @@
         },
         {
             "type": "file_ef_transparent",
-            "name": "TXploG5rL5YfLSFu",
             "id": "3B97",
             "sid": "C8",
             "contents": {

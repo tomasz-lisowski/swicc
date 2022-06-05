@@ -1,6 +1,8 @@
 {
     "type": "file_adf",
-    "name": "8TxOTbztgP0J2Udl",
-    "aid": "FA42B326B6",
+    "name": {
+        "type": "hex",
+        "contents": "FA42B326B6"
+    },
     "contents": null
 }

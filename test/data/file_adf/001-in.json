@@ -1,8 +1,10 @@
 {
     "type": "file_adf",
-    "name": "0TZ4bR8IB5DxFoDp",
+    "name": {
+        "type": "hex",
+        "contents": "A1E90B5D951CA311C2EDBD6AEBE1561F"
+    },
     "id": "54A4",
     "sid": "62",
-    "aid": "A1E90B5D951CA311C2EDBD6AEBE1561F",
     "contents": null
 }

@@ -23,10 +23,13 @@ typedef uicc_ret_et uicc_apduh_ft(uicc_st *const uicc_state,
                                   uint32_t const procedure_count);
 
 /**
- * @brief All APDUs in the proprietary class require non-interindusry
+ * @brief All APDUs in the proprietary class require non-interindustry
  * implementations for handlers. The handler passed to this function is the
  * function that will get these proprietary messages and is expected to handle
  * them.
+ * @note An attempt to handle interindustry messages using the proprietary
+ * handler will be done before running interindustry handlers in order to give a
+ * chance to override the default implementastion.
  * @param uicc_state
  * @param handler Handler for all proprietary messages.
  * @return Return code.

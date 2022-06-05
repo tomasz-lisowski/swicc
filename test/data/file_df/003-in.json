@@ -1,12 +1,14 @@
 {
     "type": "file_df",
-    "name": "S8LVSG6bFHWUUt3D",
+    "name": {
+        "type": "ascii",
+        "contents": "S8LVSG6bFHWUUt3D"
+    },
     "id": "2C84",
     "sid": "6C",
     "contents": [
         {
             "type": "file_ef_transparent",
-            "name": "Y2ataKGtjDho3Vk4",
             "id": "B3E3",
             "sid": "63",
             "contents": {
@@ -16,7 +18,6 @@
         },
         {
             "type": "file_ef_transparent",
-            "name": "B3Q6rmK9tWOZgCkC",
             "id": "289B",
             "sid": "56",
             "contents": {

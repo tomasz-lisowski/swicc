@@ -1,16 +1,17 @@
 {
     "type": "file_mf",
-    "name": "MuFQZ2xHTNgnUoQv",
     "contents": [
         {
             "type": "file_df",
-            "name": "2yFhyw9p41MOoKkl",
+            "name": {
+                "type": "ascii",
+                "contents": "2yFhyw9p41MOoKkl"
+            },
             "id": "8942",
             "sid": "6E",
             "contents": [
                 {
                     "type": "file_ef_transparent",
-                    "name": "CqCNQiTip03hS4Jj",
                     "id": "8533",
                     "sid": "63",
                     "contents": {
@@ -20,13 +21,15 @@
                 },
                 {
                     "type": "file_df",
-                    "name": "lWJDQSFdRCIBytDl",
+                    "name": {
+                        "type": "ascii",
+                        "contents": "lWJDQSFdRCIBytDl"
+                    },
                     "id": "CA8A",
                     "sid": "C2",
                     "contents": [
                         {
                             "type": "file_ef_transparent",
-                            "name": "BTno0iOpwgriuzfh",
                             "id": "EAD0",
                             "sid": "5F",
                             "contents": {
@@ -40,7 +43,6 @@
         },
         {
             "type": "file_ef_transparent",
-            "name": "clhJFljDTVyMvTuv",
             "id": "CE59",
             "sid": "77",
             "contents": {

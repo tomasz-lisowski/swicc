@@ -3,6 +3,25 @@
 #include <cJSON.h>
 #include <uicc/uicc.h>
 
+static int32_t filesize(char const *const path, uint32_t *const size)
+{
+    FILE *f = fopen(path, "r");
+    int32_t err = fseek(f, 0U, SEEK_END);
+    if (err != 0)
+    {
+        return err;
+    }
+    int64_t f_size = ftell(f);
+    if (f_size < 0 || f_size > UINT32_MAX)
+    {
+        return -1;
+    }
+    /* Safe cast since file size was checked to fit in uint32 range. */
+    *size = (uint32_t)f_size;
+    fclose(f);
+    return 0;
+}
+
 /**
  * @warning The static function 'lut_insert' is not tested because it's static.
  */
@@ -17,20 +36,31 @@ TEST(fs_disk, uicc_disk_save__param_check)
 
 TEST(fs_disk, uicc_disk_save__disk)
 {
-    /* 264 is the expected size of the disk in binary (UICC FS) form. */
-    uint8_t disk_buf[264U] = {0U};
-    char const *const disk_path = "build/tmp/3LkgKmhtzapMe5bz.uicc";
-    uicc_disk_st disk;
-    REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
-               UICC_RET_SUCCESS);
-    CHECK_EQ(uicc_disk_save(&disk, disk_path), UICC_RET_SUCCESS);
-    FILE *const fdisk = fopen(disk_path, "rb");
-    CHECK_EQ(fread(disk_buf, 264U, 1U, fdisk), 1U);
-    if (fclose(fdisk) != 0)
+    uint32_t disk_filesize;
+    if (filesize("test/data/disk/004-out.bin", &disk_filesize) == 0)
     {
-        WARN(Disk file failed to close);
+        uint8_t disk_buf[disk_filesize];
+        memset(disk_buf, 0U, disk_filesize);
+
+        char const *const disk_path = "build/tmp/3LkgKmhtzapMe5bz.uicc";
+        uicc_disk_st disk;
+        REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
+                   UICC_RET_SUCCESS);
+        uint32_t const lutid_size =
+            (disk.lutid.size_item1 + disk.lutid.size_item2) * disk.lutid.count;
+        CHECK_EQ(uicc_disk_save(&disk, disk_path), UICC_RET_SUCCESS);
+        FILE *const fdisk = fopen(disk_path, "rb");
+        CHECK_EQ(fread(disk_buf, disk_filesize - lutid_size, 1U, fdisk), 1U);
+        if (fclose(fdisk) != 0)
+        {
+            WARN("Disk file failed to close.");
+        }
+        uicc_disk_unload(&disk);
     }
-    uicc_disk_unload(&disk);
+    else
+    {
+        WARN("Failed to get file size.");
+    }
 }
 
 TEST(fs_disk, uicc_disk_load__param_check)
@@ -43,24 +73,35 @@ TEST(fs_disk, uicc_disk_load__param_check)
 
 TEST(fs_disk, uicc_disk_load__disk)
 {
-    /* 264 is the expected size of the disk in binary (UICC FS) form. */
-    uint8_t disk_buf[264U] = {0U};
-    char const *const disk_path0 = "build/tmp/Z0fnnIBCykwwaiLJ.uicc";
-    char const *const disk_path1 = "build/tmp/mP2F0I8XMnzLhBzR.uicc";
-    uicc_disk_st disk;
-    REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
-               UICC_RET_SUCCESS);
-    CHECK_EQ(uicc_disk_save(&disk, disk_path0), UICC_RET_SUCCESS);
-    uicc_disk_unload(&disk);
-    CHECK_EQ(uicc_disk_load(&disk, disk_path0), UICC_RET_SUCCESS);
-    CHECK_EQ(uicc_disk_save(&disk, disk_path1), UICC_RET_SUCCESS);
-    FILE *const fdisk = fopen(disk_path1, "rb");
-    CHECK_EQ(fread(disk_buf, 264U, 1U, fdisk), 1U);
-    if (fclose(fdisk) != 0)
+    uint32_t disk_filesize;
+    if (filesize("test/data/disk/004-out.bin", &disk_filesize) == 0)
     {
-        WARN(Disk file failed to close);
+        uint8_t disk_buf[disk_filesize];
+        memset(disk_buf, 0U, sizeof(disk_buf));
+
+        char const *const disk_path0 = "build/tmp/Z0fnnIBCykwwaiLJ.uicc";
+        char const *const disk_path1 = "build/tmp/mP2F0I8XMnzLhBzR.uicc";
+        uicc_disk_st disk;
+        REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
+                   UICC_RET_SUCCESS);
+        uint32_t const lutid_size =
+            (disk.lutid.size_item1 + disk.lutid.size_item2) * disk.lutid.count;
+        CHECK_EQ(uicc_disk_save(&disk, disk_path0), UICC_RET_SUCCESS);
+        uicc_disk_unload(&disk);
+        CHECK_EQ(uicc_disk_load(&disk, disk_path0), UICC_RET_SUCCESS);
+        CHECK_EQ(uicc_disk_save(&disk, disk_path1), UICC_RET_SUCCESS);
+        FILE *const fdisk = fopen(disk_path1, "rb");
+        CHECK_EQ(fread(disk_buf, disk_filesize - lutid_size, 1U, fdisk), 1U);
+        if (fclose(fdisk) != 0)
+        {
+            WARN("Disk file failed to close.");
+        }
+        uicc_disk_unload(&disk);
     }
-    uicc_disk_unload(&disk);
+    else
+    {
+        WARN("Failed to get file size.");
+    }
 }
 
 TEST(fs_disk, uicc_disk_unload__disk)
@@ -97,56 +138,46 @@ static uicc_ret_et uicc_disk_tree_file_foreach__disk_cb(
 {
     uicc_disk_tree_file_foreach__disk_userdata_st *const data = userdata;
     bool valid = false;
-    uint32_t hdr_size;
+    uint32_t const hdr_size = uicc_fs_item_hdr_raw_size[file->hdr_item.type];
     uint32_t file_size;
     /* Expecting 3 files. */
     switch (data->file_count)
     {
     case 0:
-        hdr_size = sizeof(uicc_fs_file_raw_st) + sizeof(uicc_fs_mf_hdr_raw_st);
-        file_size = 122U;
+        file_size = 87U;
         valid = file->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_MF &&
                 file->hdr_item.lcs == UICC_FS_LCS_OPER_ACTIV &&
                 file->hdr_item.offset_trel == 0U &&
                 file->hdr_item.offset_prel == 0U &&
                 file->hdr_item.size == file_size &&
                 file->hdr_file.id == 0x64F3 && file->hdr_file.sid == 0x22 &&
-                memcmp(file->hdr_file.name, "HbviIoQeXWVoAnpN",
-                       sizeof(file->hdr_file.name)) == 0U &&
+                memcmp(file->hdr_spec.mf.name, "HbviIoQeXWVoAnpN",
+                       sizeof(file->hdr_spec.mf.name)) == 0U &&
                 file->internal.hdr_raw == tree->buf &&
                 file->data == &file->internal.hdr_raw[hdr_size] &&
                 file->data_size == file_size - hdr_size;
-        ;
         break;
     case 1:
-        hdr_size = sizeof(uicc_fs_file_raw_st) +
-                   sizeof(uicc_fs_ef_transparent_hdr_raw_st);
-        file_size = 46U;
+        file_size = 29U;
         valid = file->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT &&
                 file->hdr_item.lcs == UICC_FS_LCS_OPER_ACTIV &&
-                file->hdr_item.offset_trel == 30U &&
-                file->hdr_item.offset_prel == 30U &&
+                file->hdr_item.offset_trel == 29U &&
+                file->hdr_item.offset_prel == 29U &&
                 file->hdr_item.size == file_size &&
                 file->hdr_file.id == 0x15B4 && file->hdr_file.sid == 0xCB &&
-                memcmp(file->hdr_file.name, "4GaVfy4F44chXBFL",
-                       sizeof(file->hdr_file.name)) == 0U &&
-                file->internal.hdr_raw == &tree->buf[30U] &&
+                file->internal.hdr_raw == &tree->buf[29U] &&
                 file->data == &file->internal.hdr_raw[hdr_size] &&
                 file->data_size == file_size - hdr_size;
         break;
     case 2:
-        hdr_size = sizeof(uicc_fs_file_raw_st) +
-                   sizeof(uicc_fs_ef_transparent_hdr_raw_st);
-        file_size = 46U;
+        file_size = 29U;
         valid = file->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT &&
                 file->hdr_item.lcs == UICC_FS_LCS_OPER_ACTIV &&
-                file->hdr_item.offset_trel == 76U &&
-                file->hdr_item.offset_prel == 76U &&
+                file->hdr_item.offset_trel == 58U &&
+                file->hdr_item.offset_prel == 58U &&
                 file->hdr_item.size == file_size &&
                 file->hdr_file.id == 0x37CC && file->hdr_file.sid == 0x8D &&
-                memcmp(file->hdr_file.name, "4x7mgH8L4m8HcRyG",
-                       sizeof(file->hdr_file.name)) == 0U &&
-                file->internal.hdr_raw == &tree->buf[76U] &&
+                file->internal.hdr_raw == &tree->buf[58U] &&
                 file->data == &file->internal.hdr_raw[hdr_size] &&
                 file->data_size == file_size - hdr_size;
         break;

@@ -189,8 +189,7 @@ static cJSON *itemjs_create(cJSON *const item_json, bool const add_type,
     return NULL;
 }
 
-static cJSON *filejs_create(cJSON *const item_json, bool const add_name,
-                            char const *const name, bool const add_id,
+static cJSON *filejs_create(cJSON *const item_json, bool const add_id,
                             char const *const id, bool const add_sid,
                             char const *const sid, bool const add_contents,
                             char const *const contents)
@@ -208,15 +207,6 @@ static cJSON *filejs_create(cJSON *const item_json, bool const add_name,
     {
         do
         {
-            if (add_name)
-            {
-                cJSON *const obj = cJSON_AddStringToObject(base, "name", name);
-                if (obj == NULL)
-                {
-                    WARN("Failed to create and add a name object.");
-                    break;
-                }
-            }
             if (add_id)
             {
                 cJSON *const obj = cJSON_AddStringToObject(base, "id", id);
@@ -266,7 +256,7 @@ TEST(fs_diskjs, jsitem_prs_file_raw__param_check)
 TEST(fs_diskjs, jsitem_prs_file_raw__file_empty)
 {
     cJSON *const file =
-        filejs_create(NULL, false, NULL, false, NULL, false, NULL, false, NULL);
+        filejs_create(NULL, false, NULL, false, NULL, false, NULL);
     if (file == NULL)
     {
         WARN("Failed to create a file object.");
@@ -274,79 +264,20 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_empty)
     else
     {
         uicc_fs_file_raw_st file_act = {0};
-        /* Parsing empty JSON object should fail as 'name' is mandatory. */
+        /* Parsing empty JSON object should succeed as no field is mandatory. */
         uicc_ret_et const ret_empty = jsitem_prs_file_raw(file, &file_act, 0U);
-        CHECK_EQ(ret_empty, UICC_RET_ERROR);
+        CHECK_EQ(ret_empty, UICC_RET_SUCCESS);
         cJSON_Delete(file);
     }
 }
 
-TEST(fs_diskjs, jsitem_prs_file_raw__file_w_name_max)
+TEST(fs_diskjs, jsitem_prs_file_raw__file_w_id)
 {
-    char const filename[] =
-        "jb2CodfvwwDdnCAq"; /* The maximum length a name can have. */
-    uint32_t const offset_prel = 0x07F6E36E;
-    cJSON *const file = filejs_create(NULL, true, filename, false, NULL, false,
-                                      NULL, false, NULL);
-    if (file == NULL)
-    {
-        WARN("Failed to create a file object.");
-    }
-    else
-    {
-        uicc_fs_file_raw_st file_act = {0};
-        uicc_fs_file_raw_st file_exp = {
-            .hdr_item = {0U},
-            .hdr_item.offset_prel = offset_prel,
-            .hdr_file =
-                {
-                    .name = {0U},
-                    .id = UICC_FS_ID_MISSING,
-                    .sid = UICC_FS_SID_MISSING,
-                },
-        };
-        memcpy(file_exp.hdr_file.name, filename, sizeof(filename));
-
-        /* Parsing JSON object with a 'name' should succeed. */
-        uicc_ret_et const ret =
-            jsitem_prs_file_raw(file, &file_act, offset_prel);
-        CHECK_EQ(ret, UICC_RET_SUCCESS);
-        CHECK_BUF_EQ(&file_act, &file_exp, sizeof(uicc_fs_file_raw_st));
-        cJSON_Delete(file);
-    }
-}
-
-TEST(fs_diskjs, jsitem_prs_file_raw__file_w_name_toolong)
-{
-    char const filename[] =
-        "UYM7hFVD06FxNvBDJ"; /* Longer than max name length. */
-    cJSON *const file = filejs_create(NULL, true, filename, false, NULL, false,
-                                      NULL, false, NULL);
-    if (file == NULL)
-    {
-        WARN("Failed to create a file object.");
-    }
-    else
-    {
-        uicc_fs_file_raw_st file_act = {0};
-        /**
-         * Parsing a JSON object with a name longer than the max allowed length
-         * should fail.
-         */
-        uicc_ret_et const ret = jsitem_prs_file_raw(file, &file_act, 0U);
-        CHECK_EQ(ret, UICC_RET_ERROR);
-        cJSON_Delete(file);
-    }
-}
-
-TEST(fs_diskjs, jsitem_prs_file_raw__file_w_id_name)
-{
-    char const filename[] = "7pm104uMFG";
     char const id_str[] = "0CDE";
     uicc_fs_id_kt const id = 0x0CDE;
     uint32_t const offset_prel = 0x8C95797C;
-    cJSON *const file = filejs_create(NULL, true, filename, true, id_str, false,
-                                      NULL, false, NULL);
+    cJSON *const file =
+        filejs_create(NULL, true, id_str, false, NULL, false, NULL);
     if (file == NULL)
     {
         WARN("Failed to create a file object.");
@@ -359,12 +290,10 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_id_name)
             .hdr_item.offset_prel = offset_prel,
             .hdr_file =
                 {
-                    .name = {0U},
                     .id = id,
                     .sid = UICC_FS_SID_MISSING,
                 },
         };
-        memcpy(file_exp.hdr_file.name, filename, sizeof(filename));
 
         uicc_ret_et const ret =
             jsitem_prs_file_raw(file, &file_act, offset_prel);
@@ -374,14 +303,13 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_id_name)
     }
 }
 
-TEST(fs_diskjs, jsitem_prs_file_raw__file_w_sid_name)
+TEST(fs_diskjs, jsitem_prs_file_raw__file_w_sid)
 {
-    char const filename[] = "NBhe5OS5nc";
     char const sid_str[] = "C9";
     uicc_fs_sid_kt const sid = 0xC9;
     uint32_t const offset_prel = 0xE8E9A0BE;
-    cJSON *const file = filejs_create(NULL, true, filename, false, NULL, true,
-                                      sid_str, false, NULL);
+    cJSON *const file =
+        filejs_create(NULL, false, NULL, true, sid_str, false, NULL);
     if (file == NULL)
     {
         WARN("Failed to create a file object.");
@@ -394,12 +322,10 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_sid_name)
             .hdr_item.offset_prel = offset_prel,
             .hdr_file =
                 {
-                    .name = {0U},
                     .id = UICC_FS_ID_MISSING,
                     .sid = sid,
                 },
         };
-        memcpy(file_exp.hdr_file.name, filename, sizeof(filename));
 
         uicc_ret_et const ret =
             jsitem_prs_file_raw(file, &file_act, offset_prel);
@@ -409,16 +335,15 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_sid_name)
     }
 }
 
-TEST(fs_diskjs, jsitem_prs_file_raw__file_w_id_sid_name)
+TEST(fs_diskjs, jsitem_prs_file_raw__file_w_id_sid)
 {
-    char const filename[] = "erU8xuE50e";
     char const id_str[] = "3F12";
     char const sid_str[] = "1F";
     uicc_fs_id_kt const id = 0x3F12;
     uicc_fs_sid_kt const sid = 0x1F;
     uint32_t const offset_prel = 0x27DC3505;
-    cJSON *const file = filejs_create(NULL, true, filename, true, id_str, true,
-                                      sid_str, false, NULL);
+    cJSON *const file =
+        filejs_create(NULL, true, id_str, true, sid_str, false, NULL);
     if (file == NULL)
     {
         WARN("Failed to create a file object.");
@@ -431,12 +356,10 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_id_sid_name)
             .hdr_item.offset_prel = offset_prel,
             .hdr_file =
                 {
-                    .name = {0U},
                     .id = id,
                     .sid = sid,
                 },
         };
-        memcpy(file_exp.hdr_file.name, filename, sizeof(filename));
 
         uicc_ret_et const ret =
             jsitem_prs_file_raw(file, &file_act, offset_prel);
@@ -513,7 +436,7 @@ TEST(fs_diskjs, jsitem_prs_file_folder__param_check)
 TEST(fs_diskjs, jsitem_prs_file_folder__data)
 {
     JSITEM_PRS_FT__DATA(jsitem_prs_file_folder, "test/data/folder/",
-                        0x0000001E);
+                        0x0000001D);
 }
 
 TEST(fs_diskjs, jsitem_prs_file_mf__param_check)

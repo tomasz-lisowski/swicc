@@ -7,8 +7,16 @@
 typedef struct uicc_fs_s uicc_fs_st;
 typedef struct uicc_disk_tree_s uicc_disk_tree_st;
 
-#define UICC_FS_NAME_LEN_MAX 16U
+/**
+ * Names and AIDs are equivalent in the standard. In this implementation, DFs
+ * and MFs have a name which doesn't have any restrictions apart from length.
+ * ADFs only have an AID which is more constrained to conform to the AID format.
+ */
+#define UICC_FS_NAME_LEN 16U
 #define UICC_FS_DEPTH_MAX 3U
+#define UICC_FS_ADF_AID_RID_LEN 5U
+#define UICC_FS_ADF_AID_PIX_LEN 11U
+#define UICC_FS_ADF_AID_LEN (UICC_FS_ADF_AID_RID_LEN + UICC_FS_ADF_AID_PIX_LEN)
 
 /**
  * These values are used when a file does not have an ID and/or SID. This also
@@ -16,10 +24,6 @@ typedef struct uicc_disk_tree_s uicc_disk_tree_st;
  */
 #define UICC_FS_ID_MISSING 0U
 #define UICC_FS_SID_MISSING 0U
-
-#define UICC_FS_ADF_AID_RID_LEN 5U
-#define UICC_FS_ADF_AID_PIX_LEN 11U
-#define UICC_FS_ADF_AID_LEN (UICC_FS_ADF_AID_RID_LEN + UICC_FS_ADF_AID_PIX_LEN)
 
 typedef enum uicc_fs_item_type_e
 {
@@ -107,29 +111,31 @@ typedef struct uicc_fs_file_hdr_s
 {
     uicc_fs_id_kt id;
     uicc_fs_sid_kt sid;
-    char name[UICC_FS_NAME_LEN_MAX + 1U]; /* +1U for null-terminator */
 } uicc_fs_file_hdr_st;
 typedef struct uicc_fs_file_hdr_raw_s
 {
     uicc_fs_id_kt id;
     uicc_fs_sid_kt sid;
-    char name[UICC_FS_NAME_LEN_MAX + 1U]; /* +1U for null-terminator */
 } __attribute__((packed)) uicc_fs_file_hdr_raw_st;
 
 /* Extra header data of a MF. */
 typedef struct uicc_fs_mf_hdr_s
 {
+    uint8_t name[UICC_FS_NAME_LEN];
 } uicc_fs_mf_hdr_st;
 typedef struct uicc_fs_mf_hdr_raw_s
 {
+    uint8_t name[UICC_FS_NAME_LEN];
 } __attribute__((packed)) uicc_fs_mf_hdr_raw_st;
 
 /* Extra header data of a DF. */
 typedef struct uicc_fs_df_hdr_s
 {
+    uint8_t name[UICC_FS_NAME_LEN];
 } uicc_fs_df_hdr_st;
 typedef struct uicc_fs_df_hdr_raw_s
 {
+    uint8_t name[UICC_FS_NAME_LEN];
 } __attribute__((packed)) uicc_fs_df_hdr_raw_st;
 
 /* Extra header data of a ADF. */

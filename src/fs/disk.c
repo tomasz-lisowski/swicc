@@ -343,10 +343,7 @@ uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
             file_root.hdr_item.type == UICC_FS_ITEM_TYPE_FILE_ADF)
         {
             uint32_t const hdr_len =
-                sizeof(uicc_fs_file_raw_st) +
-                (file_root.hdr_item.type == UICC_FS_ITEM_TYPE_FILE_ADF
-                     ? sizeof(uicc_fs_adf_hdr_raw_st)
-                     : 0U);
+                uicc_fs_item_hdr_raw_size[file_root.hdr_item.type];
             uint32_t stack_data_idx[UICC_FS_DEPTH_MAX] = {hdr_len, 0};
             uint32_t depth = 1U; /* Inside the tree so 1 already. */
             while (depth < UICC_FS_DEPTH_MAX)
