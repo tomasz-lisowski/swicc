@@ -67,6 +67,12 @@ typedef struct uicc_s
      */
     uint16_t buf_tx_len;
 
+    /**
+     * This needs to be outside of internal since it may be needed for
+     * instruction implementation in the proprietary class.
+     */
+    uicc_fs_st fs;
+
     /* This shall not be modified by anything other than the UICC library. */
     struct
     {
@@ -102,14 +108,13 @@ typedef struct uicc_s
         uicc_fsm_state_et fsm_state;
 
         uicc_tp_st tp;
-        uicc_fs_st fs;
         uicc_apduh_ft *apduh_pro; /* For all proprietary classes. */
 
         /**
          * Used for the GET RESPONSE instruction (part of transmission
          * handling). All instructions write their data output to this buffer
          * (if it does not fit in the response being sent back from that
-         * command).
+         * command or if response chaining is being used unconditionally).
          */
         struct
         {

@@ -19,14 +19,10 @@
 typedef struct uicc_va_s
 {
     uicc_disk_tree_st *cur_tree;
-    uicc_fs_file_st cur_root;
+    uicc_fs_file_st cur_adf;
     uicc_fs_file_st cur_df;
     uicc_fs_file_st cur_ef;
-    /**
-     * 'curFile' described in ISO 7816-4:2020 p.22 sec.7.2.1 is
-     * skipped because it will be computed using 'cur_df' and
-     * 'cur_ef'.
-     */
+    uicc_fs_file_st cur_file; /* Derived from cur_df and cur_ef. */
     uicc_fs_rcrd_st cur_rcrd;
 
     /**

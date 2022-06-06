@@ -118,11 +118,14 @@ TEST(fs_disk, uicc_disk_tree_file_foreach__param_check)
 {
     /* These are invalid pointers but they are not NULL. */
     uicc_disk_tree_st *const tree = (uicc_disk_tree_st *)1U;
+    uicc_fs_file_st *const file = (uicc_fs_file_st *)1U;
     fs_file_foreach_cb *const cb = (fs_file_foreach_cb *)1U;
     void *const userdata = (void *)1U;
-    CHECK_EQ(uicc_disk_tree_file_foreach(NULL, cb, userdata),
+    CHECK_EQ(uicc_disk_tree_file_foreach(NULL, file, cb, userdata),
              UICC_RET_PARAM_BAD);
-    CHECK_EQ(uicc_disk_tree_file_foreach(tree, NULL, userdata),
+    CHECK_EQ(uicc_disk_tree_file_foreach(tree, NULL, cb, userdata),
+             UICC_RET_PARAM_BAD);
+    CHECK_EQ(uicc_disk_tree_file_foreach(tree, file, NULL, userdata),
              UICC_RET_PARAM_BAD);
 }
 
@@ -197,10 +200,22 @@ TEST(fs_disk, uicc_disk_tree_file_foreach__disk)
     uicc_disk_st disk;
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                UICC_RET_SUCCESS);
-    CHECK_EQ(uicc_disk_tree_file_foreach(
-                 disk.root, uicc_disk_tree_file_foreach__disk_cb, &data),
-             UICC_RET_SUCCESS);
-    CHECK_EQ(data.valid_count, data.file_count);
+    uicc_fs_file_st file_root;
+    uicc_ret_et const ret_root =
+        uicc_disk_tree_file_root(disk.root, &file_root);
+    if (ret_root == UICC_RET_SUCCESS)
+    {
+
+        CHECK_EQ(uicc_disk_tree_file_foreach(
+                     disk.root, &file_root,
+                     uicc_disk_tree_file_foreach__disk_cb, &data),
+                 UICC_RET_SUCCESS);
+        CHECK_EQ(data.valid_count, data.file_count);
+    }
+    else
+    {
+        WARN("Failed to get the root file of the root tree.");
+    }
     uicc_disk_unload(&disk);
 }
 

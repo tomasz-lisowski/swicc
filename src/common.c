@@ -72,7 +72,7 @@ uicc_ret_et uicc_hexstr_bytearr(char const *const hexstr,
 uicc_ret_et uicc_reset(uicc_st *const uicc_state)
 {
     uicc_ret_et ret = UICC_RET_ERROR;
-    ret = uicc_va_reset(&uicc_state->internal.fs);
+    ret = uicc_va_reset(&uicc_state->fs);
     if (ret != UICC_RET_SUCCESS)
     {
         return ret;
@@ -90,7 +90,7 @@ uicc_ret_et uicc_reset(uicc_st *const uicc_state)
 
 void uicc_terminate(uicc_st *const uicc_state)
 {
-    uicc_disk_unload(&uicc_state->internal.fs.disk);
+    uicc_disk_unload(&uicc_state->fs.disk);
 }
 
 uicc_ret_et uicc_file_lcs(uicc_fs_file_st const *const file, uint8_t *const lcs)

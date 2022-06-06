@@ -88,7 +88,7 @@ void uicc_disk_unload(uicc_disk_st *const disk);
  * @param disk_path Path where to save the disk file.
  * @return Return code.
  */
-uicc_ret_et uicc_disk_save(uicc_disk_st *const disk,
+uicc_ret_et uicc_disk_save(uicc_disk_st const *const disk,
                            char const *const disk_path);
 
 /**
@@ -103,14 +103,18 @@ typedef uicc_ret_et fs_file_foreach_cb(uicc_disk_tree_st *const tree,
                                        uicc_fs_file_st *const file,
                                        void *const userdata);
 /**
- * @brief For every file in a tree, perform some operation.
- * @param tree Tree to iterate through all items in.
+ * @brief For every file in a file, perform some operation.
+ * @param tree Tree which contains the file.
+ * @param file Will perform an action for all files in this file (including the
+ * file itself). If the file is not a folder, the operation will succeed but it
+ * will only be applied on the given file.
  * @param cb A callback that will be run for every item in the tree.
  * @param userdata Pointer to any additional data the user needs access to in
  * the callback.
  * @return Return code.
  */
 uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
+                                        uicc_fs_file_st *const file,
                                         fs_file_foreach_cb *const cb,
                                         void *const userdata);
 
@@ -120,7 +124,7 @@ uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
  * @param tree_iter Where to write the created tree iterator.
  * @return Return code.
  */
-uicc_ret_et uicc_disk_tree_iter(uicc_disk_st *const disk,
+uicc_ret_et uicc_disk_tree_iter(uicc_disk_st const *const disk,
                                 uicc_disk_tree_iter_st *const tree_iter);
 
 /**
@@ -190,7 +194,7 @@ uicc_ret_et uicc_disk_lutsid_rebuild(uicc_disk_st *const disk,
  * success).
  * @return Return code.
  */
-uicc_ret_et uicc_disk_lutsid_lookup(uicc_disk_tree_st *const tree,
+uicc_ret_et uicc_disk_lutsid_lookup(uicc_disk_tree_st const *const tree,
                                     uicc_fs_sid_kt const sid,
                                     uicc_fs_file_st *const file);
 
@@ -203,7 +207,7 @@ uicc_ret_et uicc_disk_lutsid_lookup(uicc_disk_tree_st *const tree,
  * success).
  * @return Return code.
  */
-uicc_ret_et uicc_disk_lutid_lookup(uicc_disk_st *const disk,
+uicc_ret_et uicc_disk_lutid_lookup(uicc_disk_st const *const disk,
                                    uicc_disk_tree_st **const tree,
                                    uicc_fs_id_kt const id,
                                    uicc_fs_file_st *const file);
@@ -217,8 +221,8 @@ uicc_ret_et uicc_disk_lutid_lookup(uicc_disk_st *const disk,
  * @param len Length of the record buffer.
  * @return Return code.
  */
-uicc_ret_et uicc_disk_file_rcrd(uicc_disk_tree_st *const tree,
-                                uicc_fs_file_st *const file,
+uicc_ret_et uicc_disk_file_rcrd(uicc_disk_tree_st const *const tree,
+                                uicc_fs_file_st const *const file,
                                 uicc_fs_rcrd_idx_kt const idx,
                                 uint8_t **const buf, uint8_t *const len);
 
@@ -228,8 +232,8 @@ uicc_ret_et uicc_disk_file_rcrd(uicc_disk_tree_st *const tree,
  * @param file
  * @param rcrd_count Where the record count will be written.
  */
-uicc_ret_et uicc_disk_file_rcrd_cnt(uicc_disk_tree_st *const tree,
-                                    uicc_fs_file_st *const file,
+uicc_ret_et uicc_disk_file_rcrd_cnt(uicc_disk_tree_st const *const tree,
+                                    uicc_fs_file_st const *const file,
                                     uint32_t *const rcrd_cnt);
 
 /**
@@ -240,5 +244,17 @@ uicc_ret_et uicc_disk_file_rcrd_cnt(uicc_disk_tree_st *const tree,
  * @note The file written into the given file struct is guaranteed to be an ADF
  * or MF on success.
  */
-uicc_ret_et uicc_disk_tree_file_root(uicc_disk_tree_st *const tree,
+uicc_ret_et uicc_disk_tree_file_root(uicc_disk_tree_st const *const tree,
                                      uicc_fs_file_st *const file_root);
+
+/**
+ * @brief Get the parent file of a file.
+ * @param tree Tree containing the file and the parent (parent can be the root
+ * of this tree).
+ * @param file File to find parent of.
+ * @param file_parent Where the parent file will be written.
+ * @return Return code.
+ */
+uicc_ret_et uicc_disk_tree_file_parent(uicc_disk_tree_st const *const tree,
+                                       uicc_fs_file_st const *const file,
+                                       uicc_fs_file_st *const file_parent);

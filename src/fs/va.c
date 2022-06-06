@@ -2,6 +2,68 @@
 #include <string.h>
 #include <uicc/uicc.h>
 
+/**
+ * @brief Helper for performing file selection according to the standard. Rules
+ * for modifying the VA are described in ISO 7816-4:2020 p.22 sec.7.2.2.
+ * @param fs
+ * @param tree This tree must contain the file.
+ * @param file File to select.
+ * @return Return code.
+ */
+static uicc_ret_et va_select_file(uicc_fs_st *const fs,
+                                  uicc_disk_tree_st *const tree,
+                                  uicc_fs_file_st const file)
+{
+    uicc_fs_file_st file_root;
+    uicc_ret_et ret = uicc_disk_tree_file_root(tree, &file_root);
+    if (ret == UICC_RET_SUCCESS)
+    {
+        uicc_fs_file_st file_parent;
+        ret = uicc_disk_tree_file_parent(tree, &file, &file_parent);
+        if (ret == UICC_RET_SUCCESS)
+        {
+            switch (file.hdr_item.type)
+            {
+            case UICC_FS_ITEM_TYPE_FILE_MF:
+            case UICC_FS_ITEM_TYPE_FILE_ADF:
+                memset(&fs->va, 0U, sizeof(fs->va));
+                fs->va.cur_tree = tree;
+                fs->va.cur_adf = file;
+                fs->va.cur_df = file;
+                fs->va.cur_file = file;
+                break;
+            case UICC_FS_ITEM_TYPE_FILE_DF:
+                memset(&fs->va, 0U, sizeof(fs->va));
+                fs->va.cur_tree = tree;
+                fs->va.cur_adf = file_root;
+                fs->va.cur_df = file;
+                fs->va.cur_file = file;
+                break;
+            case UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
+            case UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
+            case UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC:
+                /**
+                 * @warning ISO 7816-4:2020 pg.23 sec.7.2.2 states that "When EF
+                 * selection occurs as a side-effect of a C-RP using referencing
+                 * by short EF identifier, curEF may change, while curDF does
+                 * not change" but in this implementation, current DF always
+                 * changes even for selections using SID.
+                 */
+                memset(&fs->va, 0U, sizeof(fs->va));
+                fs->va.cur_tree = tree;
+                fs->va.cur_adf = file_root;
+                fs->va.cur_df = file_parent;
+                fs->va.cur_ef = file;
+                fs->va.cur_file = file;
+                break;
+            default:
+                return UICC_RET_ERROR;
+            }
+        }
+    }
+    return ret;
+}
+
 uicc_ret_et uicc_va_reset(uicc_fs_st *const fs)
 {
     memset(&fs->va, 0U, sizeof(fs->va));
@@ -43,12 +105,7 @@ uicc_ret_et uicc_va_select_adf(uicc_fs_st *const fs, uint8_t const *const aid,
                                    &aid[UICC_FS_ADF_AID_RID_LEN],
                                    pix_len) == 0U)
                         {
-                            /* Got a match. */
-                            memset(&fs->va, 0U, sizeof(fs->va));
-                            fs->va.cur_tree = tree;
-                            fs->va.cur_root = file_root;
-                            fs->va.cur_df = file_root;
-                            return UICC_RET_SUCCESS;
+                            return va_select_file(fs, tree, file_root);
                         }
                     }
                     else
@@ -75,59 +132,11 @@ uicc_ret_et uicc_va_select_file_id(uicc_fs_st *const fs,
     uicc_disk_tree_st *tree;
     uicc_fs_file_st file;
     uicc_ret_et ret = uicc_disk_lutid_lookup(&fs->disk, &tree, fid, &file);
-    if (ret != UICC_RET_SUCCESS)
+    if (ret == UICC_RET_SUCCESS)
     {
-        return ret;
+        return va_select_file(fs, tree, file);
     }
-
-    /**
-     * Rules for modifying the VA are described in ISO 7816-4:2020 p.22
-     * sec.7.2.2.
-     */
-
-    switch (file.hdr_item.type)
-    {
-    case UICC_FS_ITEM_TYPE_FILE_MF:
-    case UICC_FS_ITEM_TYPE_FILE_ADF:
-    case UICC_FS_ITEM_TYPE_FILE_DF:
-        memset(&fs->va, 0U, sizeof(fs->va));
-        fs->va.cur_df = file;
-        break;
-    case UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
-    case UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
-    case UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC: {
-        uicc_fs_file_st file_parent;
-
-        if (uicc_fs_file_prs(
-                tree, file.hdr_item.offset_trel - file.hdr_item.offset_prel,
-                &file_parent) != UICC_RET_SUCCESS ||
-            !(file_parent.hdr_item.type == UICC_FS_ITEM_TYPE_FILE_MF ||
-              file_parent.hdr_item.type == UICC_FS_ITEM_TYPE_FILE_ADF ||
-              file_parent.hdr_item.type == UICC_FS_ITEM_TYPE_FILE_DF))
-        {
-            /* Parent must be a folder. */
-            return UICC_RET_ERROR;
-        }
-        memset(&fs->va, 0U, sizeof(fs->va));
-        fs->va.cur_df = file_parent;
-        fs->va.cur_ef = file;
-        break;
-    }
-    default:
-        return UICC_RET_ERROR;
-    }
-    fs->va.cur_tree = tree;
-
-    uicc_fs_file_st file_root;
-    if (uicc_disk_tree_file_root(tree, &file_root) == UICC_RET_SUCCESS)
-    {
-        fs->va.cur_root = file_root;
-        return UICC_RET_SUCCESS;
-    }
-    else
-    {
-        return UICC_RET_ERROR;
-    }
+    return ret;
 }
 
 uicc_ret_et uicc_va_select_file_sid(uicc_fs_st *const fs,
@@ -138,8 +147,7 @@ uicc_ret_et uicc_va_select_file_sid(uicc_fs_st *const fs,
         uicc_disk_lutsid_lookup(fs->va.cur_tree, sid, &file);
     if (ret == UICC_RET_SUCCESS)
     {
-        fs->va.cur_ef = file;
-        return UICC_RET_SUCCESS;
+        return va_select_file(fs, fs->va.cur_tree, file);
     }
     return ret;
 }
