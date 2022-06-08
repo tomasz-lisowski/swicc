@@ -1,9 +1,9 @@
-#include "uicc/common.h"
-
 #pragma once
 /**
  * ATR = Answer-to-reset
  */
+
+#include "uicc/common.h"
 
 #define UICC_ATR_LEN 25
 

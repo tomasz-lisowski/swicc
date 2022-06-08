@@ -142,9 +142,7 @@ static uicc_ret_et fs_item_str(char *const buf_str, uint16_t *const buf_str_len,
         /* Success by default because while loop may never run. */
         uicc_ret_et ret_item = UICC_RET_SUCCESS;
 
-        uint32_t const hdr_len = item->type == UICC_FS_ITEM_TYPE_FILE_ADF
-                                     ? sizeof(uicc_fs_adf_hdr_raw_st)
-                                     : sizeof(uicc_fs_file_hdr_raw_st);
+        uint32_t const hdr_len = uicc_fs_item_hdr_raw_size[item->type];
 
         if (item->offset_trel + hdr_len > UINT32_MAX)
         {

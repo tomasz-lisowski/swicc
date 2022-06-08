@@ -331,6 +331,7 @@ uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
     uicc_ret_et ret = UICC_RET_ERROR;
 
     uicc_fs_file_st *const file_root = file;
+
     /* Perform the per-file operation also for the tree. */
     ret = cb(tree, file_root, userdata);
     if (ret != UICC_RET_SUCCESS)
@@ -343,7 +344,7 @@ uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
     {
         uint32_t const hdr_len =
             uicc_fs_item_hdr_raw_size[file_root->hdr_item.type];
-        uint32_t stack_data_idx[UICC_FS_DEPTH_MAX] = {hdr_len, 0};
+        uint32_t stack_data_idx[UICC_FS_DEPTH_MAX] = {hdr_len, 0U, 0U};
         uint32_t depth = 1U; /* Inside the tree so 1 already. */
         while (depth < UICC_FS_DEPTH_MAX)
         {
@@ -368,10 +369,7 @@ uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
                 break;
             }
             uint32_t const nstd_hdr_len =
-                sizeof(uicc_fs_file_raw_st) +
-                (file_nstd.hdr_item.type == UICC_FS_ITEM_TYPE_FILE_ADF
-                     ? sizeof(uicc_fs_adf_hdr_raw_st)
-                     : 0U);
+                uicc_fs_item_hdr_raw_size[file_nstd.hdr_item.type];
 
             /* Perform the per-file operation. */
             ret = cb(tree, &file_nstd, userdata);
@@ -685,12 +683,14 @@ uicc_ret_et uicc_disk_lutsid_rebuild(uicc_disk_st *const disk,
     if (ret != UICC_RET_SUCCESS)
     {
         uicc_disk_lutsid_empty(tree);
+        return ret;
     }
     ret =
         uicc_disk_tree_file_foreach(tree, &file_root, lutsid_rebuild_cb, NULL);
     if (ret != UICC_RET_SUCCESS)
     {
         uicc_disk_lutsid_empty(tree);
+        return ret;
     }
     return ret;
 }

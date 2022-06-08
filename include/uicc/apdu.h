@@ -1,12 +1,13 @@
-#include "uicc/common.h"
-#include <assert.h>
-#include <stdbool.h>
-#include <stdint.h>
-
 #pragma once
 /**
  * APDU = Application protocol data unit
  */
+
+#include "uicc/apdu_rc.h"
+#include "uicc/common.h"
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 typedef enum uicc_apdu_cla_ccc_e
 {
@@ -77,6 +78,7 @@ typedef enum uicc_apdu_sw1_e
  */
 typedef struct uicc_apdu_cla_s
 {
+    uint8_t raw;              /* The raw CLA byte. */
     uicc_apdu_cla_ccc_et ccc; /* Command chaining control (CCC) */
     uicc_apdu_cla_sm_et sm;   /* Secure Messaging (SM) indication */
     uicc_apdu_cla_type_et type;

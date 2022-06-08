@@ -1,0 +1,22 @@
+{
+    "disk": [
+        {
+            "type": "file_mf",
+            "name": {
+                "type": "ascii",
+                "contents": "MF"
+            },
+            "id": "3F00",
+            "contents": [
+                {
+                    "type": "file_df",
+                    "name": {
+                        "type": "ascii",
+                        "contents": "TELECOM"
+                    },
+                    "contents": []
+                }
+            ]
+        }
+    ]
+}

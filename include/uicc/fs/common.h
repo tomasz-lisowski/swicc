@@ -45,6 +45,23 @@ typedef enum uicc_fs_item_type_e
 static_assert(UICC_FS_ITEM_TYPE_INVALID == 0U,
               "Invalid file type must be equal to 0");
 
+#define UICC_FS_FILE_FOLDER_CHECK(file_p)                                      \
+    (file_p->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_MF ||                     \
+     file_p->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_DF ||                     \
+     file_p->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_ADF)
+
+#define UICC_FS_FILE_EF_CHECK(file_p)                                          \
+    (file_p->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT ||         \
+     file_p->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED ||         \
+     file_p->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
+
+#define UICC_FS_FILE_EF_BERTLV_CHECK(file_p) (false)
+
+#define UICC_FS_FILE_EF_BERTLV_NOT_CHECK(file_p)                               \
+    (file_p->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT ||         \
+     file_p->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED ||         \
+     file_p->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
+
 /**
  * Life cycle status as specified in ISO 7816-4:2020 p.31 sec.7.4.10 table.15.
  */

@@ -1,4 +1,3 @@
-#include "uicc/apdu.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -230,7 +229,8 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
     {
         /* Unsupported P1/P2 parameters. */
         if (meth == METH_RFU || data_req == DATA_REQ_RFU || meth == METH_DO ||
-            meth == METH_DO_PARENT)
+            meth == METH_DO_PARENT || meth == METH_DF_PARENT ||
+            meth == METH_EF_NESTED || meth == METH_DF_NESTED)
         {
             res->sw1 = UICC_APDU_SW1_CHER_P1P2;
             res->sw2 = 0U;
@@ -253,11 +253,6 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                     &uicc_state->fs,
                     __builtin_bswap16(*(uicc_fs_id_kt *)cmd->data->b));
             }
-            break;
-        case METH_DF_NESTED:
-        case METH_EF_NESTED:
-        case METH_DF_PARENT:
-            ret_select = UICC_RET_ERROR;
             break;
         case METH_DF_NAME:
             /* Check if maybe trying to select an ADF. */
@@ -355,15 +350,15 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
              * ISO 7816-4:2020 p.27 sec.7.4.3 table.11.
              */
             static uint8_t const tags[] = {
-                0x62, /* FCP Template */
-                0x64, /* FMD Template */
+                0x62, /* '6F': FCP Template */
+                0x64, /* '6F': FMD Template */
                 0x6F, /* FCI Template */
-                0x80, /* Data byte count */
-                0x82, /* File descripotor and coding */
-                0x83, /* File ID */
-                0x84, /* DF Name */
-                0x88, /* Short File ID */
-                0x8A, /* Life cycle status */
+                0x80, /* '62': Data byte count */
+                0x82, /* '62': File descriptor. */
+                0x83, /* '62': File ID */
+                0x84, /* '62': DF Name */
+                0x88, /* '62': Short File ID */
+                0x8A, /* '62': Life cycle status */
             };
             static uint32_t const tags_count = sizeof(tags) / sizeof(tags[0U]);
             uicc_dato_bertlv_tag_st bertlv_tags[tags_count];
@@ -383,16 +378,15 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             /* Create data for BER-TLV DOs. */
             uint32_t const data_size_be =
                 __builtin_bswap32(file_selected->data_size);
-            uint16_t const data_id =
+            uint16_t const data_id_be =
                 __builtin_bswap16(file_selected->hdr_file.id);
             uint8_t const data_sid[] = {file_selected->hdr_file.sid};
-            uint8_t lcs_be[1U];
-            uint8_t desc_be[2U];
-            if (uicc_file_lcs(file_selected, &lcs_be[0U]) != UICC_RET_SUCCESS ||
-                uicc_file_descr(file_selected, &desc_be[0U]) !=
-                    UICC_RET_SUCCESS ||
-                uicc_file_data_coding(file_selected, &desc_be[1U]) !=
-                    UICC_RET_SUCCESS)
+            uint8_t lcs_be;
+            uint8_t descr_be[UICC_FS_FILE_DESCR_LEN_MAX];
+            uint8_t descr_len = 0U;
+            if (uicc_fs_file_lcs(file_selected, &lcs_be) != UICC_RET_SUCCESS ||
+                uicc_fs_file_descr(uicc_state->fs.va.cur_tree, file_selected,
+                                   descr_be, &descr_len) != UICC_RET_SUCCESS)
             {
                 res->sw1 = UICC_APDU_SW1_CHER_UNK;
                 res->sw2 = 0U;
@@ -413,17 +407,12 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                 }
                 else
                 {
-                    /* Make sure the encoded DO can fit in the buffer. */
-                    if (enc.len > sizeof(uicc_state->internal.res.b) ||
-                        enc.len > sizeof(res->data.b))
+                    if (enc.len > sizeof(res->data.b))
                     {
                         break;
                     }
-                    /* Safe cast due to the check of encoded len. */
-                    uicc_state->internal.res.len = (uint16_t)enc.len;
-                    uicc_state->internal.res.offset = 0U;
                     bertlv_len = enc.len;
-                    bertlv_buf = uicc_state->internal.res.b;
+                    bertlv_buf = res->data.b;
                 }
 
                 uicc_dato_bertlv_enc_init(&enc, bertlv_buf, bertlv_len);
@@ -458,65 +447,62 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                         uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[3U]) !=
                             UICC_RET_SUCCESS ||
                         (file_selected->hdr_file.sid != 0
-                             ? uicc_dato_bertlv_enc_data(&enc_fcp, data_sid,
-                                                         sizeof(data_sid)) !=
-                                       UICC_RET_SUCCESS ||
-                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                            &bertlv_tags[7U]) !=
-                                       UICC_RET_SUCCESS
+                             ? (uicc_dato_bertlv_enc_data(&enc_fcp, data_sid,
+                                                          sizeof(data_sid)) !=
+                                    UICC_RET_SUCCESS ||
+                                uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                         &bertlv_tags[7U]) !=
+                                    UICC_RET_SUCCESS)
                              : false) ||
-                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[9U]) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[10U]) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_data(&enc_fcp, lcs_be,
+                        uicc_dato_bertlv_enc_data(&enc_fcp, &lcs_be,
                                                   sizeof(lcs_be)) !=
                             UICC_RET_SUCCESS ||
                         uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[8U]) !=
                             UICC_RET_SUCCESS ||
                         (file_selected->hdr_item.type ==
                                  UICC_FS_ITEM_TYPE_FILE_MF
-                             ? uicc_dato_bertlv_enc_data(
-                                   &enc_fcp, file_selected->hdr_spec.mf.name,
-                                   UICC_FS_NAME_LEN) != UICC_RET_SUCCESS ||
-                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                            &bertlv_tags[6U]) !=
-                                       UICC_RET_SUCCESS
+                             ? (uicc_dato_bertlv_enc_data(
+                                    &enc_fcp, file_selected->hdr_spec.mf.name,
+                                    UICC_FS_NAME_LEN) != UICC_RET_SUCCESS ||
+                                uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                         &bertlv_tags[6U]) !=
+                                    UICC_RET_SUCCESS)
                          : file_selected->hdr_item.type ==
                                  UICC_FS_ITEM_TYPE_FILE_DF
-                             ? uicc_dato_bertlv_enc_data(
-                                   &enc_fcp, file_selected->hdr_spec.df.name,
-                                   UICC_FS_NAME_LEN) != UICC_RET_SUCCESS ||
-                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                            &bertlv_tags[6U]) !=
-                                       UICC_RET_SUCCESS
+                             ? (uicc_dato_bertlv_enc_data(
+                                    &enc_fcp, file_selected->hdr_spec.df.name,
+                                    UICC_FS_NAME_LEN) != UICC_RET_SUCCESS ||
+                                uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                         &bertlv_tags[6U]) !=
+                                    UICC_RET_SUCCESS)
                          : file_selected->hdr_item.type ==
                                  UICC_FS_ITEM_TYPE_FILE_ADF
-                             ? uicc_dato_bertlv_enc_data(
-                                   &enc_fcp,
-                                   file_selected->hdr_spec.adf.aid.pix,
-                                   sizeof(
-                                       file_selected->hdr_spec.adf.aid.pix)) !=
-                                       UICC_RET_SUCCESS ||
-                                   uicc_dato_bertlv_enc_data(
-                                       &enc_fcp,
-                                       file_selected->hdr_spec.adf.aid.rid,
-                                       sizeof(file_selected->hdr_spec.adf.aid
-                                                  .rid)) != UICC_RET_SUCCESS ||
-                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                            &bertlv_tags[6U]) !=
-                                       UICC_RET_SUCCESS
+                             ? (uicc_dato_bertlv_enc_data(
+                                    &enc_fcp,
+                                    file_selected->hdr_spec.adf.aid.pix,
+                                    sizeof(
+                                        file_selected->hdr_spec.adf.aid.pix)) !=
+                                    UICC_RET_SUCCESS ||
+                                uicc_dato_bertlv_enc_data(
+                                    &enc_fcp,
+                                    file_selected->hdr_spec.adf.aid.rid,
+                                    sizeof(
+                                        file_selected->hdr_spec.adf.aid.rid)) !=
+                                    UICC_RET_SUCCESS ||
+                                uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                         &bertlv_tags[6U]) !=
+                                    UICC_RET_SUCCESS)
                              : false) ||
                         (file_selected->hdr_file.id != 0
-                             ? uicc_dato_bertlv_enc_data(
-                                   &enc_fcp, (uint8_t *)&data_id,
-                                   sizeof(data_id)) != UICC_RET_SUCCESS ||
-                                   uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                            &bertlv_tags[5U]) !=
-                                       UICC_RET_SUCCESS
+                             ? (uicc_dato_bertlv_enc_data(
+                                    &enc_fcp, (uint8_t *)&data_id_be,
+                                    sizeof(data_id_be)) != UICC_RET_SUCCESS ||
+                                uicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                         &bertlv_tags[5U]) !=
+                                    UICC_RET_SUCCESS)
                              : false) ||
-                        uicc_dato_bertlv_enc_data(&enc_fcp, desc_be,
-                                                  sizeof(desc_be)) !=
+                        uicc_dato_bertlv_enc_data(&enc_fcp, descr_be,
+                                                  descr_len) !=
                             UICC_RET_SUCCESS ||
                         uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[4U]) !=
                             UICC_RET_SUCCESS ||
@@ -565,39 +551,32 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                     break;
                 }
             }
-            if (ret_bertlv == UICC_RET_SUCCESS)
+
+            /**
+             * Check if BER-TLV creation succeeded and if enqueueing of the
+             * BER-TLV DO succeeded.
+             */
+            if (ret_bertlv == UICC_RET_SUCCESS &&
+                uicc_apdu_rc_enq(&uicc_state->apdu_rc, res->data.b,
+                                 bertlv_len) == UICC_RET_SUCCESS)
             {
-                if (bertlv_len > 0)
-                {
-                    res->sw1 = UICC_APDU_SW1_NORM_BYTES_AVAILABLE;
-                    /**
-                     * @todo What happens when extended APDUs are supported and
-                     * length of response does not fit in SW2? For now work
-                     * around is to static assert that only short APDUs are
-                     * used.
-                     */
-                    static_assert(UICC_DATA_MAX == UICC_DATA_MAX_SHRT,
-                                  "Response buffer length might not fit in SW2 "
-                                  "if SW1 is 0x61");
-                    /* Safe cast due check inside the BER-TLV loop. */
-                    res->sw2 = (uint8_t)bertlv_len;
-                }
-                else
-                {
-                    res->sw1 = UICC_APDU_SW1_NORM_NONE;
-                }
+                res->sw1 = UICC_APDU_SW1_NORM_BYTES_AVAILABLE;
+                /**
+                 * @todo What happens when extended APDUs are supported and
+                 * length of response does not fit in SW2? For now work
+                 * around is to static assert that only short APDUs are
+                 * used.
+                 */
+                static_assert(UICC_DATA_MAX == UICC_DATA_MAX_SHRT,
+                              "Response buffer length might not fit in SW2 "
+                              "if SW1 is 0x61");
+                /* Safe cast due to check inside the BER-TLV loop. */
+                res->sw2 = (uint8_t)bertlv_len;
                 res->data.len = 0U;
                 return UICC_RET_SUCCESS;
             }
             else
             {
-                /**
-                 * Reset the response buffer just to be sure the next call to
-                 * retrieve this data will get no bytes.
-                 */
-                uicc_state->internal.res.len = 0U;
-                uicc_state->internal.res.offset = 0U;
-
                 res->sw1 = UICC_APDU_SW1_CHER_UNK;
                 res->sw2 = 0U;
                 res->data.len = 0U;
@@ -1128,64 +1107,49 @@ static uicc_ret_et apduh_res_get(uicc_st *const uicc_state,
         return UICC_RET_SUCCESS;
     }
 
-    /**
-     * Safe cast since will not overflow and len is always greater or equal to
-     * the offset.
-     */
-    uint16_t const res_len_available =
-        (uint16_t)(uicc_state->internal.res.len -
-                   uicc_state->internal.res.offset);
-
-    if (res_len_available < *cmd->p3)
+    uint32_t rc_len = *cmd->p3;
+    uicc_ret_et const ret_rc =
+        uicc_apdu_rc_deq(&uicc_state->apdu_rc, res->data.b, &rc_len);
+    if (ret_rc == UICC_RET_SUCCESS)
     {
-        res->sw1 = UICC_APDU_SW1_WARN_NVM_CHGN;
-        res->sw2 = 0x82; /* "End of file, record or DO reached before reading Ne
-                            bytes, or unsuccessful search" */
-        res->data.len = 0U;
-        return UICC_RET_SUCCESS;
-    }
-    else if (res_len_available == *cmd->p3)
-    {
-        res->sw1 = UICC_APDU_SW1_NORM_NONE;
-        res->sw2 = 0U;
-        res->data.len = *cmd->p3;
-        memcpy(res->data.b, uicc_state->internal.res.b, *cmd->p3);
-        /* Progress offset of response by num of bytes read. */
-        uicc_state->internal.res.offset = uicc_state->internal.res.len;
-        return UICC_RET_SUCCESS;
-    }
-    else
-    {
-        /* Safe cast since available len is greater than P3. */
-        uint16_t const res_len_remaining =
-            (uint16_t)(res_len_available - *cmd->p3);
-        if (res_len_remaining > UINT8_MAX)
+        uint32_t const rc_len_rem = uicc_apdu_rc_len_rem(&uicc_state->apdu_rc);
+        if (rc_len_rem > 0U)
         {
-            /* Did not expect the remaining length to not fit in SW2. */
-            res->sw1 = UICC_APDU_SW1_CHER_UNK;
-            res->sw2 = 0U;
-            res->data.len = 0U;
+            res->sw1 = UICC_APDU_SW1_NORM_BYTES_AVAILABLE;
+            if (rc_len_rem > UINT8_MAX)
+            {
+                /**
+                 * Can't indicate the real length remaining so just setting it
+                 * to max.
+                 */
+                res->sw2 = 0xFF;
+            }
+            else
+            {
+                /* Safe cast since if checks if leq uint8 max. */
+                res->sw2 = (uint8_t)rc_len_rem;
+            }
+            res->data.len = *cmd->p3;
             return UICC_RET_SUCCESS;
         }
         else
         {
-            res->sw1 = UICC_APDU_SW1_NORM_BYTES_AVAILABLE;
-            /* Safe cast since if checks if leq uint8 max. */
-            res->sw2 = (uint8_t)(res_len_available - *cmd->p3);
+            res->sw1 = UICC_APDU_SW1_NORM_NONE;
+            res->sw2 = 0U;
             res->data.len = *cmd->p3;
-            memcpy(res->data.b, uicc_state->internal.res.b, *cmd->p3);
-            /* Progress offset of response by num of bytes read. */
-            /**
-             * Safe cast since reading less than is available so this will not
-             * surpass length.
-             */
-            uicc_state->internal.res.offset =
-                (uint16_t)(uicc_state->internal.res.offset + *cmd->p3);
             return UICC_RET_SUCCESS;
         }
     }
-
-    return UICC_RET_UNKNOWN;
+    else
+    {
+        /* Not enough data in the RC buffer to give back to the interface. */
+        res->sw1 = UICC_APDU_SW1_WARN_NVM_CHGN;
+        res->sw2 = 0x82; /* "End of file, record or DO reached before
+                            reading Ne bytes, or unsuccessful search" */
+        res->data.len = 0U;
+        return UICC_RET_SUCCESS;
+    }
+    return UICC_RET_ERROR;
 }
 
 uicc_ret_et uicc_apduh_pro_register(uicc_st *const uicc_state,
@@ -1211,6 +1175,31 @@ uicc_ret_et uicc_apduh_demux(uicc_st *const uicc_state,
         ret = UICC_RET_SUCCESS;
         break;
     case UICC_APDU_CLA_TYPE_INTERINDUSTRY:
+        if (cmd->hdr->ins != 0xC0 /* GET RESPONSE instruction */)
+        {
+            /* Make GET RESPONSE deterministically not work if resumed. */
+            uicc_apdu_rc_reset(&uicc_state->apdu_rc);
+        }
+
+        /**
+         * Let the interindustry implementations to be overridden by proprietary
+         * ones.
+         */
+        if (uicc_state->internal.apduh_pro != NULL)
+        {
+            ret = uicc_state->internal.apduh_pro(uicc_state, cmd, res,
+                                                 procedure_count);
+            if (ret == UICC_RET_SUCCESS)
+            {
+                break;
+            }
+            else if (ret != UICC_RET_APDU_UNHANDLED)
+            {
+                /* Something went wrong. */
+                break;
+            }
+        }
+
         ret = uicc_apduh[cmd->hdr->ins](uicc_state, cmd, res, procedure_count);
         break;
     case UICC_APDU_CLA_TYPE_PROPRIETARY:

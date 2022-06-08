@@ -285,7 +285,7 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_id)
     else
     {
         uicc_fs_file_raw_st file_act = {0};
-        uicc_fs_file_raw_st file_exp = {
+        uicc_fs_file_raw_st const file_exp = {
             .hdr_item = {0U},
             .hdr_item.offset_prel = offset_prel,
             .hdr_file =
@@ -317,7 +317,7 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_sid)
     else
     {
         uicc_fs_file_raw_st file_act = {0};
-        uicc_fs_file_raw_st file_exp = {
+        uicc_fs_file_raw_st const file_exp = {
             .hdr_item = {0U},
             .hdr_item.offset_prel = offset_prel,
             .hdr_file =
@@ -351,7 +351,7 @@ TEST(fs_diskjs, jsitem_prs_file_raw__file_w_id_sid)
     else
     {
         uicc_fs_file_raw_st file_act = {0};
-        uicc_fs_file_raw_st file_exp = {
+        uicc_fs_file_raw_st const file_exp = {
             .hdr_item = {0U},
             .hdr_item.offset_prel = offset_prel,
             .hdr_file =
@@ -544,7 +544,7 @@ TEST(fs_diskjs, disk_json_prs__param_check)
 
 TEST(fs_diskjs, disk_json_prs__data)
 {
-    uicc_disk_st disk = {};
+    uicc_disk_st disk = {0U};
     TEST_DATA_FOREACH("test/data/disk/", {
         cJSON *const obj = cJSON_ParseWithLength((char *)buf_in, buf_in_len);
         if (obj == NULL)

@@ -104,6 +104,12 @@ static uicc_ret_et jsitem_prs_file_raw(cJSON const *const item_json,
                     ret_id = UICC_RET_SUCCESS;
                 }
             }
+            else
+            {
+                printf(
+                    "File: ID ('%s') length invalid (got %lu, expected 4).\n",
+                    id_str, strlen(id_str));
+            }
         }
         else
         {
@@ -131,6 +137,12 @@ static uicc_ret_et jsitem_prs_file_raw(cJSON const *const item_json,
                     file_raw->hdr_file.sid = sid;
                     ret_sid = UICC_RET_SUCCESS;
                 }
+            }
+            else
+            {
+                printf(
+                    "File: SID ('%s') length invalid (got %lu, expected 2).\n",
+                    sid_str, strlen(sid_str));
             }
         }
         else
@@ -219,6 +231,10 @@ static uicc_ret_et jsitem_prs_demux(cJSON const *const item_json,
             }
         }
     }
+    else
+    {
+        printf("Item: 'type' missing or not of type: string.\n");
+    }
     return ret;
 }
 
@@ -298,6 +314,10 @@ static uicc_ret_et jsitem_prs_file_folder(cJSON const *const item_json,
                 ret = UICC_RET_ERROR;
             }
         }
+    }
+    else
+    {
+        printf("Folder: 'contents' missing or not of type: null, array.\n");
     }
     return ret;
 }
@@ -387,6 +407,9 @@ static uicc_ret_et jsitem_prs_file_adf(cJSON const *const item_json,
                  */
                 if (aid_len < UICC_FS_ADF_AID_RID_LEN)
                 {
+                    printf("File ADF: AID is too short to contain the RID (got "
+                           "%u, expected >=%u).\n",
+                           aid_len, UICC_FS_ADF_AID_RID_LEN);
                     ret = UICC_RET_ERROR;
                 }
                 else
@@ -420,6 +443,10 @@ static uicc_ret_et jsitem_prs_file_adf(cJSON const *const item_json,
                 }
             }
         }
+    }
+    else
+    {
+        printf("File ADF: 'name' is missing or not of type: object.\n");
     }
     return ret;
 }
@@ -497,6 +524,10 @@ static uicc_ret_et jsitem_prs_file_df(cJSON const *const item_json,
             ret = UICC_RET_BUFFER_TOO_SHORT;
         }
     }
+    else
+    {
+        printf("File DF/MF: 'name' is missing or not of type: object.\n");
+    }
     return ret;
 }
 
@@ -555,6 +586,11 @@ static uicc_ret_et jsitem_prs_file_ef_transparent(cJSON const *const item_json,
             {
                 contents_len = 0U;
                 ret_data = UICC_RET_SUCCESS;
+            }
+            else
+            {
+                printf("File EF transparent: 'contents' missing or not of "
+                       "type: null, object.\n");
             }
 
             if (ret_data == UICC_RET_SUCCESS)
@@ -677,6 +713,11 @@ static uicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
                         ret_item = UICC_RET_BUFFER_TOO_SHORT;
                     }
                 }
+                else
+                {
+                    printf("File EF linear-fixed/cyclic: 'contents' missing or "
+                           "not of type: null, array.\n");
+                }
 
                 /**
                  * The buffer size was already checked and the items + header
@@ -693,6 +734,11 @@ static uicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
                     *buf_len = file_raw->hdr_item.size;
                 }
                 ret = ret_item;
+            }
+            else
+            {
+                printf("File EF linear-fixed/cyclic: 'rcrd_size' missing or "
+                       "not of type: number.\n");
             }
         }
     }
@@ -772,6 +818,9 @@ static uicc_ret_et prs_bertlv(cJSON const *const bertlv_json,
                 double const cla_raw = cJSON_GetNumberValue(tag_class_obj);
                 if (cla_raw > UINT32_MAX || cla_raw < 0)
                 {
+                    printf("Item dato BER-TLV: CLA is outside of the valid "
+                           "range (got %lf, expected <%lf and >%lf).\n",
+                           cla_raw, (double)UINT32_MAX, cla_raw);
                     return UICC_RET_ERROR;
                 }
 
@@ -904,6 +953,16 @@ static uicc_ret_et prs_bertlv(cJSON const *const bertlv_json,
                     }
                 }
             }
+            else
+            {
+                printf("Item dato BER-TLV: 'class' missing or not of type: "
+                       "number, or 'number' missing or not of type: number.\n");
+            }
+        }
+        else
+        {
+            printf("Item dato BER-TLV: 'tag' missing or not of type: null, "
+                   "object, or 'val' missing or not of type: null, array.\n");
         }
     }
     return UICC_RET_ERROR;
@@ -978,7 +1037,17 @@ static uicc_ret_et jsitem_prs_item_dato_bertlv(cJSON const *const item_json,
         {
             *buf_len = enc_buf_len;
         }
+        else
+        {
+            printf("Item dato BER-TLV: Failed to parse the JSON representation "
+                   "into a BER-TLV DO.\n");
+        }
         ret = ret_enc;
+    }
+    else
+    {
+        printf("Item dato BER-TLV: 'contents' missing or not of type: null, "
+               "object.\n");
     }
     return ret;
 }
@@ -1019,7 +1088,7 @@ static uicc_ret_et jsitem_prs_item_hex(cJSON const *const item_json,
         if (contents_str != NULL)
         {
             uint64_t const hexstr_len = strlen(contents_str);
-            if (hexstr_len <= UINT32_MAX)
+            if (hexstr_len <= UINT32_MAX && hexstr_len % 2U == 0U)
             {
                 uint32_t bytearr_len = *buf_len;
                 /* Safe cast due to the boundary check. */
@@ -1038,7 +1107,17 @@ static uicc_ret_et jsitem_prs_item_hex(cJSON const *const item_json,
                     }
                 }
             }
+            else
+            {
+                printf("Item hex: hex string has an invalid length (got %lu, "
+                       "expected <=%u and multiple of 2).\n",
+                       hexstr_len, UINT32_MAX);
+            }
         }
+    }
+    else
+    {
+        printf("Item hex: 'contents' missing or not of type: null, string.\n");
     }
     return ret;
 }
@@ -1093,7 +1172,18 @@ static uicc_ret_et jsitem_prs_item_ascii(cJSON const *const item_json,
                     ret = UICC_RET_BUFFER_TOO_SHORT;
                 }
             }
+            else
+            {
+                printf("Item ASCII: ASCII string is too long (got %lu, "
+                       "expected <=%u).\n",
+                       ascii_len, UINT32_MAX);
+            }
         }
+    }
+    else
+    {
+        printf(
+            "Item ASCII: 'contents' missing or not of type: null, string.\n");
     }
     return ret;
 }
@@ -1131,7 +1221,7 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
     uicc_ret_et ret = UICC_RET_SUCCESS;
     if (disk->root != NULL)
     {
-        /* Old disk must be unloaded first. */
+        printf("Root: old disk must be unloaded first.\n");
         return UICC_RET_ERROR;
     }
 
@@ -1152,6 +1242,8 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
                 tree = malloc(sizeof(*tree));
                 if (tree == NULL)
                 {
+                    printf("Tree: failed to allocate space for a tree struct "
+                           "for the root tree.\n");
                     /* Nothing should have been allocated before. */
                     ret = UICC_RET_ERROR;
                     break;
@@ -1163,6 +1255,8 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
                 tree->next = malloc(sizeof(*tree));
                 if (tree->next == NULL)
                 {
+                    printf("Tree: failed to allocate a tree struct for next "
+                           "tree.\n");
                     ret = UICC_RET_ERROR;
                     break;
                 }
@@ -1173,6 +1267,7 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
             tree->buf = malloc(DISK_SIZE_START);
             if (tree->buf == NULL)
             {
+                printf("Tree: failed to allocate a tree buffer.\n");
                 ret = UICC_RET_ERROR;
                 break;
             }
@@ -1195,9 +1290,8 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
                             tree->size + DISK_SIZE_RESIZE;
                         if (tree_buf_size_new > UINT32_MAX)
                         {
-                            /**
-                             * Tree buffer size limit has been reached.
-                             */
+                            printf(
+                                "Tree: buffer size limit has been reached.\n");
                             ret = UICC_RET_ERROR;
                             /**
                              * No break because we still have to update the tree
@@ -1212,13 +1306,23 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
                     }
                     else
                     {
+                        printf("Tree: failed to realloc tree buffer from %u "
+                               "bytes to %u bytes.\n",
+                               tree->size, tree->size + DISK_SIZE_RESIZE);
                         ret = UICC_RET_ERROR;
                         break;
                     }
                 }
+                else if (ret != UICC_RET_SUCCESS)
+                {
+                    printf("Tree: failed to parse tree JSON: %s.\n",
+                           uicc_dbg_ret_str(ret));
+                }
             } while (ret == UICC_RET_BUFFER_TOO_SHORT);
             if (ret != UICC_RET_SUCCESS)
             {
+                printf("Tree: failed to parse tree contents: %s.\n",
+                       uicc_dbg_ret_str(ret));
                 break;
             }
 
@@ -1229,12 +1333,6 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
              */
             tree->len = item_size;
 
-            /**
-             * Unsafe case which relies on there being fewer than 256 trees in
-             * the root.
-             */
-            tree_count = (uint8_t)(tree_count + 1U);
-
             ret = uicc_disk_lutsid_rebuild(disk, tree);
             if (ret != UICC_RET_SUCCESS)
             {
@@ -1242,8 +1340,16 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
                  * No need to clean up SID LUT since this will be done when
                  * whole root get emptied due to this error.
                  */
+                printf("Tree: failed to create the SID LUT: %s.\n",
+                       uicc_dbg_ret_str(ret));
                 break;
             }
+
+            /**
+             * Unsafe case which relies on there being fewer than 256 trees in
+             * the root.
+             */
+            tree_count = (uint8_t)(tree_count + 1U);
         }
 
         /* Make sure the forest has been created successfully. */
@@ -1252,6 +1358,9 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
             uicc_disk_root_empty(disk);
             memset(disk, 0U, sizeof(*disk));
             ret = UICC_RET_ERROR;
+            printf("Root: failed to create the forest of trees (parsed %u "
+                   "trees): %s.\n",
+                   tree_count, uicc_dbg_ret_str(ret));
         }
         ret = uicc_disk_lutid_rebuild(disk);
         if (ret != UICC_RET_SUCCESS)
@@ -1261,6 +1370,7 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
     }
     else
     {
+        printf("Root: 'disk' missing or not of type: object.\n");
         ret = UICC_RET_ERROR;
     }
     return ret;
@@ -1269,10 +1379,12 @@ static uicc_ret_et disk_json_prs(uicc_disk_st *const disk,
 uicc_ret_et uicc_diskjs_disk_create(uicc_disk_st *const disk,
                                     char const *const disk_json_path)
 {
-    /**
-     * @todo Check if a disk exists inside the given disk, if so, unload it or
-     * fail.
-     */
+    /* Need to unload old disk to create a new one in its place. */
+    if (disk->root != NULL || disk->lutid.buf1 != NULL ||
+        disk->lutid.buf2 != NULL)
+    {
+        return UICC_RET_ERROR;
+    }
     memset(disk, 0U, sizeof(*disk));
     uicc_ret_et ret = UICC_RET_ERROR;
     FILE *f = fopen(disk_json_path, "rb");

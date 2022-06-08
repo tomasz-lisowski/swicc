@@ -43,7 +43,7 @@ TEST(fs_disk, uicc_disk_save__disk)
         memset(disk_buf, 0U, disk_filesize);
 
         char const *const disk_path = "build/tmp/3LkgKmhtzapMe5bz.uicc";
-        uicc_disk_st disk;
+        uicc_disk_st disk = {0U};
         REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                    UICC_RET_SUCCESS);
         uint32_t const lutid_size =
@@ -81,7 +81,7 @@ TEST(fs_disk, uicc_disk_load__disk)
 
         char const *const disk_path0 = "build/tmp/Z0fnnIBCykwwaiLJ.uicc";
         char const *const disk_path1 = "build/tmp/mP2F0I8XMnzLhBzR.uicc";
-        uicc_disk_st disk;
+        uicc_disk_st disk = {0U};
         REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                    UICC_RET_SUCCESS);
         uint32_t const lutid_size =
@@ -106,8 +106,8 @@ TEST(fs_disk, uicc_disk_load__disk)
 
 TEST(fs_disk, uicc_disk_unload__disk)
 {
-    uicc_disk_st disk_zero = {0U};
-    uicc_disk_st disk;
+    uicc_disk_st const disk_zero = {0U};
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                UICC_RET_SUCCESS);
     uicc_disk_unload(&disk);
@@ -197,7 +197,7 @@ TEST(fs_disk, uicc_disk_tree_file_foreach__disk)
 {
     uicc_disk_tree_file_foreach__disk_userdata_st data = {.file_count = 0U,
                                                           .valid_count = 0U};
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                UICC_RET_SUCCESS);
     uicc_fs_file_st file_root;
@@ -229,7 +229,7 @@ TEST(fs_disk, uicc_disk_tree_iter__param_check)
 
 TEST(fs_disk, uicc_disk_tree_iter__disk)
 {
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                UICC_RET_SUCCESS);
     uicc_disk_tree_iter_st tree_iter;
@@ -249,7 +249,7 @@ TEST(fs_disk, uicc_disk_tree_iter_next__param_check)
 
 TEST(fs_disk, uicc_disk_tree_iter_next__disk)
 {
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                UICC_RET_SUCCESS);
     uicc_disk_tree_iter_st tree_iter;
@@ -272,7 +272,7 @@ TEST(fs_disk, uicc_disk_tree_iter_idx__param_check)
 
 TEST(fs_disk, uicc_disk_tree_iter_idx__disk_ordered)
 {
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/005-in.json"),
                UICC_RET_SUCCESS);
     uicc_disk_tree_iter_st tree_iter;
@@ -294,7 +294,7 @@ TEST(fs_disk, uicc_disk_tree_iter_idx__disk_ordered)
 
 TEST(fs_disk, uicc_disk_tree_iter_idx__disk_unordered)
 {
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/005-in.json"),
                UICC_RET_SUCCESS);
     uicc_disk_tree_iter_st tree_iter;
@@ -313,8 +313,8 @@ TEST(fs_disk, uicc_disk_tree_iter_idx__disk_unordered)
 
 TEST(fs_disk, uicc_disk_root_empty__disk)
 {
-    uicc_disk_lut_st lutid_zero = {0};
-    uicc_disk_st disk;
+    uicc_disk_lut_st const lutid_zero = {0};
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                UICC_RET_SUCCESS);
     uicc_disk_root_empty(&disk);
@@ -326,8 +326,8 @@ TEST(fs_disk, uicc_disk_root_empty__disk)
 
 TEST(fs_disk, uicc_disk_lutsid_empty__disk)
 {
-    uicc_disk_lut_st lutsid_zero = {0};
-    uicc_disk_st disk;
+    uicc_disk_lut_st const lutsid_zero = {0};
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                UICC_RET_SUCCESS);
     uicc_disk_lutsid_empty(disk.root);
@@ -338,8 +338,8 @@ TEST(fs_disk, uicc_disk_lutsid_empty__disk)
 
 TEST(fs_disk, uicc_disk_lutid_empty__disk)
 {
-    uicc_disk_lut_st lutid_zero = {0};
-    uicc_disk_st disk;
+    uicc_disk_lut_st const lutid_zero = {0};
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                UICC_RET_SUCCESS);
     uicc_disk_lutid_empty(&disk);
@@ -356,7 +356,7 @@ TEST(fs_disk, uicc_disk_lutid_rebuild__param_check)
 TEST(fs_disk, uicc_disk_lutid_rebuild__disk)
 {
     uicc_disk_lut_st lutid_copy;
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                UICC_RET_SUCCESS);
 
@@ -398,7 +398,7 @@ TEST(fs_disk, uicc_disk_lutsid_rebuild__param_check)
 TEST(fs_disk, uicc_disk_lutsid_rebuild__disk)
 {
     uicc_disk_lut_st lutsid_copy;
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                UICC_RET_SUCCESS);
 
@@ -449,7 +449,7 @@ TEST(fs_disk, uicc_disk_lutsid_lookup__disk)
         {0x63, 0xAD, 0xCF, 0xDD},
     };
 
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/006-in.json"),
                UICC_RET_SUCCESS);
     uicc_disk_tree_iter_st tree_iter;
@@ -529,7 +529,7 @@ TEST(fs_disk, uicc_disk_lutid_lookup__disk)
         0x8EB4, 0xAF09, 0xB1E9, 0xC24A, 0xC3C0, 0xE7C7, 0xE99D, 0xF4F4,
     };
 
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/006-in.json"),
                UICC_RET_SUCCESS);
 
@@ -603,14 +603,14 @@ TEST(fs_disk, uicc_disk_file_rcrd__param_check)
 TEST(fs_disk, uicc_disk_file_rcrd__disk)
 {
     /* Tree -> File */
-    static uicc_fs_id_kt file_rcrd_id[4U][2U] = {
+    static uicc_fs_id_kt const file_rcrd_id[4U][2U] = {
         {0xE99D, 0x5ABD},
         {0x5240, 0xB1E9},
         {0x89E7, 0xC24A},
         {0x8EB4, 0xAF09},
     };
     /* Tree -> File -> Record -> Byte */
-    static uint8_t rcrd_data[4U][2U][3U][16U] = {
+    static uint8_t const rcrd_data[4U][2U][3U][16U] = {
         {
             {
                 {0xF6, 0x72, 0xFF, 0x99, 0x3B, 0x80, 0x83, 0x0F, 0xAE, 0xEE,
@@ -685,7 +685,7 @@ TEST(fs_disk, uicc_disk_file_rcrd__disk)
         },
     };
 
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/006-in.json"),
                UICC_RET_SUCCESS);
 
@@ -788,7 +788,7 @@ TEST(fs_disk, uicc_disk_file_rcrd_cnt__disk)
         {0x8EB4, 0xAF09},
     };
 
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/006-in.json"),
                UICC_RET_SUCCESS);
 
@@ -833,7 +833,7 @@ TEST(fs_disk, uicc_disk_tree_file_root__disk)
     static uicc_fs_id_kt const file_root_id[4U] = {0xE7C7, 0x1217, 0x40B1,
                                                    0xC3C0};
 
-    uicc_disk_st disk;
+    uicc_disk_st disk = {0U};
     REQUIRE_EQ(uicc_diskjs_disk_create(&disk, "test/data/disk/006-in.json"),
                UICC_RET_SUCCESS);
 

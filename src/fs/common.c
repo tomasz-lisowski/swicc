@@ -117,19 +117,15 @@ uicc_ret_et uicc_fs_file_prs(uicc_disk_tree_st const *const tree,
     uicc_fs_file_hdr_prs(file_hdr_raw, &file->hdr_file);
     file->internal.hdr_raw = &tree->buf[offset_trel];
 
-    uint32_t const hdr_size_base =
-        sizeof(uicc_fs_item_hdr_raw_st) + sizeof(uicc_fs_file_hdr_raw_st);
-    uint32_t hdr_size_spec;
     switch (file->hdr_item.type)
     {
-    case UICC_FS_ITEM_TYPE_FILE_MF:
-        hdr_size_spec = sizeof(uicc_fs_mf_hdr_raw_st);
+    case UICC_FS_ITEM_TYPE_FILE_MF: {
         uicc_fs_mf_hdr_raw_st const *const mf_hdr_raw =
             (uicc_fs_mf_hdr_raw_st *)&tree->buf[offset_trel_hdr_spec];
         memcpy(file->hdr_spec.mf.name, mf_hdr_raw->name, UICC_FS_NAME_LEN);
         break;
-    case UICC_FS_ITEM_TYPE_FILE_ADF:
-        hdr_size_spec = sizeof(uicc_fs_adf_hdr_raw_st);
+    }
+    case UICC_FS_ITEM_TYPE_FILE_ADF: {
         uicc_fs_adf_hdr_raw_st const *const adf_hdr_raw =
             (uicc_fs_adf_hdr_raw_st *)&tree->buf[offset_trel_hdr_spec];
         memcpy(file->hdr_spec.adf.aid.rid, adf_hdr_raw->aid.rid,
@@ -137,39 +133,39 @@ uicc_ret_et uicc_fs_file_prs(uicc_disk_tree_st const *const tree,
         memcpy(file->hdr_spec.adf.aid.pix, adf_hdr_raw->aid.pix,
                sizeof(file->hdr_spec.adf.aid.pix));
         break;
-    case UICC_FS_ITEM_TYPE_FILE_DF:
-        hdr_size_spec = sizeof(uicc_fs_df_hdr_raw_st);
+    }
+    case UICC_FS_ITEM_TYPE_FILE_DF: {
         uicc_fs_df_hdr_raw_st const *const df_hdr_raw =
             (uicc_fs_df_hdr_raw_st *)&tree->buf[offset_trel_hdr_spec];
         memcpy(file->hdr_spec.df.name, df_hdr_raw->name, UICC_FS_NAME_LEN);
         break;
-    case UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
-        hdr_size_spec = sizeof(uicc_fs_ef_transparent_hdr_raw_st);
+    }
+    case UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT: {
         static_assert(sizeof(uicc_fs_ef_transparent_hdr_raw_st) == 0,
                       "Transparent EF header is not 0 bytes so need to add "
                       "parsing for extra fields into the file parser");
         break;
-    case UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
-        hdr_size_spec = sizeof(uicc_fs_ef_linearfixed_hdr_raw_st);
+    }
+    case UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED: {
         uicc_fs_ef_linearfixed_hdr_raw_st const *const ef_linearfixed_hdr_raw =
             (uicc_fs_ef_linearfixed_hdr_raw_st *)&tree
                 ->buf[offset_trel_hdr_spec];
         file->hdr_spec.ef_linearfixed.rcrd_size =
             ef_linearfixed_hdr_raw->rcrd_size;
         break;
-    case UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC:
-        hdr_size_spec = sizeof(uicc_fs_ef_cyclic_hdr_raw_st);
+    }
+    case UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC: {
         uicc_fs_ef_cyclic_hdr_raw_st const *const ef_cyclic_hdr_raw =
             (uicc_fs_ef_cyclic_hdr_raw_st *)&tree->buf[offset_trel_hdr_spec];
         file->hdr_spec.ef_cyclic.rcrd_size = ef_cyclic_hdr_raw->rcrd_size;
         break;
-
+    }
     /* For handling anything that is not a valid file type. */
     default:
         return UICC_RET_ERROR;
     }
 
-    uint32_t const hdr_size = hdr_size_base + hdr_size_spec;
+    uint32_t const hdr_size = uicc_fs_item_hdr_raw_size[file->hdr_item.type];
     file->data_size = file->hdr_item.size - hdr_size;
     file->data = &tree->buf[offset_trel + hdr_size];
 

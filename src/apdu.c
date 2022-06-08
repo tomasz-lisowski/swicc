@@ -3,7 +3,8 @@
 
 uicc_apdu_cla_st uicc_apdu_cmd_cla_parse(uint8_t const cla_raw)
 {
-    uicc_apdu_cla_st cla = {0};
+    uicc_apdu_cla_st cla = {0U};
+    cla.raw = cla_raw;
     if (cla_raw >> (8U - 3U) == 0b000U) /* ISO 7816-4:2020 p.13 table.2 */
     {
         cla.lchan = cla_raw & 0b00000011U;
@@ -44,10 +45,10 @@ uicc_apdu_cla_st uicc_apdu_cmd_cla_parse(uint8_t const cla_raw)
         cla.type = UICC_APDU_CLA_TYPE_RFU;
     }
     else if (cla_raw >> (8U - 4U) ==
-                 0b1010U || /* ETSI TS 102 221 V16.4.0 p.76 */
+                 0b1010U || /* ETSI TS 102 221 V16.4.0 p.76 sec.10.1.1. */
              cla_raw >> (8U - 4U) ==
-                 0b1000U /* ETSI TS 102 221 V16.4.0 p.76 and GSM 11.11 4.21.1
-                            pg.32 sec.9.1.*/
+                 0b1000U /* ETSI TS 102 221 V16.4.0 p.76 sec.10.1.1 and
+                            GSM 11.11 4.21.1 pg.32 sec.9.1.*/
     )
     {
         cla.type = UICC_APDU_CLA_TYPE_PROPRIETARY;
