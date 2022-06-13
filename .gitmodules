@@ -1,9 +1,9 @@
 [submodule "lib/make-pal"]
 	path = lib/make-pal
-	url = https://github.com/tomasz-lisowski/make-pal.git
+	url = git@github.com:tomasz-lisowski/make-pal.git
 [submodule "lib/cjson"]
 	path = lib/cjson
-	url = https://github.com/DaveGamble/cJSON.git
+	url = git@github.com:DaveGamble/cJSON.git
 [submodule "lib/tau"]
 	path = lib/tau
-	url = https://github.com/jasmcaus/tau.git
+	url = git@github.com:jasmcaus/tau.git
