@@ -1,8 +1,8 @@
-#include "uicc/fs/common.h"
+#include "swicc/fs/common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <uicc/uicc.h>
+#include <swicc/swicc.h>
 
 /**
  * Used when creating LUTs. The 'start' count determines that size of the
@@ -21,9 +21,9 @@
  * to the item size 2.
  * @return Return code.
  */
-static uicc_ret_et lut_insert(uicc_disk_lut_st *const lut,
-                              uint8_t const *const entry_item1,
-                              uint8_t const *const entry_item2)
+static swicc_ret_et lut_insert(swicc_disk_lut_st *const lut,
+                               uint8_t const *const entry_item1,
+                               uint8_t const *const entry_item2)
 {
     /* Check if need to resize the LUT to fit more items. */
     if (lut->count >= lut->count_max)
@@ -35,7 +35,7 @@ static uicc_ret_et lut_insert(uicc_disk_lut_st *const lut,
         {
             free(buf1_new);
             free(buf2_new);
-            return UICC_RET_ERROR;
+            return SWICC_RET_ERROR;
         }
         lut->buf1 = buf1_new;
         lut->buf2 = buf2_new;
@@ -70,18 +70,18 @@ static uicc_ret_et lut_insert(uicc_disk_lut_st *const lut,
     memcpy(&lut->buf1[lut->size_item1 * start], entry_item1, lut->size_item1);
     memcpy(&lut->buf2[lut->size_item2 * start], entry_item2, lut->size_item2);
     lut->count += 1U;
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_disk_load(uicc_disk_st *const disk,
-                           char const *const disk_path)
+swicc_ret_et swicc_disk_load(swicc_disk_st *const disk,
+                             char const *const disk_path)
 {
     if (disk == NULL || disk_path == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
-    uicc_ret_et ret = UICC_RET_ERROR;
+    swicc_ret_et ret = SWICC_RET_ERROR;
     if (disk->root != NULL)
     {
         /* Get rid of the current disk first before loading a new one. */
@@ -101,21 +101,21 @@ uicc_ret_et uicc_disk_load(uicc_disk_st *const disk,
             {
                 if (fseek(f, 0, SEEK_SET) == 0)
                 {
-                    uint8_t magic_expected[UICC_DISK_MAGIC_LEN] =
-                        UICC_DISK_MAGIC;
-                    uint8_t magic[UICC_DISK_MAGIC_LEN];
-                    if (fread(&magic, UICC_DISK_MAGIC_LEN, 1U, f) == 1U)
+                    uint8_t magic_expected[SWICC_DISK_MAGIC_LEN] =
+                        SWICC_DISK_MAGIC;
+                    uint8_t magic[SWICC_DISK_MAGIC_LEN];
+                    if (fread(&magic, SWICC_DISK_MAGIC_LEN, 1U, f) == 1U)
                     {
                         if (memcmp(magic, magic_expected,
-                                   UICC_DISK_MAGIC_LEN) == 0)
+                                   SWICC_DISK_MAGIC_LEN) == 0)
                         {
                             /**
                              * Parse the root (forest of trees) contained in the
                              * file.
                              */
-                            uicc_disk_tree_st *tree = NULL;
-                            uicc_ret_et ret_item = UICC_RET_SUCCESS;
-                            uint32_t data_idx = UICC_DISK_MAGIC_LEN;
+                            swicc_disk_tree_st *tree = NULL;
+                            swicc_ret_et ret_item = SWICC_RET_SUCCESS;
+                            uint32_t data_idx = SWICC_DISK_MAGIC_LEN;
                             uint8_t tree_idx = 0U;
                             /**
                              * Assume the file length matches the disk length
@@ -129,7 +129,7 @@ uicc_ret_et uicc_disk_load(uicc_disk_st *const disk,
                                     tree = malloc(sizeof(*tree));
                                     if (tree == NULL)
                                     {
-                                        ret_item = UICC_RET_ERROR;
+                                        ret_item = SWICC_RET_ERROR;
                                         break;
                                     }
                                     disk->root = tree;
@@ -139,7 +139,7 @@ uicc_ret_et uicc_disk_load(uicc_disk_st *const disk,
                                     tree->next = malloc(sizeof(*tree));
                                     if (tree->next == NULL)
                                     {
-                                        ret_item = UICC_RET_ERROR;
+                                        ret_item = SWICC_RET_ERROR;
                                         break;
                                     }
                                     tree = tree->next;
@@ -147,30 +147,30 @@ uicc_ret_et uicc_disk_load(uicc_disk_st *const disk,
                                 memset(tree, 0U, sizeof(*tree));
 
                                 /* Got a header. */
-                                uicc_fs_item_hdr_raw_st item_hdr_raw;
-                                uicc_fs_item_hdr_st item_hdr;
+                                swicc_fs_item_hdr_raw_st item_hdr_raw;
+                                swicc_fs_item_hdr_st item_hdr;
                                 if (fread(&item_hdr_raw, sizeof(item_hdr_raw),
                                           1U, f) != 1U)
                                 {
-                                    ret_item = UICC_RET_ERROR;
+                                    ret_item = SWICC_RET_ERROR;
                                     break;
                                 }
-                                uicc_fs_item_hdr_prs(&item_hdr_raw, 0U,
-                                                     &item_hdr);
+                                swicc_fs_item_hdr_prs(&item_hdr_raw, 0U,
+                                                      &item_hdr);
                                 /**
                                  * Make sure all trees are valid, the first
                                  * one is the MF, and all other ones are ADFs.
                                  */
                                 if (item_hdr.type ==
-                                        UICC_FS_ITEM_TYPE_INVALID ||
+                                        SWICC_FS_ITEM_TYPE_INVALID ||
                                     (tree_idx == 0 &&
                                      item_hdr.type !=
-                                         UICC_FS_ITEM_TYPE_FILE_MF) ||
+                                         SWICC_FS_ITEM_TYPE_FILE_MF) ||
                                     (tree_idx != 0 &&
                                      item_hdr.type !=
-                                         UICC_FS_ITEM_TYPE_FILE_ADF))
+                                         SWICC_FS_ITEM_TYPE_FILE_ADF))
                                 {
-                                    ret_item = UICC_RET_ERROR;
+                                    ret_item = SWICC_RET_ERROR;
                                     break;
                                 }
 
@@ -181,7 +181,7 @@ uicc_ret_et uicc_disk_load(uicc_disk_st *const disk,
                                 tree->buf = malloc(item_hdr.size);
                                 if (tree->buf == NULL)
                                 {
-                                    ret_item = UICC_RET_ERROR;
+                                    ret_item = SWICC_RET_ERROR;
                                     break;
                                 }
                                 tree->size = item_hdr.size;
@@ -197,7 +197,7 @@ uicc_ret_et uicc_disk_load(uicc_disk_st *const disk,
                                           1U, f);
                                 if (fred_ret != 1U)
                                 {
-                                    ret_item = UICC_RET_ERROR;
+                                    ret_item = SWICC_RET_ERROR;
                                     break;
                                 }
                                 /* Copy the header. */
@@ -228,43 +228,43 @@ uicc_ret_et uicc_disk_load(uicc_disk_st *const disk,
         }
         if (fclose(f) != 0)
         {
-            ret = UICC_RET_ERROR;
+            ret = SWICC_RET_ERROR;
         }
     }
-    if (ret != UICC_RET_SUCCESS)
+    if (ret != SWICC_RET_SUCCESS)
     {
-        uicc_disk_root_empty(disk);
+        swicc_disk_root_empty(disk);
     }
     else
     {
         /* Create all the LUTs. */
-        uicc_disk_tree_st *tree = disk->root;
+        swicc_disk_tree_st *tree = disk->root;
         if (tree == NULL)
         {
-            ret = UICC_RET_ERROR;
+            ret = SWICC_RET_ERROR;
         }
         while (tree != NULL)
         {
-            ret = uicc_disk_lutsid_rebuild(disk, tree);
-            if (ret != UICC_RET_SUCCESS)
+            ret = swicc_disk_lutsid_rebuild(disk, tree);
+            if (ret != SWICC_RET_SUCCESS)
             {
                 break;
             }
             tree = tree->next;
         }
-        if (ret == UICC_RET_SUCCESS)
+        if (ret == SWICC_RET_SUCCESS)
         {
-            ret = uicc_disk_lutid_rebuild(disk);
+            ret = swicc_disk_lutid_rebuild(disk);
         }
     }
-    if (ret != UICC_RET_SUCCESS)
+    if (ret != SWICC_RET_SUCCESS)
     {
-        uicc_disk_root_empty(disk);
+        swicc_disk_root_empty(disk);
     }
     return ret;
 }
 
-void uicc_disk_unload(uicc_disk_st *const disk)
+void swicc_disk_unload(swicc_disk_st *const disk)
 {
     if (disk == NULL)
     {
@@ -276,77 +276,77 @@ void uicc_disk_unload(uicc_disk_st *const disk)
     }
 
     /* This also frees the SID LUT of all trees. */
-    uicc_disk_root_empty(disk);
+    swicc_disk_root_empty(disk);
 
-    uicc_disk_lutid_empty(disk);
+    swicc_disk_lutid_empty(disk);
     memset(disk, 0U, sizeof(*disk));
 }
 
-uicc_ret_et uicc_disk_save(uicc_disk_st const *const disk,
-                           char const *const disk_path)
+swicc_ret_et swicc_disk_save(swicc_disk_st const *const disk,
+                             char const *const disk_path)
 {
     if (disk == NULL || disk_path == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
-    uicc_ret_et ret = UICC_RET_ERROR;
+    swicc_ret_et ret = SWICC_RET_ERROR;
     FILE *f = fopen(disk_path, "wb");
     if (f != NULL)
     {
-        uint8_t magic[UICC_DISK_MAGIC_LEN] = UICC_DISK_MAGIC;
-        if (fwrite(magic, UICC_DISK_MAGIC_LEN, 1U, f) == 1U)
+        uint8_t magic[SWICC_DISK_MAGIC_LEN] = SWICC_DISK_MAGIC;
+        if (fwrite(magic, SWICC_DISK_MAGIC_LEN, 1U, f) == 1U)
         {
-            uicc_disk_tree_st *tree = disk->root;
+            swicc_disk_tree_st *tree = disk->root;
             while (tree != NULL)
             {
                 if (fwrite(tree->buf, tree->len, 1U, f) != 1U)
                 {
-                    ret = UICC_RET_ERROR;
+                    ret = SWICC_RET_ERROR;
                     break;
                 }
                 tree = tree->next;
-                ret = UICC_RET_SUCCESS;
+                ret = SWICC_RET_SUCCESS;
             }
         }
         if (fclose(f) != 0)
         {
-            ret = UICC_RET_ERROR;
+            ret = SWICC_RET_ERROR;
         }
     }
     return ret;
 }
 
-uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
-                                        uicc_fs_file_st *const file,
-                                        fs_file_foreach_cb *const cb,
-                                        void *const userdata)
+swicc_ret_et swicc_disk_tree_file_foreach(swicc_disk_tree_st *const tree,
+                                          swicc_fs_file_st *const file,
+                                          fs_file_foreach_cb *const cb,
+                                          void *const userdata)
 {
     /* User-data can be null, other params not. */
     if (tree == NULL || file == NULL || cb == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
-    uicc_ret_et ret = UICC_RET_ERROR;
+    swicc_ret_et ret = SWICC_RET_ERROR;
 
-    uicc_fs_file_st *const file_root = file;
+    swicc_fs_file_st *const file_root = file;
 
     /* Perform the per-file operation also for the tree. */
     ret = cb(tree, file_root, userdata);
-    if (ret != UICC_RET_SUCCESS)
+    if (ret != SWICC_RET_SUCCESS)
     {
         return ret;
     }
 
-    if (file_root->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_MF ||
-        file_root->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_ADF)
+    if (file_root->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_MF ||
+        file_root->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_ADF)
     {
         uint32_t const hdr_len =
-            uicc_fs_item_hdr_raw_size[file_root->hdr_item.type];
-        uint32_t stack_data_idx[UICC_FS_DEPTH_MAX] = {hdr_len, 0U, 0U};
+            swicc_fs_item_hdr_raw_size[file_root->hdr_item.type];
+        uint32_t stack_data_idx[SWICC_FS_DEPTH_MAX] = {hdr_len, 0U, 0U};
         uint32_t depth = 1U; /* Inside the tree so 1 already. */
-        while (depth < UICC_FS_DEPTH_MAX)
+        while (depth < SWICC_FS_DEPTH_MAX)
         {
             if (stack_data_idx[depth - 1U] >= file_root->hdr_item.size)
             {
@@ -354,35 +354,35 @@ uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
                 if (depth < 1U)
                 {
                     /* Not an error, just means we are done. */
-                    ret = UICC_RET_SUCCESS;
+                    ret = SWICC_RET_SUCCESS;
                     break;
                 }
                 /* Restore old data idx. */
                 stack_data_idx[depth - 1U] = stack_data_idx[depth];
             }
 
-            uicc_fs_file_st file_nstd;
+            swicc_fs_file_st file_nstd;
             ret =
-                uicc_fs_file_prs(tree, stack_data_idx[depth - 1U], &file_nstd);
-            if (ret != UICC_RET_SUCCESS)
+                swicc_fs_file_prs(tree, stack_data_idx[depth - 1U], &file_nstd);
+            if (ret != SWICC_RET_SUCCESS)
             {
                 break;
             }
             uint32_t const nstd_hdr_len =
-                uicc_fs_item_hdr_raw_size[file_nstd.hdr_item.type];
+                swicc_fs_item_hdr_raw_size[file_nstd.hdr_item.type];
 
             /* Perform the per-file operation. */
             ret = cb(tree, &file_nstd, userdata);
-            if (ret != UICC_RET_SUCCESS)
+            if (ret != SWICC_RET_SUCCESS)
             {
                 break;
             }
 
             switch (file_nstd.hdr_item.type)
             {
-            case UICC_FS_ITEM_TYPE_FILE_MF:
-            case UICC_FS_ITEM_TYPE_FILE_ADF:
-            case UICC_FS_ITEM_TYPE_FILE_DF:
+            case SWICC_FS_ITEM_TYPE_FILE_MF:
+            case SWICC_FS_ITEM_TYPE_FILE_ADF:
+            case SWICC_FS_ITEM_TYPE_FILE_DF:
                 stack_data_idx[depth] = stack_data_idx[depth - 1U];
                 depth += 1U;
                 uint64_t const data_idx_new =
@@ -390,25 +390,25 @@ uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
                 if (data_idx_new > UINT32_MAX)
                 {
                     /* Data index would overflow. */
-                    ret = UICC_RET_ERROR;
+                    ret = SWICC_RET_ERROR;
                     break;
                 }
                 /* Safe cast due to overflow check. */
                 stack_data_idx[depth - 1U] = (uint32_t)(data_idx_new);
                 break;
-            case UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
-            case UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
-            case UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC:
+            case SWICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
+            case SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
+            case SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC:
                 stack_data_idx[depth - 1U] += file_nstd.hdr_item.size;
                 break;
-            case UICC_FS_ITEM_TYPE_INVALID:
-                ret = UICC_RET_ERROR;
+            case SWICC_FS_ITEM_TYPE_INVALID:
+                ret = SWICC_RET_ERROR;
                 break;
             default:
                 break;
             }
 
-            if (ret != UICC_RET_SUCCESS)
+            if (ret != SWICC_RET_SUCCESS)
             {
                 break;
             }
@@ -417,33 +417,33 @@ uicc_ret_et uicc_disk_tree_file_foreach(uicc_disk_tree_st *const tree,
     else
     {
         /* Only MFs and ADFs can be roots of trees. */
-        ret = UICC_RET_ERROR;
+        ret = SWICC_RET_ERROR;
     }
     return ret;
 }
 
-uicc_ret_et uicc_disk_tree_iter(uicc_disk_st const *const disk,
-                                uicc_disk_tree_iter_st *const tree_iter)
+swicc_ret_et swicc_disk_tree_iter(swicc_disk_st const *const disk,
+                                  swicc_disk_tree_iter_st *const tree_iter)
 {
     if (disk == NULL || tree_iter == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
     if (disk->root != NULL)
     {
         tree_iter->tree = disk->root;
         tree_iter->tree_idx = 0U;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
-    return UICC_RET_ERROR;
+    return SWICC_RET_ERROR;
 }
 
-uicc_ret_et uicc_disk_tree_iter_next(uicc_disk_tree_iter_st *const tree_iter,
-                                     uicc_disk_tree_st **const tree)
+swicc_ret_et swicc_disk_tree_iter_next(swicc_disk_tree_iter_st *const tree_iter,
+                                       swicc_disk_tree_st **const tree)
 {
     if (tree_iter == NULL || tree == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
     if (tree_iter->tree->next != NULL)
     {
@@ -451,28 +451,28 @@ uicc_ret_et uicc_disk_tree_iter_next(uicc_disk_tree_iter_st *const tree_iter,
         /* Unsafe cast that relies on there being fewer than 256 trees. */
         tree_iter->tree_idx = (uint8_t)(tree_iter->tree_idx + 1U);
         *tree = tree_iter->tree;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
     else
     {
         /* Did not find tree. */
-        return UICC_RET_FS_NOT_FOUND;
+        return SWICC_RET_FS_NOT_FOUND;
     }
-    return UICC_RET_ERROR;
+    return SWICC_RET_ERROR;
 }
 
-uicc_ret_et uicc_disk_tree_iter_idx(uicc_disk_tree_iter_st *const tree_iter,
-                                    uint8_t const tree_idx,
-                                    uicc_disk_tree_st **const tree)
+swicc_ret_et swicc_disk_tree_iter_idx(swicc_disk_tree_iter_st *const tree_iter,
+                                      uint8_t const tree_idx,
+                                      swicc_disk_tree_st **const tree)
 {
     if (tree_iter == NULL || tree == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
     while (tree_iter->tree_idx != tree_idx)
     {
-        uicc_ret_et ret_iter = uicc_disk_tree_iter_next(tree_iter, tree);
-        if (ret_iter != UICC_RET_SUCCESS)
+        swicc_ret_et ret_iter = swicc_disk_tree_iter_next(tree_iter, tree);
+        if (ret_iter != SWICC_RET_SUCCESS)
         {
             return ret_iter;
         }
@@ -481,16 +481,16 @@ uicc_ret_et uicc_disk_tree_iter_idx(uicc_disk_tree_iter_st *const tree_iter,
     {
         *tree = tree_iter->tree;
     }
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
-void uicc_disk_root_empty(uicc_disk_st *const disk)
+void swicc_disk_root_empty(swicc_disk_st *const disk)
 {
     if (disk == NULL)
     {
         return;
     }
-    uicc_disk_tree_st *tree = disk->root;
+    swicc_disk_tree_st *tree = disk->root;
     while (tree != NULL)
     {
         if (tree->buf != NULL)
@@ -499,24 +499,24 @@ void uicc_disk_root_empty(uicc_disk_st *const disk)
         }
 
         /* Free the SID LUT of this tree. */
-        uicc_disk_lutsid_empty(tree);
+        swicc_disk_lutsid_empty(tree);
 
-        uicc_disk_tree_st *const tree_next = tree->next;
+        swicc_disk_tree_st *const tree_next = tree->next;
         free(tree);
         tree = tree_next;
     }
     disk->root = NULL;
     /* Since there will be no trees left, the ID LUT shall also be destroyed. */
-    uicc_disk_lutid_empty(disk);
+    swicc_disk_lutid_empty(disk);
 }
 
-void uicc_disk_lutsid_empty(uicc_disk_tree_st *const tree)
+void swicc_disk_lutsid_empty(swicc_disk_tree_st *const tree)
 {
     if (tree == NULL)
     {
         return;
     }
-    uicc_disk_lut_st *lutsid = &tree->lutsid;
+    swicc_disk_lut_st *lutsid = &tree->lutsid;
     if (lutsid->buf1 != NULL)
     {
         free(lutsid->buf1);
@@ -528,13 +528,13 @@ void uicc_disk_lutsid_empty(uicc_disk_tree_st *const tree)
     memset(&tree->lutsid, 0U, sizeof(tree->lutsid));
 }
 
-void uicc_disk_lutid_empty(uicc_disk_st *const disk)
+void swicc_disk_lutid_empty(swicc_disk_st *const disk)
 {
     if (disk == NULL)
     {
         return;
     }
-    uicc_disk_lut_st *lutid = &disk->lutid;
+    swicc_disk_lut_st *lutid = &disk->lutid;
     if (lutid->buf1 != NULL)
     {
         free(lutid->buf1);
@@ -548,7 +548,7 @@ void uicc_disk_lutid_empty(uicc_disk_st *const disk)
 
 typedef struct lutid_rebuild_cb_userdata_s
 {
-    uicc_disk_lut_st *lut;
+    swicc_disk_lut_st *lut;
     uint8_t tree_idx;
 } lutid_rebuild_cb_userdata_st;
 /**
@@ -559,25 +559,25 @@ typedef struct lutid_rebuild_cb_userdata_s
  * @param userdata This must point to the userdata struct.
  */
 static fs_file_foreach_cb lutid_rebuild_cb;
-static uicc_ret_et lutid_rebuild_cb(uicc_disk_tree_st *const tree,
-                                    uicc_fs_file_st *const file,
-                                    void *const userdata)
+static swicc_ret_et lutid_rebuild_cb(swicc_disk_tree_st *const tree,
+                                     swicc_fs_file_st *const file,
+                                     void *const userdata)
 {
-    if (file->hdr_file.id == UICC_FS_ID_MISSING)
+    if (file->hdr_file.id == SWICC_FS_ID_MISSING)
     {
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 
     /* Insert the ID + offset into the ID LUT. */
     lutid_rebuild_cb_userdata_st const *const userdata_struct = userdata;
-    uicc_disk_lut_st *const lutid = userdata_struct->lut;
-    uint8_t entry_item1[sizeof(uicc_fs_id_kt)];
+    swicc_disk_lut_st *const lutid = userdata_struct->lut;
+    uint8_t entry_item1[sizeof(swicc_fs_id_kt)];
     /**
      * @note IDs are kept in big-endian inside the LUT so that they are sorted
      * from MSB to LSB.
      */
-    uicc_fs_id_kt const id_be = htobe16(file->hdr_file.id);
-    memcpy(entry_item1, &id_be, sizeof(uicc_fs_id_kt));
+    swicc_fs_id_kt const id_be = htobe16(file->hdr_file.id);
+    memcpy(entry_item1, &id_be, sizeof(swicc_fs_id_kt));
     uint8_t entry_item2[lutid->size_item2];
     memcpy(&entry_item2[0U], &file->hdr_item.offset_trel, sizeof(uint32_t));
     memcpy(&entry_item2[sizeof(uint32_t)], &userdata_struct->tree_idx,
@@ -585,16 +585,16 @@ static uicc_ret_et lutid_rebuild_cb(uicc_disk_tree_st *const tree,
     return lut_insert(lutid, entry_item1, entry_item2);
 }
 
-uicc_ret_et uicc_disk_lutid_rebuild(uicc_disk_st *const disk)
+swicc_ret_et swicc_disk_lutid_rebuild(swicc_disk_st *const disk)
 {
     if (disk == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
-    uicc_ret_et ret = UICC_RET_ERROR;
+    swicc_ret_et ret = SWICC_RET_ERROR;
     /* Cleanup the old ID LUT before rebuilding it. */
-    uicc_disk_lutid_empty(disk);
-    disk->lutid.size_item1 = sizeof(uicc_fs_id_kt);
+    swicc_disk_lutid_empty(disk);
+    disk->lutid.size_item1 = sizeof(swicc_fs_id_kt);
     disk->lutid.size_item2 =
         sizeof(uint32_t) + sizeof(uint8_t); /* Offset + tree index */
     disk->lutid.count_max = LUT_COUNT_START;
@@ -603,28 +603,28 @@ uicc_ret_et uicc_disk_lutid_rebuild(uicc_disk_st *const disk)
     disk->lutid.buf2 = malloc(disk->lutid.count_max * disk->lutid.size_item2);
     if (disk->lutid.buf1 == NULL || disk->lutid.buf2 == NULL)
     {
-        uicc_disk_lutid_empty(disk);
-        return UICC_RET_ERROR;
+        swicc_disk_lutid_empty(disk);
+        return SWICC_RET_ERROR;
     }
 
-    uicc_disk_tree_st *tree = disk->root;
+    swicc_disk_tree_st *tree = disk->root;
     uint8_t tree_idx = 0U;
     while (tree != NULL)
     {
         lutid_rebuild_cb_userdata_st userdata = {.lut = &disk->lutid,
                                                  .tree_idx = tree_idx};
-        uicc_fs_file_st file_root;
-        ret = uicc_disk_tree_file_root(tree, &file_root);
-        if (ret != UICC_RET_SUCCESS)
+        swicc_fs_file_st file_root;
+        ret = swicc_disk_tree_file_root(tree, &file_root);
+        if (ret != SWICC_RET_SUCCESS)
         {
-            uicc_disk_lutid_empty(disk);
+            swicc_disk_lutid_empty(disk);
             break;
         }
-        ret = uicc_disk_tree_file_foreach(tree, &file_root, lutid_rebuild_cb,
-                                          &userdata);
-        if (ret != UICC_RET_SUCCESS)
+        ret = swicc_disk_tree_file_foreach(tree, &file_root, lutid_rebuild_cb,
+                                           &userdata);
+        if (ret != SWICC_RET_SUCCESS)
         {
-            uicc_disk_lutid_empty(disk);
+            swicc_disk_lutid_empty(disk);
             break;
         }
 
@@ -640,13 +640,13 @@ uicc_ret_et uicc_disk_lutid_rebuild(uicc_disk_st *const disk)
 }
 
 static fs_file_foreach_cb lutsid_rebuild_cb;
-static uicc_ret_et lutsid_rebuild_cb(uicc_disk_tree_st *const tree,
-                                     uicc_fs_file_st *const file,
-                                     void *const userdata)
+static swicc_ret_et lutsid_rebuild_cb(swicc_disk_tree_st *const tree,
+                                      swicc_fs_file_st *const file,
+                                      void *const userdata)
 {
-    if (file->hdr_file.sid == UICC_FS_SID_MISSING)
+    if (file->hdr_file.sid == SWICC_FS_SID_MISSING)
     {
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 
     /* Insert the SID + offset into the SID LUT. */
@@ -654,17 +654,17 @@ static uicc_ret_et lutsid_rebuild_cb(uicc_disk_tree_st *const tree,
                       (uint8_t *)&file->hdr_item.offset_trel);
 }
 
-uicc_ret_et uicc_disk_lutsid_rebuild(uicc_disk_st *const disk,
-                                     uicc_disk_tree_st *const tree)
+swicc_ret_et swicc_disk_lutsid_rebuild(swicc_disk_st *const disk,
+                                       swicc_disk_tree_st *const tree)
 {
     if (disk == NULL || tree == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
     /* Cleanup the old SID LUT before rebuilding it. */
-    uicc_disk_lutsid_empty(tree);
-    tree->lutsid.size_item1 = sizeof(uicc_fs_sid_kt);
+    swicc_disk_lutsid_empty(tree);
+    tree->lutsid.size_item1 = sizeof(swicc_fs_sid_kt);
     tree->lutsid.size_item2 = sizeof(uint32_t);
     tree->lutsid.count_max = LUT_COUNT_START;
     tree->lutsid.count = 0U;
@@ -674,42 +674,42 @@ uicc_ret_et uicc_disk_lutsid_rebuild(uicc_disk_st *const disk,
         malloc(tree->lutsid.count_max * tree->lutsid.size_item2);
     if (tree->lutsid.buf1 == NULL || tree->lutsid.buf2 == NULL)
     {
-        uicc_disk_lutsid_empty(tree);
-        return UICC_RET_ERROR;
+        swicc_disk_lutsid_empty(tree);
+        return SWICC_RET_ERROR;
     }
 
-    uicc_fs_file_st file_root;
-    uicc_ret_et ret = uicc_disk_tree_file_root(tree, &file_root);
-    if (ret != UICC_RET_SUCCESS)
+    swicc_fs_file_st file_root;
+    swicc_ret_et ret = swicc_disk_tree_file_root(tree, &file_root);
+    if (ret != SWICC_RET_SUCCESS)
     {
-        uicc_disk_lutsid_empty(tree);
+        swicc_disk_lutsid_empty(tree);
         return ret;
     }
     ret =
-        uicc_disk_tree_file_foreach(tree, &file_root, lutsid_rebuild_cb, NULL);
-    if (ret != UICC_RET_SUCCESS)
+        swicc_disk_tree_file_foreach(tree, &file_root, lutsid_rebuild_cb, NULL);
+    if (ret != SWICC_RET_SUCCESS)
     {
-        uicc_disk_lutsid_empty(tree);
+        swicc_disk_lutsid_empty(tree);
         return ret;
     }
     return ret;
 }
 
-uicc_ret_et uicc_disk_lutsid_lookup(uicc_disk_tree_st const *const tree,
-                                    uicc_fs_sid_kt const sid,
-                                    uicc_fs_file_st *const file)
+swicc_ret_et swicc_disk_lutsid_lookup(swicc_disk_tree_st const *const tree,
+                                      swicc_fs_sid_kt const sid,
+                                      swicc_fs_file_st *const file)
 {
     if (tree == NULL || file == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
-    uicc_disk_lut_st const *const lutsid = &tree->lutsid;
+    swicc_disk_lut_st const *const lutsid = &tree->lutsid;
     /* Make sure the SID LUT is as expected. */
-    if (lutsid->buf1 == NULL || lutsid->size_item1 != sizeof(uicc_fs_sid_kt) ||
+    if (lutsid->buf1 == NULL || lutsid->size_item1 != sizeof(swicc_fs_sid_kt) ||
         lutsid->size_item2 != sizeof(uint32_t))
     {
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
 
     /* Find the file by SID. */
@@ -725,7 +725,7 @@ uicc_ret_et uicc_disk_lutsid_lookup(uicc_disk_tree_st const *const tree,
     }
     if (entry_idx >= lutsid->count)
     {
-        return UICC_RET_FS_NOT_FOUND;
+        return SWICC_RET_FS_NOT_FOUND;
     }
 
     uint32_t const offset =
@@ -733,32 +733,32 @@ uicc_ret_et uicc_disk_lutsid_lookup(uicc_disk_tree_st const *const tree,
     /* Offset too large. */
     if (offset >= tree->len)
     {
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
-    if (uicc_fs_file_prs(tree, offset, file) != UICC_RET_SUCCESS)
+    if (swicc_fs_file_prs(tree, offset, file) != SWICC_RET_SUCCESS)
     {
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_disk_lutid_lookup(uicc_disk_st const *const disk,
-                                   uicc_disk_tree_st **const tree,
-                                   uicc_fs_id_kt const id,
-                                   uicc_fs_file_st *const file)
+swicc_ret_et swicc_disk_lutid_lookup(swicc_disk_st const *const disk,
+                                     swicc_disk_tree_st **const tree,
+                                     swicc_fs_id_kt const id,
+                                     swicc_fs_file_st *const file)
 {
     if (disk == NULL || tree == NULL || file == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
-    uicc_disk_lut_st const *const lutid = &disk->lutid;
+    swicc_disk_lut_st const *const lutid = &disk->lutid;
 
     /* Make sure the ID LUT is as expected. */
-    if (lutid->buf1 == NULL || lutid->size_item1 != sizeof(uicc_fs_id_kt) ||
+    if (lutid->buf1 == NULL || lutid->size_item1 != sizeof(swicc_fs_id_kt) ||
         lutid->size_item2 != sizeof(uint32_t) + sizeof(uint8_t))
     {
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
 
     /* Find the file by ID. */
@@ -766,7 +766,7 @@ uicc_ret_et uicc_disk_lutid_lookup(uicc_disk_st const *const disk,
     while (entry_idx < lutid->count)
     {
         /* ID's are stored in big-endian inside the LUT. */
-        uicc_fs_id_kt const id_be = __builtin_bswap16(id);
+        swicc_fs_id_kt const id_be = __builtin_bswap16(id);
 
         if (memcmp(&lutid->buf1[lutid->size_item1 * entry_idx], &id_be,
                    lutid->size_item1) == 0)
@@ -777,7 +777,7 @@ uicc_ret_et uicc_disk_lutid_lookup(uicc_disk_st const *const disk,
     }
     if (entry_idx >= lutid->count)
     {
-        return UICC_RET_FS_NOT_FOUND;
+        return SWICC_RET_FS_NOT_FOUND;
     }
 
     uint32_t const offset =
@@ -786,54 +786,54 @@ uicc_ret_et uicc_disk_lutid_lookup(uicc_disk_st const *const disk,
         lutid->buf2[(lutid->size_item2 * entry_idx) + sizeof(uint32_t)];
 
     /* Find the tree in which the file resides. */
-    uicc_disk_tree_iter_st tree_iter;
-    if (uicc_disk_tree_iter(disk, &tree_iter) != UICC_RET_SUCCESS ||
-        uicc_disk_tree_iter_idx(&tree_iter, tree_idx, tree) !=
-            UICC_RET_SUCCESS ||
+    swicc_disk_tree_iter_st tree_iter;
+    if (swicc_disk_tree_iter(disk, &tree_iter) != SWICC_RET_SUCCESS ||
+        swicc_disk_tree_iter_idx(&tree_iter, tree_idx, tree) !=
+            SWICC_RET_SUCCESS ||
         (*tree)->len <= offset)
     {
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
 
     /* Offset too large. */
     if (offset >= (*tree)->len)
     {
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
-    if (uicc_fs_file_prs(*tree, offset, file) != UICC_RET_SUCCESS)
+    if (swicc_fs_file_prs(*tree, offset, file) != SWICC_RET_SUCCESS)
     {
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_disk_file_rcrd(uicc_disk_tree_st const *const tree,
-                                uicc_fs_file_st const *const file,
-                                uicc_fs_rcrd_idx_kt const idx,
-                                uint8_t **const buf, uint8_t *const len)
+swicc_ret_et swicc_disk_file_rcrd(swicc_disk_tree_st const *const tree,
+                                  swicc_fs_file_st const *const file,
+                                  swicc_fs_rcrd_idx_kt const idx,
+                                  uint8_t **const buf, uint8_t *const len)
 {
     if (tree == NULL || file == NULL || buf == NULL || len == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
     /* Only linear-fixed or cyclic files have records. */
-    if (file->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED ||
-        file->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
+    if (file->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED ||
+        file->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
     {
         uint8_t const rcrd_size =
-            file->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED
+            file->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED
                 ? file->hdr_spec.ef_linearfixed.rcrd_size
                 : file->hdr_spec.ef_cyclic.rcrd_size;
 
         uint32_t rcrd_cnt;
-        uicc_ret_et const ret_rcrd_cnt =
-            uicc_disk_file_rcrd_cnt(tree, file, &rcrd_cnt);
-        if (ret_rcrd_cnt == UICC_RET_SUCCESS)
+        swicc_ret_et const ret_rcrd_cnt =
+            swicc_disk_file_rcrd_cnt(tree, file, &rcrd_cnt);
+        if (ret_rcrd_cnt == SWICC_RET_SUCCESS)
         {
             if (idx >= rcrd_cnt)
             {
-                return UICC_RET_FS_NOT_FOUND;
+                return SWICC_RET_FS_NOT_FOUND;
             }
             /* Safe cast since uint8 * uint8 will fit in a uint32. */
             uint32_t const rcrd_offset = (uint32_t)(rcrd_size * idx);
@@ -842,72 +842,72 @@ uicc_ret_et uicc_disk_file_rcrd(uicc_disk_tree_st const *const tree,
                 "Expected values to be 1 byte wide for cast to be safe");
             if (rcrd_offset >= file->data_size)
             {
-                return UICC_RET_ERROR;
+                return SWICC_RET_ERROR;
             }
             *buf = &file->data[rcrd_offset];
             *len = rcrd_size;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
     }
-    return UICC_RET_ERROR;
+    return SWICC_RET_ERROR;
 }
 
-uicc_ret_et uicc_disk_file_rcrd_cnt(uicc_disk_tree_st const *const tree,
-                                    uicc_fs_file_st const *const file,
-                                    uint32_t *const rcrd_cnt)
+swicc_ret_et swicc_disk_file_rcrd_cnt(swicc_disk_tree_st const *const tree,
+                                      swicc_fs_file_st const *const file,
+                                      uint32_t *const rcrd_cnt)
 {
     if (tree == NULL || file == NULL || rcrd_cnt == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
-    if (file->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED)
+    if (file->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED)
     {
         /* Safe case since there can only be uint32_max records at most. */
         *rcrd_cnt = (uint32_t)(file->data_size /
                                file->hdr_spec.ef_linearfixed.rcrd_size);
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
-    else if (file->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
+    else if (file->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
     {
         /* Safe case since there can only be uint32_max records at most. */
         *rcrd_cnt =
             (uint32_t)((file->data_size) / file->hdr_spec.ef_cyclic.rcrd_size);
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
-    return UICC_RET_ERROR;
+    return SWICC_RET_ERROR;
 }
 
-uicc_ret_et uicc_disk_tree_file_root(uicc_disk_tree_st const *const tree,
-                                     uicc_fs_file_st *const file_root)
+swicc_ret_et swicc_disk_tree_file_root(swicc_disk_tree_st const *const tree,
+                                       swicc_fs_file_st *const file_root)
 {
     if (tree == NULL || file_root == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
-    if (uicc_fs_file_prs(tree, 0U, file_root) == UICC_RET_SUCCESS)
+    if (swicc_fs_file_prs(tree, 0U, file_root) == SWICC_RET_SUCCESS)
     {
-        if (file_root->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_ADF ||
-            file_root->hdr_item.type == UICC_FS_ITEM_TYPE_FILE_MF)
+        if (file_root->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_ADF ||
+            file_root->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_MF)
         {
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
     }
-    return UICC_RET_ERROR;
+    return SWICC_RET_ERROR;
 }
 
-uicc_ret_et uicc_disk_tree_file_parent(uicc_disk_tree_st const *const tree,
-                                       uicc_fs_file_st const *const file,
-                                       uicc_fs_file_st *const file_parent)
+swicc_ret_et swicc_disk_tree_file_parent(swicc_disk_tree_st const *const tree,
+                                         swicc_fs_file_st const *const file,
+                                         swicc_fs_file_st *const file_parent)
 {
-    uicc_ret_et ret = UICC_RET_ERROR;
+    swicc_ret_et ret = SWICC_RET_ERROR;
     int64_t const parent_offset_trel =
         file->hdr_item.offset_trel - file->hdr_item.offset_prel;
     if (parent_offset_trel >= 0U && parent_offset_trel <= UINT32_MAX)
     {
-        return uicc_fs_file_prs(tree, (uint32_t)parent_offset_trel,
-                                file_parent);
+        return swicc_fs_file_prs(tree, (uint32_t)parent_offset_trel,
+                                 file_parent);
     }
     return ret;
 }

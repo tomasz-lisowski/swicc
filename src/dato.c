@@ -1,5 +1,5 @@
 #include <string.h>
-#include <uicc/uicc.h>
+#include <swicc/swicc.h>
 
 /**
  * @brief Parse a BER-TLV-encoded tag.
@@ -9,8 +9,8 @@
  * @param tag_buf_size Size of the tag buffer.
  * @return Return code.
  */
-static uicc_ret_et bertlv_hdr_tag_prs(
-    uicc_dato_bertlv_tag_st *const bertlv_tag_prsd, uint32_t *const tag_len,
+static swicc_ret_et bertlv_hdr_tag_prs(
+    swicc_dato_bertlv_tag_st *const bertlv_tag_prsd, uint32_t *const tag_len,
     uint8_t const *const tag_buf, uint32_t const tag_buf_size)
 {
     *tag_len = 0U;
@@ -20,19 +20,19 @@ static uicc_ret_et bertlv_hdr_tag_prs(
     switch ((tag_b0 & 0b11000000) >> 6U)
     {
     case 0:
-        bertlv_tag_prsd->cla = UICC_DATO_BERTLV_TAG_CLA_UNIVERSAL;
+        bertlv_tag_prsd->cla = SWICC_DATO_BERTLV_TAG_CLA_UNIVERSAL;
         break;
     case 1:
-        bertlv_tag_prsd->cla = UICC_DATO_BERTLV_TAG_CLA_APPLICATION;
+        bertlv_tag_prsd->cla = SWICC_DATO_BERTLV_TAG_CLA_APPLICATION;
         break;
     case 2:
-        bertlv_tag_prsd->cla = UICC_DATO_BERTLV_TAG_CLA_CONTEXT_SPECIFIC;
+        bertlv_tag_prsd->cla = SWICC_DATO_BERTLV_TAG_CLA_CONTEXT_SPECIFIC;
         break;
     case 3:
-        bertlv_tag_prsd->cla = UICC_DATO_BERTLV_TAG_CLA_PRIVATE;
+        bertlv_tag_prsd->cla = SWICC_DATO_BERTLV_TAG_CLA_PRIVATE;
         break;
     default:
-        bertlv_tag_prsd->cla = UICC_DATO_BERTLV_TAG_CLA_INVALID;
+        bertlv_tag_prsd->cla = SWICC_DATO_BERTLV_TAG_CLA_INVALID;
         break;
     }
 
@@ -52,12 +52,12 @@ static uicc_ret_et bertlv_hdr_tag_prs(
     {
         /* Long form. */
         bertlv_tag_prsd->num = 0U;
-        for (; *tag_len < UICC_DATO_BERTLV_TAG_LEN_MAX; ++(*tag_len))
+        for (; *tag_len < SWICC_DATO_BERTLV_TAG_LEN_MAX; ++(*tag_len))
         {
             /* Not enough data in the buffer to contain the entire tag. */
             if (*tag_len >= tag_buf_size)
             {
-                return UICC_RET_DATO_END;
+                return SWICC_RET_DATO_END;
             }
 
             /* Safe cast since we iterate for at most 2 times. */
@@ -67,20 +67,20 @@ static uicc_ret_et bertlv_hdr_tag_prs(
             if ((tag_buf[*tag_len] & 0b10000000) == 0)
             {
                 *tag_len += 1U; /* Include the first byte. */
-                return UICC_RET_SUCCESS;
+                return SWICC_RET_SUCCESS;
             }
         }
         /**
          * If the for loop iterates completely without returning, it means the
          * tag is too long.
          */
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
     else
     {
         /* Short form. */
         bertlv_tag_prsd->num = tag_num_b0;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 }
 
@@ -90,21 +90,21 @@ static uicc_ret_et bertlv_hdr_tag_prs(
  * @param buf Raw BER-TLV to parse.
  * @param buf_len Length of the buffer containing the raw BER-TLV.
  */
-static uicc_ret_et bertlv_hdr_prs(uicc_dato_bertlv_st *const bertlv_prsd,
-                                  uint32_t *const bertlv_hdr_len,
-                                  uint8_t const *const buf,
-                                  uint32_t const buf_len)
+static swicc_ret_et bertlv_hdr_prs(swicc_dato_bertlv_st *const bertlv_prsd,
+                                   uint32_t *const bertlv_hdr_len,
+                                   uint8_t const *const buf,
+                                   uint32_t const buf_len)
 {
     if (buf_len < 1)
     {
-        return UICC_RET_DATO_END;
+        return SWICC_RET_DATO_END;
     }
 
     *bertlv_hdr_len = 0U;
     uint32_t tag_len = 0U;
-    uicc_ret_et const ret_tag =
+    swicc_ret_et const ret_tag =
         bertlv_hdr_tag_prs(&bertlv_prsd->tag, &tag_len, buf, buf_len);
-    if (ret_tag != UICC_RET_SUCCESS)
+    if (ret_tag != SWICC_RET_SUCCESS)
     {
         return ret_tag;
     }
@@ -118,7 +118,7 @@ static uicc_ret_et bertlv_hdr_prs(uicc_dato_bertlv_st *const bertlv_prsd,
     if ((len_b0 & 0b10000000) == 0)
     {
         /* Definite short. */
-        bertlv_prsd->len.form = UICC_DATO_BERTLV_LEN_FORM_DEFINITE_SHORT;
+        bertlv_prsd->len.form = SWICC_DATO_BERTLV_LEN_FORM_DEFINITE_SHORT;
     }
     else
     {
@@ -127,29 +127,29 @@ static uicc_ret_et bertlv_hdr_prs(uicc_dato_bertlv_st *const bertlv_prsd,
         {
         case 0:
             /* Not supported. */
-            bertlv_prsd->len.form = UICC_DATO_BERTLV_LEN_FORM_INDEFINITE;
-            return UICC_RET_ERROR;
+            bertlv_prsd->len.form = SWICC_DATO_BERTLV_LEN_FORM_INDEFINITE;
+            return SWICC_RET_ERROR;
         case 127:
-            bertlv_prsd->len.form = UICC_DATO_BERTLV_LEN_FORM_RFU;
-            return UICC_RET_ERROR;
+            bertlv_prsd->len.form = SWICC_DATO_BERTLV_LEN_FORM_RFU;
+            return SWICC_RET_ERROR;
         default:
-            bertlv_prsd->len.form = UICC_DATO_BERTLV_LEN_FORM_DEFINITE_LONG;
+            bertlv_prsd->len.form = SWICC_DATO_BERTLV_LEN_FORM_DEFINITE_LONG;
             /**
              * Number of bytes after b0 of len that are part of the length
              * field.
              */
             uint8_t len_len = len_b0 & 0b01111111;
 
-            if (len_len > UICC_DATO_BERTLV_LEN_LEN_MAX)
+            if (len_len > SWICC_DATO_BERTLV_LEN_LEN_MAX)
             {
-                return UICC_RET_ERROR;
+                return SWICC_RET_ERROR;
             }
 
             for (uint8_t len_idx = 1U; len_idx < len_len; ++len_idx)
             {
                 if (buf_len < *bertlv_hdr_len)
                 {
-                    return UICC_RET_DATO_END;
+                    return SWICC_RET_DATO_END;
                 }
                 /* Safe cast since we iterate for at most 2 times. */
                 bertlv_prsd->len.val |= (uint32_t)(buf[(*bertlv_hdr_len)++]
@@ -159,7 +159,7 @@ static uicc_ret_et bertlv_hdr_prs(uicc_dato_bertlv_st *const bertlv_prsd,
         }
     }
 
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
 /**
@@ -173,27 +173,27 @@ static uicc_ret_et bertlv_hdr_prs(uicc_dato_bertlv_st *const bertlv_prsd,
  * length written to the buffer. Can be anything when buffer is NULL.
  * @return Return code.
  */
-static uicc_ret_et bertlv_hdr_deprs(
-    uicc_dato_bertlv_st const *const bertlv_deprs, uint8_t *const buf,
+static swicc_ret_et bertlv_hdr_deprs(
+    swicc_dato_bertlv_st const *const bertlv_deprs, uint8_t *const buf,
     uint32_t *const len)
 {
     bool const dry_run = buf == NULL;
 
     /* The provided BER-TLV is invalid. */
-    if (bertlv_deprs->len.form == UICC_DATO_BERTLV_LEN_FORM_INVALID ||
-        bertlv_deprs->tag.cla == UICC_DATO_BERTLV_TAG_CLA_INVALID)
+    if (bertlv_deprs->len.form == SWICC_DATO_BERTLV_LEN_FORM_INVALID ||
+        bertlv_deprs->tag.cla == SWICC_DATO_BERTLV_TAG_CLA_INVALID)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
     uint32_t const buf_len = *len;
     *len = 0U;
 
-    uint8_t len_raw[UICC_DATO_BERTLV_LEN_LEN_MAX] = {0};
+    uint8_t len_raw[SWICC_DATO_BERTLV_LEN_LEN_MAX] = {0};
     uint8_t len_len = 0U;
     len_raw[len_len] = 0U;
     {
-        if (bertlv_deprs->len.form == UICC_DATO_BERTLV_LEN_FORM_DEFINITE_SHORT)
+        if (bertlv_deprs->len.form == SWICC_DATO_BERTLV_LEN_FORM_DEFINITE_SHORT)
         {
             /* Safe cast since short length forms are 7 bits wide. */
             len_raw[len_len] = (uint8_t)bertlv_deprs->len.val;
@@ -202,7 +202,7 @@ static uicc_ret_et bertlv_hdr_deprs(
             /* The most significant bit must be 0 in short form. */
             if (len_raw[len_len] & 0b10000000)
             {
-                return UICC_RET_ERROR;
+                return SWICC_RET_ERROR;
             }
         }
         else
@@ -212,10 +212,10 @@ static uicc_ret_et bertlv_hdr_deprs(
 
             uint8_t zero_cnt = 0U;
 
-            for (; len_len < UICC_DATO_BERTLV_LEN_LEN_MAX; ++len_len)
+            for (; len_len < SWICC_DATO_BERTLV_LEN_LEN_MAX; ++len_len)
             {
                 uint32_t const len_raw_idx =
-                    UICC_DATO_BERTLV_LEN_LEN_MAX - len_len;
+                    SWICC_DATO_BERTLV_LEN_LEN_MAX - len_len;
                 /**
                  * Safe cast because the expression extracts exactly one byte.
                  */
@@ -245,7 +245,7 @@ static uicc_ret_et bertlv_hdr_deprs(
              * Move up the non-zero bytes up to just after the first len byte.
              */
             memmove(&len_raw[1U],
-                    &len_raw[1U + (UICC_DATO_BERTLV_LEN_LEN_MAX - len_len)],
+                    &len_raw[1U + (SWICC_DATO_BERTLV_LEN_LEN_MAX - len_len)],
                     len_len - 1U);
 
             /* Safe cast since this will only form a byte. */
@@ -257,7 +257,7 @@ static uicc_ret_et bertlv_hdr_deprs(
             /* Check if the length fits in the buffer. */
             if (len_len > buf_len - *len)
             {
-                return UICC_RET_BUFFER_TOO_SHORT;
+                return SWICC_RET_BUFFER_TOO_SHORT;
             }
         }
 
@@ -268,25 +268,25 @@ static uicc_ret_et bertlv_hdr_deprs(
         }
     }
 
-    uint8_t tag_raw[UICC_DATO_BERTLV_TAG_LEN_MAX] = {0};
+    uint8_t tag_raw[SWICC_DATO_BERTLV_TAG_LEN_MAX] = {0};
     uint8_t tag_len = 0U;
     {
         switch (bertlv_deprs->tag.cla)
         {
-        case UICC_DATO_BERTLV_TAG_CLA_UNIVERSAL:
+        case SWICC_DATO_BERTLV_TAG_CLA_UNIVERSAL:
             /* Just 0b00 so no need to write any bits. */
             break;
-        case UICC_DATO_BERTLV_TAG_CLA_APPLICATION:
+        case SWICC_DATO_BERTLV_TAG_CLA_APPLICATION:
             tag_raw[0U] |= 0b01000000;
             break;
-        case UICC_DATO_BERTLV_TAG_CLA_CONTEXT_SPECIFIC:
+        case SWICC_DATO_BERTLV_TAG_CLA_CONTEXT_SPECIFIC:
             tag_raw[0U] |= 0b10000000;
             break;
-        case UICC_DATO_BERTLV_TAG_CLA_PRIVATE:
+        case SWICC_DATO_BERTLV_TAG_CLA_PRIVATE:
             tag_raw[0U] |= 0b11000000;
             break;
         default:
-            return UICC_RET_ERROR;
+            return SWICC_RET_ERROR;
         }
 
         if (bertlv_deprs->tag.pc)
@@ -303,10 +303,10 @@ static uicc_ret_et bertlv_hdr_deprs(
 
             uint8_t zero_cnt = 0U;
 
-            for (; tag_len < UICC_DATO_BERTLV_TAG_LEN_MAX; ++tag_len)
+            for (; tag_len < SWICC_DATO_BERTLV_TAG_LEN_MAX; ++tag_len)
             {
                 uint32_t const tag_raw_idx =
-                    UICC_DATO_BERTLV_TAG_LEN_MAX - tag_len;
+                    SWICC_DATO_BERTLV_TAG_LEN_MAX - tag_len;
                 /**
                  * Safe cast because the expression extracts exactly one byte (7
                  * bits to be exact).
@@ -334,7 +334,7 @@ static uicc_ret_et bertlv_hdr_deprs(
              * Move up the non-zero bytes up to just after the first tag byte.
              */
             memmove(&tag_raw[1U],
-                    &tag_raw[1U + (UICC_DATO_BERTLV_TAG_LEN_MAX - tag_len)],
+                    &tag_raw[1U + (SWICC_DATO_BERTLV_TAG_LEN_MAX - tag_len)],
                     tag_len - 1U);
             for (uint8_t tag_idx = 0U;
                  tag_idx < tag_len - 1U /* Skip first tag byte. */ -
@@ -344,7 +344,7 @@ static uicc_ret_et bertlv_hdr_deprs(
                 /* First bit should never be 1. */
                 if (tag_raw[1U + tag_idx] & 0b10000000)
                 {
-                    return UICC_RET_ERROR;
+                    return SWICC_RET_ERROR;
                 }
                 tag_raw[1U + tag_idx] |= 0b10000000;
             }
@@ -361,7 +361,7 @@ static uicc_ret_et bertlv_hdr_deprs(
             /* Check if the tag fits in the buffer. */
             if (tag_len > buf_len - *len)
             {
-                return UICC_RET_BUFFER_TOO_SHORT;
+                return SWICC_RET_BUFFER_TOO_SHORT;
             }
         }
 
@@ -372,56 +372,57 @@ static uicc_ret_et bertlv_hdr_deprs(
         }
     }
 
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_dato_bertlv_tag_create(
-    uicc_dato_bertlv_tag_st *const bertlv_tag_out, uint32_t const tag)
+swicc_ret_et swicc_dato_bertlv_tag_create(
+    swicc_dato_bertlv_tag_st *const bertlv_tag_out, uint32_t const tag)
 {
     uint8_t *const tag_buf = (uint8_t *)&tag;
     uint32_t tag_len = 0U;
     return bertlv_hdr_tag_prs(bertlv_tag_out, &tag_len, tag_buf, sizeof(tag));
 }
 
-void uicc_dato_bertlv_dec_init(uicc_dato_bertlv_dec_st *const decoder,
-                               uint8_t *const bertlv_buf,
-                               uint32_t const bertlv_len)
+void swicc_dato_bertlv_dec_init(swicc_dato_bertlv_dec_st *const decoder,
+                                uint8_t *const bertlv_buf,
+                                uint32_t const bertlv_len)
 {
     memset(decoder, 0U, sizeof(*decoder));
     decoder->buf = bertlv_buf;
     decoder->len = bertlv_len;
     decoder->offset = 0U;
-    decoder->cur.tag.cla = UICC_DATO_BERTLV_TAG_CLA_INVALID;
-    decoder->cur.len.form = UICC_DATO_BERTLV_LEN_FORM_INVALID;
+    decoder->cur.tag.cla = SWICC_DATO_BERTLV_TAG_CLA_INVALID;
+    decoder->cur.len.form = SWICC_DATO_BERTLV_LEN_FORM_INVALID;
 }
 
-uicc_ret_et uicc_dato_bertlv_dec_cur(uicc_dato_bertlv_dec_st *const decoder,
-                                     uicc_dato_bertlv_dec_st *const decoder_cur,
-                                     uicc_dato_bertlv_st *const bertlv_cur)
+swicc_ret_et swicc_dato_bertlv_dec_cur(
+    swicc_dato_bertlv_dec_st *const decoder,
+    swicc_dato_bertlv_dec_st *const decoder_cur,
+    swicc_dato_bertlv_st *const bertlv_cur)
 {
     /* Never called next so there is no current BER-TLV DO to get. */
     if (decoder->offset == 0U)
     {
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
     uint32_t const offset_cur_val = decoder->offset - decoder->cur.len.val;
     *bertlv_cur = decoder->cur;
-    uicc_dato_bertlv_dec_init(decoder_cur, &decoder->buf[offset_cur_val],
-                              decoder->cur.len.val);
-    return UICC_RET_SUCCESS;
+    swicc_dato_bertlv_dec_init(decoder_cur, &decoder->buf[offset_cur_val],
+                               decoder->cur.len.val);
+    return SWICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_dato_bertlv_dec_next(uicc_dato_bertlv_dec_st *const decoder)
+swicc_ret_et swicc_dato_bertlv_dec_next(swicc_dato_bertlv_dec_st *const decoder)
 {
     if (decoder->offset >= decoder->len)
     {
         /* No more data to parse. */
-        return UICC_RET_DATO_END;
+        return SWICC_RET_DATO_END;
     }
-    uicc_ret_et ret = bertlv_hdr_prs(&decoder->cur, &decoder->cur_len_hdr,
-                                     &decoder->buf[decoder->offset],
-                                     decoder->len - decoder->offset);
-    if (ret == UICC_RET_SUCCESS)
+    swicc_ret_et ret = bertlv_hdr_prs(&decoder->cur, &decoder->cur_len_hdr,
+                                      &decoder->buf[decoder->offset],
+                                      decoder->len - decoder->offset);
+    if (ret == SWICC_RET_SUCCESS)
     {
         /* Move offset to after the end of the current BER-TLV DO. */
         decoder->offset += decoder->cur_len_hdr + decoder->cur.len.val;
@@ -429,8 +430,8 @@ uicc_ret_et uicc_dato_bertlv_dec_next(uicc_dato_bertlv_dec_st *const decoder)
     return ret;
 }
 
-void uicc_dato_bertlv_enc_init(uicc_dato_bertlv_enc_st *const encoder,
-                               uint8_t *const buf, uint32_t const buf_size)
+void swicc_dato_bertlv_enc_init(swicc_dato_bertlv_enc_st *const encoder,
+                                uint8_t *const buf, uint32_t const buf_size)
 {
     bool const dry_run = buf == NULL;
     memset(encoder, 0U, sizeof(*encoder));
@@ -448,54 +449,55 @@ void uicc_dato_bertlv_enc_init(uicc_dato_bertlv_enc_st *const encoder,
     encoder->len_val = 0U;
 }
 
-uicc_ret_et uicc_dato_bertlv_enc_nstd_start(
-    uicc_dato_bertlv_enc_st *const encoder,
-    uicc_dato_bertlv_enc_st *const encoder_nstd)
+swicc_ret_et swicc_dato_bertlv_enc_nstd_start(
+    swicc_dato_bertlv_enc_st *const encoder,
+    swicc_dato_bertlv_enc_st *const encoder_nstd)
 {
     /* Can't begin nesting when there is some data without a header. */
     if (encoder->len_val != 0)
     {
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
-    uicc_dato_bertlv_enc_init(encoder_nstd, encoder->buf,
-                              encoder->size - encoder->len);
-    return UICC_RET_SUCCESS;
+    swicc_dato_bertlv_enc_init(encoder_nstd, encoder->buf,
+                               encoder->size - encoder->len);
+    return SWICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_dato_bertlv_enc_nstd_end(
-    uicc_dato_bertlv_enc_st *const encoder,
-    uicc_dato_bertlv_enc_st *const encoder_nstd)
+swicc_ret_et swicc_dato_bertlv_enc_nstd_end(
+    swicc_dato_bertlv_enc_st *const encoder,
+    swicc_dato_bertlv_enc_st *const encoder_nstd)
 {
     /* Can't end nesting with data without a header inside the nested block. */
     if (encoder->len_val != 0)
     {
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
     encoder->len += encoder_nstd->len;
     encoder->len_val = encoder_nstd->len;
     encoder->offset -= encoder_nstd->len;
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_dato_bertlv_enc_hdr(uicc_dato_bertlv_enc_st *const encoder,
-                                     uicc_dato_bertlv_tag_st const *const tag)
+swicc_ret_et swicc_dato_bertlv_enc_hdr(
+    swicc_dato_bertlv_enc_st *const encoder,
+    swicc_dato_bertlv_tag_st const *const tag)
 {
     uint32_t const len = encoder->len_val;
-    uicc_dato_bertlv_len_form_et len_form;
+    swicc_dato_bertlv_len_form_et len_form;
     if (len <= 127U)
     {
-        len_form = UICC_DATO_BERTLV_LEN_FORM_DEFINITE_SHORT;
+        len_form = SWICC_DATO_BERTLV_LEN_FORM_DEFINITE_SHORT;
     }
     else if (len <= UINT32_MAX)
     {
-        len_form = UICC_DATO_BERTLV_LEN_FORM_DEFINITE_LONG;
+        len_form = SWICC_DATO_BERTLV_LEN_FORM_DEFINITE_LONG;
     }
     else
     {
         /* Value length can't exceed what can be stored in a 4 byte uint. */
-        return UICC_RET_ERROR;
+        return SWICC_RET_ERROR;
     }
-    uicc_dato_bertlv_st const bertlv = {
+    swicc_dato_bertlv_st const bertlv = {
         .tag = *tag,
         .len =
             {
@@ -504,9 +506,9 @@ uicc_ret_et uicc_dato_bertlv_enc_hdr(uicc_dato_bertlv_enc_st *const encoder,
             },
     };
     uint32_t len_hdr = encoder->size - encoder->len;
-    uicc_ret_et const ret_deprs =
+    swicc_ret_et const ret_deprs =
         bertlv_hdr_deprs(&bertlv, encoder->buf, &len_hdr);
-    if (ret_deprs == UICC_RET_SUCCESS)
+    if (ret_deprs == SWICC_RET_SUCCESS)
     {
         encoder->len += len_hdr;
         encoder->offset -= len_hdr;
@@ -515,9 +517,9 @@ uicc_ret_et uicc_dato_bertlv_enc_hdr(uicc_dato_bertlv_enc_st *const encoder,
     return ret_deprs;
 }
 
-uicc_ret_et uicc_dato_bertlv_enc_data(uicc_dato_bertlv_enc_st *const encoder,
-                                      uint8_t const *const data,
-                                      uint32_t const data_len)
+swicc_ret_et swicc_dato_bertlv_enc_data(swicc_dato_bertlv_enc_st *const encoder,
+                                        uint8_t const *const data,
+                                        uint32_t const data_len)
 {
     bool const dry_run = encoder->buf == NULL;
 
@@ -525,7 +527,7 @@ uicc_ret_et uicc_dato_bertlv_enc_data(uicc_dato_bertlv_enc_st *const encoder,
     if (encoder->offset - (int64_t)data_len < 0)
     {
         /* Not enough space for the data. */
-        return UICC_RET_BUFFER_TOO_SHORT;
+        return SWICC_RET_BUFFER_TOO_SHORT;
     }
     encoder->offset -= data_len;
     encoder->len_val += data_len;
@@ -534,5 +536,5 @@ uicc_ret_et uicc_dato_bertlv_enc_data(uicc_dato_bertlv_enc_st *const encoder,
     {
         memcpy(&encoder->buf[encoder->offset], data, data_len);
     }
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }

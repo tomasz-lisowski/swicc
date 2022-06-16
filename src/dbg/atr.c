@@ -1,9 +1,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include <uicc/uicc.h>
+#include <swicc/swicc.h>
 
-typedef struct uicc_atr_chunk
+typedef struct swicc_atr_chunk
 {
     bool y[4U];
     uint8_t tabcd[4U];
@@ -17,15 +17,15 @@ typedef struct uicc_atr_chunk
      * ISO 7816-4:2020 p.17 sec.8.2.3.
      **/
     uint8_t t;
-} uicc_atr_chunk_t;
+} swicc_atr_chunk_t;
 
 #ifdef DEBUG
-static char const *const uicc_dbg_table_str_indicator[2U] = {"no", "yes"};
+static char const *const swicc_dbg_table_str_indicator[2U] = {"no", "yes"};
 #endif /* DEBUG */
 
-uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
-                             uint8_t const *const buf_atr,
-                             uint16_t const buf_atr_len)
+swicc_ret_et swicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
+                               uint8_t const *const buf_atr,
+                               uint16_t const buf_atr_len)
 {
 #ifdef DEBUG
     int bytes_written = 0U;
@@ -33,14 +33,14 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
 
     if (*buf_str_len - bytes_written < 0)
     {
-        return UICC_RET_BUFFER_TOO_SHORT;
+        return SWICC_RET_BUFFER_TOO_SHORT;
     }
     ret = snprintf(buf_str + bytes_written,
                    *buf_str_len - (uint32_t)bytes_written,
                    "(" CLR_KND("ATR") " ");
     if (ret < 0)
     {
-        return UICC_RET_BUFFER_TOO_SHORT;
+        return SWICC_RET_BUFFER_TOO_SHORT;
     }
     bytes_written += ret;
 
@@ -48,22 +48,22 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
     {
         if (*buf_str_len - bytes_written < 0)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
         ret = snprintf(buf_str + bytes_written,
                        *buf_str_len - (uint32_t)bytes_written,
                        CLR_VAL("??\?") ")\n");
         if (ret < 0)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
-        return UICC_RET_ATR_INVALID;
+        return SWICC_RET_ATR_INVALID;
     }
 
     bool chunk_last = false;
     uint8_t chunk_idx = 0U;    /* Indicates i for TAi, TBi, TCi, TDi. */
     uint16_t buf_atr_idx = 1U; /* Skip over TS. */
-    uicc_atr_chunk_t chunk = {0}, chunk_prev = {0};
+    swicc_atr_chunk_t chunk = {0}, chunk_prev = {0};
 
     /* To determine TCK presence. ISO 7816-3:2006 p.18 sec.8.2.5. */
     bool t0_present = false;
@@ -86,7 +86,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         /* Prepare header of chunk. */
         if (*buf_str_len - bytes_written < 0)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
         if (chunk_idx == 0U)
         {
@@ -103,7 +103,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         }
         if (ret < 0)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
         bytes_written += ret;
 
@@ -185,7 +185,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
                     chunk.tabcd[y_idx] = buf_atr[buf_atr_idx + chunk_size];
                     if (*buf_str_len - bytes_written < 0)
                     {
-                        return UICC_RET_BUFFER_TOO_SHORT;
+                        return SWICC_RET_BUFFER_TOO_SHORT;
                     }
                     ret = snprintf(
                         buf_str + bytes_written,
@@ -194,7 +194,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
                         'A' + y_idx, chunk_idx, chunk.tabcd[y_idx]);
                     if (ret < 0)
                     {
-                        return UICC_RET_BUFFER_TOO_SHORT;
+                        return SWICC_RET_BUFFER_TOO_SHORT;
                     }
                     bytes_written += ret;
                     /* Safe cast since chunk size is never larger than 4. */
@@ -211,12 +211,12 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
          * The previous chunk determines what interface bytes are printed for
          * the current chunk so this needs to be saved.
          */
-        memcpy(&chunk_prev, &chunk, sizeof(uicc_atr_chunk_t));
+        memcpy(&chunk_prev, &chunk, sizeof(swicc_atr_chunk_t));
 
         /* Print the Y indicator, T (or K for chunk 0), and trailer. */
         if (*buf_str_len - bytes_written < 0)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
         if (chunk_last || !structural_present)
         {
@@ -229,21 +229,21 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
                 // clang-format off
                 "\n    (" CLR_KND("Y%u") " (" CLR_KND("A") " " CLR_VAL("'%s'") ") (" CLR_KND("B") " " CLR_VAL("'%s'") ") (" CLR_KND("C") " " CLR_VAL("'%s'") ") (" CLR_KND("D") " " CLR_VAL("'%s'") "))",
                 // clang-format on
-                chunk_idx + 1U, uicc_dbg_table_str_indicator[chunk.y[0U]],
-                uicc_dbg_table_str_indicator[chunk.y[1U]],
-                uicc_dbg_table_str_indicator[chunk.y[2U]],
-                uicc_dbg_table_str_indicator[chunk.y[3U]]);
+                chunk_idx + 1U, swicc_dbg_table_str_indicator[chunk.y[0U]],
+                swicc_dbg_table_str_indicator[chunk.y[1U]],
+                swicc_dbg_table_str_indicator[chunk.y[2U]],
+                swicc_dbg_table_str_indicator[chunk.y[3U]]);
         }
         if (ret < 0)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
         bytes_written += ret;
 
         /* Print K (historical byte count) or T (protocol type). */
         if (*buf_str_len - bytes_written < 0)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
         if (chunk_last || !structural_present)
         {
@@ -269,7 +269,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         }
         if (ret < 0)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
         bytes_written += ret;
 
@@ -277,7 +277,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
         chunk_idx++;
         if (buf_atr_idx + chunk_size > UINT16_MAX)
         {
-            return UICC_RET_ATR_INVALID;
+            return SWICC_RET_ATR_INVALID;
         }
         /* Safe cast due to check above. */
         buf_atr_idx = (uint16_t)(buf_atr_idx + chunk_size);
@@ -288,7 +288,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
     {
         if (*buf_str_len - bytes_written < 0)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
         ret = snprintf(buf_str + bytes_written,
                        *buf_str_len - (uint32_t)bytes_written,
@@ -297,14 +297,14 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
                        buf_atr[buf_atr_idx + hist_idx]);
         if (ret < 0)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
         bytes_written += ret;
     }
     /* Done printing the historical bytes. */
     if (buf_atr_idx + chunk.k > UINT16_MAX)
     {
-        return UICC_RET_ATR_INVALID;
+        return SWICC_RET_ATR_INVALID;
     }
     /* Safe cast due to check above. */
     buf_atr_idx = (uint16_t)(buf_atr_idx + chunk.k);
@@ -314,7 +314,7 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
     {
         if (*buf_str_len - bytes_written < 0)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
         if (buf_atr_idx >= buf_atr_len)
         {
@@ -322,13 +322,13 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
             ret = snprintf(
                 buf_str + bytes_written, *buf_str_len - (uint32_t)bytes_written,
                 "\n  (" CLR_KND("TCK") " " CLR_VAL("'missing'") "))");
-            return UICC_RET_ATR_INVALID;
+            return SWICC_RET_ATR_INVALID;
         }
         else
         {
             /* Safe cast since at this point the length of ATR will be >= 1. */
-            uint8_t const tck = uicc_ck(buf_atr + 1U /* Skip TS */,
-                                        (uint8_t)(buf_atr_len - 1U));
+            uint8_t const tck = swicc_ck(buf_atr + 1U /* Skip TS */,
+                                         (uint8_t)(buf_atr_len - 1U));
             ret = snprintf(buf_str + bytes_written,
                            *buf_str_len - (uint32_t)bytes_written,
                            // clang-format off
@@ -344,15 +344,15 @@ uicc_ret_et uicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
     }
     if (ret < 0)
     {
-        return UICC_RET_BUFFER_TOO_SHORT;
+        return SWICC_RET_BUFFER_TOO_SHORT;
     }
     bytes_written += ret;
 
     *buf_str_len =
         (uint16_t)bytes_written; /* Safe cast due to args of snprintf. */
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 #else
     *buf_str_len = 0U;
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 #endif
 }

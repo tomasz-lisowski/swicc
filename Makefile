@@ -7,7 +7,7 @@ DIR_BUILD:=build
 CC:=gcc
 AR:=ar
 
-MAIN_NAME:=uicc
+MAIN_NAME:=swicc
 MAIN_SRC:=$(wildcard $(DIR_SRC)/*.c) $(wildcard $(DIR_SRC)/dbg/*.c) $(wildcard $(DIR_SRC)/fs/*.c)
 MAIN_OBJ:=$(MAIN_SRC:$(DIR_SRC)/%.c=$(DIR_BUILD)/$(MAIN_NAME)/%.o)
 MAIN_DEP:=$(MAIN_OBJ:%.o=%.d)
@@ -45,7 +45,7 @@ TEST_CC_FLAGS:=\
 	-I$(DIR_LIB)/tau \
 	-I.. \
 	-L$(DIR_BUILD) \
-	-luicc
+	-lswicc
 
 all: main test
 .PHONY: all
@@ -60,7 +60,7 @@ test-dbg: TEST_CC_FLAGS+=-g -DDEBUG -fsanitize=address
 test-dbg: test
 .PHONY: test test-dbg
 
-# Create the UICC static lib.
+# Create the swICC static lib.
 $(DIR_BUILD)/$(LIB_PREFIX)$(MAIN_NAME).$(EXT_LIB_STATIC): $(DIR_LIB)/cjson/build/libcjson.a $(MAIN_OBJ)
 	cd $(DIR_BUILD)/cjson && $(AR) -x ../../$(DIR_LIB)/cjson/build/libcjson.a
 	$(AR) -rcs $(@) $(MAIN_OBJ) $(DIR_BUILD)/cjson/*

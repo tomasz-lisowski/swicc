@@ -6,4 +6,4 @@
 	url = git@github.com:DaveGamble/cJSON.git
 [submodule "lib/tau"]
 	path = lib/tau
-	url = git@github.com:jasmcaus/tau.git
+	url = git@github.com:tomasz-lisowski/tau.git

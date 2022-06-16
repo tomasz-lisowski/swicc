@@ -1,10 +1,10 @@
-#include <uicc/uicc.h>
+#include <swicc/swicc.h>
 
 /**
  * ATR defined according to ISO 7816-3:2006 p.15-20 sec.8 and ISO 7816-4:2020
  * p.120 sec.12.2.2.
  */
-uint8_t const uicc_atr[] = {
+uint8_t const swicc_atr[] = {
     0b00111011, /**
                  * LSB>MSB
                  * TS  =   L (implicit character start indicator)

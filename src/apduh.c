@@ -1,36 +1,36 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-#include <uicc/uicc.h>
+#include <swicc/swicc.h>
 
 /**
  * Store pointers to handlers for every instruction in the interindustry class.
  */
-static uicc_apduh_ft *const uicc_apduh[0x100];
+static swicc_apduh_ft *const swicc_apduh[0x100];
 
 /**
  * @brief Handle both invalid and unknown instructions.
- * @param uicc_state
+ * @param swicc_state
  * @param cmd
  * @param res
  * @param procedure_count
  * @return Return code.
  */
-static uicc_apduh_ft apduh_unk;
-static uicc_ret_et apduh_unk(uicc_st *const uicc_state,
-                             uicc_apdu_cmd_st const *const cmd,
-                             uicc_apdu_res_st *const res,
-                             uint32_t const procedure_count)
+static swicc_apduh_ft apduh_unk;
+static swicc_ret_et apduh_unk(swicc_st *const swicc_state,
+                              swicc_apdu_cmd_st const *const cmd,
+                              swicc_apdu_res_st *const res,
+                              uint32_t const procedure_count)
 {
-    res->sw1 = UICC_APDU_SW1_CHER_INS;
+    res->sw1 = SWICC_APDU_SW1_CHER_INS;
     res->sw2 = 0;
     res->data.len = 0;
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
 /**
  * @brief Handle the SELECT command in the interindustry class.
- * @param uicc_state
+ * @param swicc_state
  * @param cmd
  * @param res
  * @param procedure_count
@@ -38,11 +38,11 @@ static uicc_ret_et apduh_unk(uicc_st *const uicc_state,
  * @note As described in ISO 7816-4:2020 p.74 sec.11.2.2.
  * @todo Handle special (reserved) IDs.
  */
-static uicc_apduh_ft apduh_select;
-static uicc_ret_et apduh_select(uicc_st *const uicc_state,
-                                uicc_apdu_cmd_st const *const cmd,
-                                uicc_apdu_res_st *const res,
-                                uint32_t const procedure_count)
+static swicc_apduh_ft apduh_select;
+static swicc_ret_et apduh_select(swicc_st *const swicc_state,
+                                 swicc_apdu_cmd_st const *const cmd,
+                                 swicc_apdu_res_st *const res,
+                                 uint32_t const procedure_count)
 {
     /**
      * ISO 7816-4:2020 pg.75 sec.11.2.2 table.63 states any value with not all
@@ -50,10 +50,10 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
      */
     if ((cmd->hdr->p2 & 0b11110000) != 0)
     {
-        res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+        res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
         res->sw2 = 0x86; /* "Incorrect parameters P1-P2" */
         res->data.len = 0U;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 
     /**
@@ -68,10 +68,10 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
          */
         if (cmd->data->len != 0U)
         {
-            res->sw1 = UICC_APDU_SW1_CHER_UNK;
+            res->sw1 = SWICC_APDU_SW1_CHER_UNK;
             res->sw2 = 0U;
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
 
         /**
@@ -80,10 +80,10 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
          */
         if (*cmd->p3 > 0)
         {
-            res->sw1 = UICC_APDU_SW1_PROC_ACK_ALL;
+            res->sw1 = SWICC_APDU_SW1_PROC_ACK_ALL;
             res->sw2 = 0U;
             res->data.len = *cmd->p3; /* Length of expected data. */
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
     }
 
@@ -94,10 +94,10 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
      */
     if (cmd->data->len != *cmd->p3 && procedure_count >= 1U)
     {
-        res->sw1 = UICC_APDU_SW1_CHER_LEN;
+        res->sw1 = SWICC_APDU_SW1_CHER_LEN;
         res->sw2 = 0x02; /* The value of Lc is not the one expected. */
         res->data.len = 0U;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 
     enum meth_e
@@ -126,7 +126,7 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                            Data: Absent. */
     } meth = METH_RFU;
 
-    uicc_fs_occ_et occ;
+    swicc_fs_occ_et occ;
 
     enum data_req_e
     {
@@ -186,16 +186,16 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
         switch (cmd->hdr->p2 & 0b00000011)
         {
         case 0b00000000:
-            occ = UICC_FS_OCC_FIRST;
+            occ = SWICC_FS_OCC_FIRST;
             break;
         case 0b00000001:
-            occ = UICC_FS_OCC_LAST;
+            occ = SWICC_FS_OCC_LAST;
             break;
         case 0b00000010:
-            occ = UICC_FS_OCC_NEXT;
+            occ = SWICC_FS_OCC_NEXT;
             break;
         case 0b00000011:
-            occ = UICC_FS_OCC_PREV;
+            occ = SWICC_FS_OCC_PREV;
             break;
         }
         switch (cmd->hdr->p2 & 0b00001100)
@@ -232,84 +232,84 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             meth == METH_DO_PARENT || meth == METH_DF_PARENT ||
             meth == METH_EF_NESTED || meth == METH_DF_NESTED)
         {
-            res->sw1 = UICC_APDU_SW1_CHER_P1P2;
+            res->sw1 = SWICC_APDU_SW1_CHER_P1P2;
             res->sw2 = 0U;
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
 
-        uicc_ret_et ret_select = UICC_RET_ERROR;
+        swicc_ret_et ret_select = SWICC_RET_ERROR;
         switch (meth)
         {
         case METH_MF_ADF_DF_EF:
             /* Must contain exactly 1 file ID. */
-            if (cmd->data->len != sizeof(uicc_fs_id_kt))
+            if (cmd->data->len != sizeof(swicc_fs_id_kt))
             {
-                ret_select = UICC_RET_ERROR;
+                ret_select = SWICC_RET_ERROR;
             }
             else
             {
-                ret_select = uicc_va_select_file_id(
-                    &uicc_state->fs,
-                    __builtin_bswap16(*(uicc_fs_id_kt *)cmd->data->b));
+                ret_select = swicc_va_select_file_id(
+                    &swicc_state->fs,
+                    __builtin_bswap16(*(swicc_fs_id_kt *)cmd->data->b));
             }
             break;
         case METH_DF_NAME:
             /* Check if maybe trying to select an ADF. */
-            if (cmd->data->len > UICC_FS_ADF_AID_LEN ||
-                cmd->data->len < UICC_FS_ADF_AID_RID_LEN ||
-                occ != UICC_FS_OCC_FIRST)
+            if (cmd->data->len > SWICC_FS_ADF_AID_LEN ||
+                cmd->data->len < SWICC_FS_ADF_AID_RID_LEN ||
+                occ != SWICC_FS_OCC_FIRST)
             {
                 /* Try to select by DF name at least. */
-                if (cmd->data->len == 0 || occ != UICC_FS_OCC_FIRST)
+                if (cmd->data->len == 0 || occ != SWICC_FS_OCC_FIRST)
                 {
-                    ret_select = UICC_RET_ERROR;
+                    ret_select = SWICC_RET_ERROR;
                 }
                 else
                 {
-                    ret_select = uicc_va_select_file_dfname(
-                        &uicc_state->fs, (char *)cmd->data->b, cmd->data->len);
+                    ret_select = swicc_va_select_file_dfname(
+                        &swicc_state->fs, (char *)cmd->data->b, cmd->data->len);
                 }
             }
             else
             {
-                ret_select = uicc_va_select_adf(&uicc_state->fs, cmd->data->b,
-                                                cmd->data->len -
-                                                    UICC_FS_ADF_AID_RID_LEN);
+                ret_select = swicc_va_select_adf(&swicc_state->fs, cmd->data->b,
+                                                 cmd->data->len -
+                                                     SWICC_FS_ADF_AID_RID_LEN);
             }
             break;
         case METH_MF_PATH:
             /* Must contain at least 1 ID in the path. */
-            if (cmd->data->len < sizeof(uicc_fs_id_kt) ||
-                occ != UICC_FS_OCC_FIRST)
+            if (cmd->data->len < sizeof(swicc_fs_id_kt) ||
+                occ != SWICC_FS_OCC_FIRST)
             {
-                ret_select = UICC_RET_ERROR;
+                ret_select = SWICC_RET_ERROR;
             }
             else
             {
-                uicc_fs_path_st const path = {
+                swicc_fs_path_st const path = {
                     .b = cmd->data->b,
                     .len = cmd->data->len,
-                    .type = UICC_FS_PATH_TYPE_MF,
+                    .type = SWICC_FS_PATH_TYPE_MF,
                 };
-                ret_select = uicc_va_select_file_path(&uicc_state->fs, path);
+                ret_select = swicc_va_select_file_path(&swicc_state->fs, path);
             }
             break;
         case METH_DF_PATH:
             /* Must contain at least 1 ID in the path. */
-            if (cmd->data->len < sizeof(uicc_fs_id_kt) ||
-                occ != UICC_FS_OCC_FIRST)
+            if (cmd->data->len < sizeof(swicc_fs_id_kt) ||
+                occ != SWICC_FS_OCC_FIRST)
             {
-                ret_select = UICC_RET_ERROR;
+                ret_select = SWICC_RET_ERROR;
             }
             else
             {
-                uicc_fs_path_st const path = {
+                swicc_fs_path_st const path = {
                     .b = cmd->data->b,
                     .len = cmd->data->len,
-                    .type = UICC_FS_PATH_TYPE_DF,
+                    .type = SWICC_FS_PATH_TYPE_DF,
                 };
-                ret_select = uicc_va_select_file_path(&uicc_state->fs, path);
+                ret_select = swicc_va_select_file_path(&swicc_state->fs, path);
             }
             break;
         default:
@@ -317,31 +317,31 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
             __builtin_unreachable();
         }
 
-        if (ret_select == UICC_RET_FS_NOT_FOUND)
+        if (ret_select == SWICC_RET_FS_NOT_FOUND)
         {
-            res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+            res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
             res->sw2 = 0x82; /* "Not found" */
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
-        else if (ret_select != UICC_RET_SUCCESS)
+        else if (ret_select != SWICC_RET_SUCCESS)
         {
             /* Failed to select. */
-            res->sw1 = UICC_APDU_SW1_CHER_UNK;
+            res->sw1 = SWICC_APDU_SW1_CHER_UNK;
             res->sw2 = 0U;
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
 
         /* The file that was requested to be selected. */
-        uicc_fs_file_st *file_selected = &uicc_state->fs.va.cur_file;
+        swicc_fs_file_st *file_selected = &swicc_state->fs.va.cur_file;
 
         if (data_req == DATA_REQ_ABSENT)
         {
-            res->sw1 = UICC_APDU_SW1_NORM_NONE;
+            res->sw1 = SWICC_APDU_SW1_NORM_NONE;
             res->sw2 = 0U;
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
         else
         {
@@ -361,17 +361,17 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                 0x8A, /* '62': Life cycle status */
             };
             static uint32_t const tags_count = sizeof(tags) / sizeof(tags[0U]);
-            uicc_dato_bertlv_tag_st bertlv_tags[tags_count];
+            swicc_dato_bertlv_tag_st bertlv_tags[tags_count];
             for (uint8_t tag_idx = 0U; tag_idx < tags_count; ++tag_idx)
             {
-                if (uicc_dato_bertlv_tag_create(&bertlv_tags[tag_idx],
-                                                tags[tag_idx]) !=
-                    UICC_RET_SUCCESS)
+                if (swicc_dato_bertlv_tag_create(&bertlv_tags[tag_idx],
+                                                 tags[tag_idx]) !=
+                    SWICC_RET_SUCCESS)
                 {
-                    res->sw1 = UICC_APDU_SW1_CHER_UNK;
+                    res->sw1 = SWICC_APDU_SW1_CHER_UNK;
                     res->sw2 = 0U;
                     res->data.len = 0U;
-                    return UICC_RET_SUCCESS;
+                    return SWICC_RET_SUCCESS;
                 }
             }
 
@@ -382,22 +382,23 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                 __builtin_bswap16(file_selected->hdr_file.id);
             uint8_t const data_sid[] = {file_selected->hdr_file.sid};
             uint8_t lcs_be;
-            uint8_t descr_be[UICC_FS_FILE_DESCR_LEN_MAX];
+            uint8_t descr_be[SWICC_FS_FILE_DESCR_LEN_MAX];
             uint8_t descr_len = 0U;
-            if (uicc_fs_file_lcs(file_selected, &lcs_be) != UICC_RET_SUCCESS ||
-                uicc_fs_file_descr(uicc_state->fs.va.cur_tree, file_selected,
-                                   descr_be, &descr_len) != UICC_RET_SUCCESS)
+            if (swicc_fs_file_lcs(file_selected, &lcs_be) !=
+                    SWICC_RET_SUCCESS ||
+                swicc_fs_file_descr(swicc_state->fs.va.cur_tree, file_selected,
+                                    descr_be, &descr_len) != SWICC_RET_SUCCESS)
             {
-                res->sw1 = UICC_APDU_SW1_CHER_UNK;
+                res->sw1 = SWICC_APDU_SW1_CHER_UNK;
                 res->sw2 = 0U;
                 res->data.len = 0U;
-                return UICC_RET_SUCCESS;
+                return SWICC_RET_SUCCESS;
             }
 
             uint8_t *bertlv_buf;
             uint32_t bertlv_len;
-            uicc_ret_et ret_bertlv = UICC_RET_ERROR;
-            uicc_dato_bertlv_enc_st enc;
+            swicc_ret_et ret_bertlv = SWICC_RET_ERROR;
+            swicc_dato_bertlv_enc_st enc;
             for (bool dry_run = true;; dry_run = false)
             {
                 if (dry_run)
@@ -415,14 +416,14 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                     bertlv_buf = res->data.b;
                 }
 
-                uicc_dato_bertlv_enc_init(&enc, bertlv_buf, bertlv_len);
-                uicc_dato_bertlv_enc_st enc_nstd;
+                swicc_dato_bertlv_enc_init(&enc, bertlv_buf, bertlv_len);
+                swicc_dato_bertlv_enc_st enc_nstd;
 
                 /* Nest everything in an FCI if it was requested. */
                 if (data_req == DATA_REQ_FCI)
                 {
-                    if (uicc_dato_bertlv_enc_nstd_start(&enc, &enc_nstd) !=
-                        UICC_RET_SUCCESS)
+                    if (swicc_dato_bertlv_enc_nstd_start(&enc, &enc_nstd) !=
+                        SWICC_RET_SUCCESS)
                     {
                         break;
                     }
@@ -438,78 +439,78 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                 /* Create an FCP if it was requested. */
                 if (data_req == DATA_REQ_FCI || data_req == DATA_REQ_FCP)
                 {
-                    uicc_dato_bertlv_enc_st enc_fcp;
-                    if (uicc_dato_bertlv_enc_nstd_start(&enc_nstd, &enc_fcp) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_data(
+                    swicc_dato_bertlv_enc_st enc_fcp;
+                    if (swicc_dato_bertlv_enc_nstd_start(&enc_nstd, &enc_fcp) !=
+                            SWICC_RET_SUCCESS ||
+                        swicc_dato_bertlv_enc_data(
                             &enc_fcp, (uint8_t *)&data_size_be,
-                            sizeof(data_size_be)) != UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[3U]) !=
-                            UICC_RET_SUCCESS ||
+                            sizeof(data_size_be)) != SWICC_RET_SUCCESS ||
+                        swicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[3U]) !=
+                            SWICC_RET_SUCCESS ||
                         (file_selected->hdr_file.sid != 0
-                             ? (uicc_dato_bertlv_enc_data(&enc_fcp, data_sid,
-                                                          sizeof(data_sid)) !=
-                                    UICC_RET_SUCCESS ||
-                                uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                         &bertlv_tags[7U]) !=
-                                    UICC_RET_SUCCESS)
+                             ? (swicc_dato_bertlv_enc_data(&enc_fcp, data_sid,
+                                                           sizeof(data_sid)) !=
+                                    SWICC_RET_SUCCESS ||
+                                swicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                          &bertlv_tags[7U]) !=
+                                    SWICC_RET_SUCCESS)
                              : false) ||
-                        uicc_dato_bertlv_enc_data(&enc_fcp, &lcs_be,
-                                                  sizeof(lcs_be)) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[8U]) !=
-                            UICC_RET_SUCCESS ||
+                        swicc_dato_bertlv_enc_data(&enc_fcp, &lcs_be,
+                                                   sizeof(lcs_be)) !=
+                            SWICC_RET_SUCCESS ||
+                        swicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[8U]) !=
+                            SWICC_RET_SUCCESS ||
                         (file_selected->hdr_item.type ==
-                                 UICC_FS_ITEM_TYPE_FILE_MF
-                             ? (uicc_dato_bertlv_enc_data(
+                                 SWICC_FS_ITEM_TYPE_FILE_MF
+                             ? (swicc_dato_bertlv_enc_data(
                                     &enc_fcp, file_selected->hdr_spec.mf.name,
-                                    UICC_FS_NAME_LEN) != UICC_RET_SUCCESS ||
-                                uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                         &bertlv_tags[6U]) !=
-                                    UICC_RET_SUCCESS)
+                                    SWICC_FS_NAME_LEN) != SWICC_RET_SUCCESS ||
+                                swicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                          &bertlv_tags[6U]) !=
+                                    SWICC_RET_SUCCESS)
                          : file_selected->hdr_item.type ==
-                                 UICC_FS_ITEM_TYPE_FILE_DF
-                             ? (uicc_dato_bertlv_enc_data(
+                                 SWICC_FS_ITEM_TYPE_FILE_DF
+                             ? (swicc_dato_bertlv_enc_data(
                                     &enc_fcp, file_selected->hdr_spec.df.name,
-                                    UICC_FS_NAME_LEN) != UICC_RET_SUCCESS ||
-                                uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                         &bertlv_tags[6U]) !=
-                                    UICC_RET_SUCCESS)
+                                    SWICC_FS_NAME_LEN) != SWICC_RET_SUCCESS ||
+                                swicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                          &bertlv_tags[6U]) !=
+                                    SWICC_RET_SUCCESS)
                          : file_selected->hdr_item.type ==
-                                 UICC_FS_ITEM_TYPE_FILE_ADF
-                             ? (uicc_dato_bertlv_enc_data(
+                                 SWICC_FS_ITEM_TYPE_FILE_ADF
+                             ? (swicc_dato_bertlv_enc_data(
                                     &enc_fcp,
                                     file_selected->hdr_spec.adf.aid.pix,
                                     sizeof(
                                         file_selected->hdr_spec.adf.aid.pix)) !=
-                                    UICC_RET_SUCCESS ||
-                                uicc_dato_bertlv_enc_data(
+                                    SWICC_RET_SUCCESS ||
+                                swicc_dato_bertlv_enc_data(
                                     &enc_fcp,
                                     file_selected->hdr_spec.adf.aid.rid,
                                     sizeof(
                                         file_selected->hdr_spec.adf.aid.rid)) !=
-                                    UICC_RET_SUCCESS ||
-                                uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                         &bertlv_tags[6U]) !=
-                                    UICC_RET_SUCCESS)
+                                    SWICC_RET_SUCCESS ||
+                                swicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                          &bertlv_tags[6U]) !=
+                                    SWICC_RET_SUCCESS)
                              : false) ||
                         (file_selected->hdr_file.id != 0
-                             ? (uicc_dato_bertlv_enc_data(
+                             ? (swicc_dato_bertlv_enc_data(
                                     &enc_fcp, (uint8_t *)&data_id_be,
-                                    sizeof(data_id_be)) != UICC_RET_SUCCESS ||
-                                uicc_dato_bertlv_enc_hdr(&enc_fcp,
-                                                         &bertlv_tags[5U]) !=
-                                    UICC_RET_SUCCESS)
+                                    sizeof(data_id_be)) != SWICC_RET_SUCCESS ||
+                                swicc_dato_bertlv_enc_hdr(&enc_fcp,
+                                                          &bertlv_tags[5U]) !=
+                                    SWICC_RET_SUCCESS)
                              : false) ||
-                        uicc_dato_bertlv_enc_data(&enc_fcp, descr_be,
-                                                  descr_len) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[4U]) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_nstd_end(&enc_nstd, &enc_fcp) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_hdr(&enc_nstd, &bertlv_tags[0U]) !=
-                            UICC_RET_SUCCESS)
+                        swicc_dato_bertlv_enc_data(&enc_fcp, descr_be,
+                                                   descr_len) !=
+                            SWICC_RET_SUCCESS ||
+                        swicc_dato_bertlv_enc_hdr(&enc_fcp, &bertlv_tags[4U]) !=
+                            SWICC_RET_SUCCESS ||
+                        swicc_dato_bertlv_enc_nstd_end(&enc_nstd, &enc_fcp) !=
+                            SWICC_RET_SUCCESS ||
+                        swicc_dato_bertlv_enc_hdr(
+                            &enc_nstd, &bertlv_tags[0U]) != SWICC_RET_SUCCESS)
                     {
                         break;
                     }
@@ -517,23 +518,23 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                 /* Create an FMD if it was requested. */
                 if (data_req == DATA_REQ_FCI || data_req == DATA_REQ_FMD)
                 {
-                    uicc_dato_bertlv_enc_st enc_fmd;
-                    if (uicc_dato_bertlv_enc_nstd_start(&enc_nstd, &enc_fmd) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_nstd_end(&enc_nstd, &enc_fmd) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_hdr(&enc_nstd, &bertlv_tags[1U]) !=
-                            UICC_RET_SUCCESS)
+                    swicc_dato_bertlv_enc_st enc_fmd;
+                    if (swicc_dato_bertlv_enc_nstd_start(&enc_nstd, &enc_fmd) !=
+                            SWICC_RET_SUCCESS ||
+                        swicc_dato_bertlv_enc_nstd_end(&enc_nstd, &enc_fmd) !=
+                            SWICC_RET_SUCCESS ||
+                        swicc_dato_bertlv_enc_hdr(
+                            &enc_nstd, &bertlv_tags[1U]) != SWICC_RET_SUCCESS)
                     {
                         break;
                     }
                 }
                 if (data_req == DATA_REQ_FCI)
                 {
-                    if (uicc_dato_bertlv_enc_nstd_end(&enc, &enc_nstd) !=
-                            UICC_RET_SUCCESS ||
-                        uicc_dato_bertlv_enc_hdr(&enc, &bertlv_tags[2U]) !=
-                            UICC_RET_SUCCESS)
+                    if (swicc_dato_bertlv_enc_nstd_end(&enc, &enc_nstd) !=
+                            SWICC_RET_SUCCESS ||
+                        swicc_dato_bertlv_enc_hdr(&enc, &bertlv_tags[2U]) !=
+                            SWICC_RET_SUCCESS)
                     {
                         break;
                     }
@@ -547,7 +548,7 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
                 /* Stop when finished with the real run (i.e. not dry run). */
                 if (!dry_run)
                 {
-                    ret_bertlv = UICC_RET_SUCCESS;
+                    ret_bertlv = SWICC_RET_SUCCESS;
                     break;
                 }
             }
@@ -556,31 +557,31 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
              * Check if BER-TLV creation succeeded and if enqueueing of the
              * BER-TLV DO succeeded.
              */
-            if (ret_bertlv == UICC_RET_SUCCESS &&
-                uicc_apdu_rc_enq(&uicc_state->apdu_rc, res->data.b,
-                                 bertlv_len) == UICC_RET_SUCCESS)
+            if (ret_bertlv == SWICC_RET_SUCCESS &&
+                swicc_apdu_rc_enq(&swicc_state->apdu_rc, res->data.b,
+                                  bertlv_len) == SWICC_RET_SUCCESS)
             {
-                res->sw1 = UICC_APDU_SW1_NORM_BYTES_AVAILABLE;
+                res->sw1 = SWICC_APDU_SW1_NORM_BYTES_AVAILABLE;
                 /**
                  * @todo What happens when extended APDUs are supported and
                  * length of response does not fit in SW2? For now work
                  * around is to static assert that only short APDUs are
                  * used.
                  */
-                static_assert(UICC_DATA_MAX == UICC_DATA_MAX_SHRT,
+                static_assert(SWICC_DATA_MAX == SWICC_DATA_MAX_SHRT,
                               "Response buffer length might not fit in SW2 "
                               "if SW1 is 0x61");
                 /* Safe cast due to check inside the BER-TLV loop. */
                 res->sw2 = (uint8_t)bertlv_len;
                 res->data.len = 0U;
-                return UICC_RET_SUCCESS;
+                return SWICC_RET_SUCCESS;
             }
             else
             {
-                res->sw1 = UICC_APDU_SW1_CHER_UNK;
+                res->sw1 = SWICC_APDU_SW1_CHER_UNK;
                 res->sw2 = 0U;
                 res->data.len = 0U;
-                return UICC_RET_SUCCESS;
+                return SWICC_RET_SUCCESS;
             }
         }
     }
@@ -588,18 +589,18 @@ static uicc_ret_et apduh_select(uicc_st *const uicc_state,
 
 /**
  * @brief Handle the READ BINARY command in the interindustry class.
- * @param uicc_state
+ * @param swicc_state
  * @param cmd
  * @param res
  * @param procedure_count
  * @return Return code.
  * @note As described in ISO 7816-4:2020 p.74 sec.11.3.3.
  */
-static uicc_apduh_ft apduh_bin_read;
-static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
-                                  uicc_apdu_cmd_st const *const cmd,
-                                  uicc_apdu_res_st *const res,
-                                  uint32_t const procedure_count)
+static swicc_apduh_ft apduh_bin_read;
+static swicc_ret_et apduh_bin_read(swicc_st *const swicc_state,
+                                   swicc_apdu_cmd_st const *const cmd,
+                                   swicc_apdu_res_st *const res,
+                                   uint32_t const procedure_count)
 {
     /**
      * Odd instruction (B1) not supported. It would have the data field encoded
@@ -607,10 +608,10 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
      */
     if (cmd->hdr->ins != 0xB0)
     {
-        res->sw1 = UICC_APDU_SW1_CHER_INS;
+        res->sw1 = SWICC_APDU_SW1_CHER_INS;
         res->sw2 = 0U;
         res->data.len = 0U;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 
     /**
@@ -619,10 +620,10 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
      */
     if (procedure_count == 0U)
     {
-        res->sw1 = UICC_APDU_SW1_PROC_ACK_ALL;
+        res->sw1 = SWICC_APDU_SW1_PROC_ACK_ALL;
         res->sw2 = 0U;
         res->data.len = 0U; /* 0 bytes expected. */
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
     else
     {
@@ -632,23 +633,23 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
          */
         if (cmd->data->len != 0)
         {
-            res->sw1 = UICC_APDU_SW1_CHER_LEN;
+            res->sw1 = SWICC_APDU_SW1_CHER_LEN;
             res->sw2 = 0x02; /* The value of Lc is not the one expected. */
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
     }
 
     uint8_t const len_expected = *cmd->p3;
     uint16_t offset;
-    uicc_fs_file_st file;
+    swicc_fs_file_st file;
 
     /**
      * Indicates if P1 contains a SID thus leading to a lookup and change in
      * current EF in VA on successful read.
      */
     bool const sid_use = cmd->hdr->p1 & 0b10000000;
-    uicc_fs_sid_kt sid;
+    swicc_fs_sid_kt sid;
 
     /**
      * Parse P1 and P2.
@@ -664,31 +665,31 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
         /* b6 and b7 of P1 must be 0. */
         if ((cmd->hdr->p1 & 0b01100000) != 0)
         {
-            res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+            res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
             res->sw2 = 0x86; /* "Incorrect parameters P1-P2" */
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
 
         sid = cmd->hdr->p1 & 0b00011111;
         offset = cmd->hdr->p2;
 
-        uicc_ret_et const ret_lookup =
-            uicc_disk_lutsid_lookup(uicc_state->fs.va.cur_tree, sid, &file);
-        if (ret_lookup == UICC_RET_FS_NOT_FOUND)
+        swicc_ret_et const ret_lookup =
+            swicc_disk_lutsid_lookup(swicc_state->fs.va.cur_tree, sid, &file);
+        if (ret_lookup == SWICC_RET_FS_NOT_FOUND)
         {
-            res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+            res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
             res->sw2 = 0x82; /* "File or application not found" */
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
-        else if (ret_lookup != UICC_RET_SUCCESS)
+        else if (ret_lookup != SWICC_RET_SUCCESS)
         {
             /* Not sure what went wrong. */
-            res->sw1 = UICC_APDU_SW1_CHER_UNK;
+            res->sw1 = SWICC_APDU_SW1_CHER_UNK;
             res->sw2 = 0U;
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
     }
     else
@@ -700,17 +701,17 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
         /* Safe cast since just concatentating 2 bytes into short. */
         offset = (uint16_t)(((0b01111111 & cmd->hdr->p1) << 8U) | cmd->hdr->p2);
 
-        file = uicc_state->fs.va.cur_ef;
-        if (file.hdr_item.type == UICC_FS_ITEM_TYPE_INVALID)
+        file = swicc_state->fs.va.cur_ef;
+        if (file.hdr_item.type == SWICC_FS_ITEM_TYPE_INVALID)
         {
-            res->sw1 = UICC_APDU_SW1_CHER_CMD;
+            res->sw1 = SWICC_APDU_SW1_CHER_CMD;
             res->sw2 = 0x86; /* "Command not allowed (curEF not set)" */
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
     }
 
-    if (file.hdr_item.type == UICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT)
+    if (file.hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT)
     {
         if (offset >= file.data_size)
         {
@@ -718,10 +719,10 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
              * Requested an offset which is outside the bounds of the
              * file.
              */
-            res->sw1 = UICC_APDU_SW1_CHER_P1P2;
+            res->sw1 = SWICC_APDU_SW1_CHER_P1P2;
             res->sw2 = 0U;
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
 
         /* Read data into response. */
@@ -729,19 +730,19 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
         uint8_t const len_readable = (uint8_t)(file.data_size - offset);
         uint8_t const len_read =
             len_expected > len_readable ? len_readable : len_expected;
-        memcpy(res->data.b, &uicc_state->fs.va.cur_ef.data[offset], len_read);
+        memcpy(res->data.b, &swicc_state->fs.va.cur_ef.data[offset], len_read);
         res->data.len = len_read;
         if (len_read < len_expected)
         {
             /* Read fewer bytes than were requested. */
-            res->sw1 = UICC_APDU_SW1_WARN_NVM_CHGN;
+            res->sw1 = SWICC_APDU_SW1_WARN_NVM_CHGN;
             res->sw2 = 0x82; /* "End of file, record or DO reached before
                                 reading Ne bytes, or unsuccessful search" */
         }
         else
         {
             /* Read exactly the number of bytes requested. */
-            res->sw1 = UICC_APDU_SW1_NORM_NONE;
+            res->sw1 = SWICC_APDU_SW1_NORM_NONE;
             res->sw2 = 0U;
         }
 
@@ -751,10 +752,10 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
              * Select the file by SID now that the command is known to
              * succeed.
              */
-            if (uicc_va_select_file_sid(&uicc_state->fs, sid) ==
-                UICC_RET_SUCCESS)
+            if (swicc_va_select_file_sid(&swicc_state->fs, sid) ==
+                SWICC_RET_SUCCESS)
             {
-                return UICC_RET_SUCCESS;
+                return SWICC_RET_SUCCESS;
             }
             /**
              * Selection should not fail since the lookup worked just fine.
@@ -764,37 +765,37 @@ static uicc_ret_et apduh_bin_read(uicc_st *const uicc_state,
         else
         {
             /* Nothing extra to be done on simple read by offset. */
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
     }
     else
     {
-        res->sw1 = UICC_APDU_SW1_CHER_CMD;
+        res->sw1 = SWICC_APDU_SW1_CHER_CMD;
         res->sw2 = 0x81; /* "Command incompatible with file structure" */
         res->data.len = 0U;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 
-    res->sw1 = UICC_APDU_SW1_CHER_UNK;
+    res->sw1 = SWICC_APDU_SW1_CHER_UNK;
     res->sw2 = 0U;
     res->data.len = 0U;
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
 /**
  * @brief Handle the READ RECORD command in the interindustry class.
- * @param uicc_state
+ * @param swicc_state
  * @param cmd
  * @param res
  * @param procedure_count
  * @return Return code.
  * @note As described in ISO 7816-4:2020 p.82 sec.11.4.3.
  */
-static uicc_apduh_ft apduh_rcrd_read;
-static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
-                                   uicc_apdu_cmd_st const *const cmd,
-                                   uicc_apdu_res_st *const res,
-                                   uint32_t const procedure_count)
+static swicc_apduh_ft apduh_rcrd_read;
+static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
+                                    swicc_apdu_cmd_st const *const cmd,
+                                    swicc_apdu_res_st *const res,
+                                    uint32_t const procedure_count)
 {
     /**
      * Odd instruction (B3) not supported. It would have the data field encoded
@@ -802,10 +803,10 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
      */
     if (cmd->hdr->ins != 0xB2)
     {
-        res->sw1 = UICC_APDU_SW1_CHER_INS;
+        res->sw1 = SWICC_APDU_SW1_CHER_INS;
         res->sw2 = 0U;
         res->data.len = 0U;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 
     /**
@@ -814,10 +815,10 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
      */
     if (procedure_count == 0U)
     {
-        res->sw1 = UICC_APDU_SW1_PROC_ACK_ALL;
+        res->sw1 = SWICC_APDU_SW1_PROC_ACK_ALL;
         res->sw2 = 0U;
         res->data.len = 0U; /* 0 bytes expected. */
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
     else
     {
@@ -827,10 +828,10 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
          */
         if (cmd->data->len != 0)
         {
-            res->sw1 = UICC_APDU_SW1_CHER_LEN;
+            res->sw1 = SWICC_APDU_SW1_CHER_LEN;
             res->sw2 = 0x02; /* The value of Lc is not the one expected. */
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
     }
 
@@ -843,7 +844,7 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
     } trgt;
 
     /* Which occurrence to read when reading using an ID. */
-    __attribute__((unused)) uicc_fs_occ_et occ = UICC_FS_OCC_FIRST;
+    __attribute__((unused)) swicc_fs_occ_et occ = SWICC_FS_OCC_FIRST;
 
     /* What to record(s) to read when reading using a number. */
     enum what_e
@@ -907,16 +908,16 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
             switch (cmd->hdr->p2 & 0b00000011)
             {
             case 0b00:
-                occ = UICC_FS_OCC_FIRST;
+                occ = SWICC_FS_OCC_FIRST;
                 break;
             case 0b01:
-                occ = UICC_FS_OCC_LAST;
+                occ = SWICC_FS_OCC_LAST;
                 break;
             case 0b10:
-                occ = UICC_FS_OCC_NEXT;
+                occ = SWICC_FS_OCC_NEXT;
                 break;
             case 0b11:
-                occ = UICC_FS_OCC_PREV;
+                occ = SWICC_FS_OCC_PREV;
                 break;
             }
         }
@@ -932,10 +933,10 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
         if (cmd->hdr->p2 == 0b11111000 || meth == METH_RCRD_ID ||
             trgt == TRGT_MANY)
         {
-            res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+            res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
             res->sw2 = 0x81; /* "Function not supported" */
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
 
         /**
@@ -947,30 +948,30 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
             (p2_val == 0b11111 && meth == METH_RCRD_NUM) || what == WHAT_RFU ||
             cmd->hdr->p1 == 0x00 || cmd->hdr->p1 == 0xFF)
         {
-            res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+            res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
             res->sw2 = 0x86; /* "Incorrect parameters P1-P2" */
             res->data.len = 0U;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
 
         if (meth == METH_RCRD_NUM)
         {
             /* Safe cast because P1 is >0. */
-            uicc_fs_rcrd_idx_kt const rcrd_idx = (uint8_t)(cmd->hdr->p1 - 1U);
+            swicc_fs_rcrd_idx_kt const rcrd_idx = (uint8_t)(cmd->hdr->p1 - 1U);
 
-            uicc_fs_file_st ef_cur;
-            uicc_ret_et ret_ef = UICC_RET_ERROR;
+            swicc_fs_file_st ef_cur;
+            swicc_ret_et ret_ef = SWICC_RET_ERROR;
             switch (trgt)
             {
             case TRGT_EF_CUR: {
-                ef_cur = uicc_state->fs.va.cur_ef;
-                ret_ef = UICC_RET_SUCCESS;
+                ef_cur = swicc_state->fs.va.cur_ef;
+                ret_ef = SWICC_RET_SUCCESS;
                 break;
             }
             case TRGT_EF_SID: {
-                uicc_fs_sid_kt const sid = p2_val;
-                ret_ef = uicc_disk_lutsid_lookup(uicc_state->fs.va.cur_tree,
-                                                 sid, &ef_cur);
+                swicc_fs_sid_kt const sid = p2_val;
+                ret_ef = swicc_disk_lutsid_lookup(swicc_state->fs.va.cur_tree,
+                                                  sid, &ef_cur);
                 break;
             }
             default:
@@ -978,29 +979,29 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
                 __builtin_unreachable();
             }
 
-            if (ret_ef == UICC_RET_FS_NOT_FOUND)
+            if (ret_ef == SWICC_RET_FS_NOT_FOUND)
             {
-                res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+                res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
                 res->sw2 = 0x82; /* "File or application not found" */
                 res->data.len = 0U;
-                return UICC_RET_SUCCESS;
+                return SWICC_RET_SUCCESS;
             }
-            else if (ret_ef == UICC_RET_SUCCESS)
+            else if (ret_ef == SWICC_RET_SUCCESS)
             {
                 /* Got the target EF, can read the record now. */
                 uint8_t *rcrd_buf;
                 uint8_t rcrd_len;
-                uicc_ret_et const ret_rcrd =
-                    uicc_disk_file_rcrd(uicc_state->fs.va.cur_tree, &ef_cur,
-                                        rcrd_idx, &rcrd_buf, &rcrd_len);
-                if (ret_rcrd == UICC_RET_FS_NOT_FOUND)
+                swicc_ret_et const ret_rcrd =
+                    swicc_disk_file_rcrd(swicc_state->fs.va.cur_tree, &ef_cur,
+                                         rcrd_idx, &rcrd_buf, &rcrd_len);
+                if (ret_rcrd == SWICC_RET_FS_NOT_FOUND)
                 {
-                    res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+                    res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
                     res->sw2 = 0x83; /* "Record not found" */
                     res->data.len = 0U;
-                    return UICC_RET_SUCCESS;
+                    return SWICC_RET_SUCCESS;
                 }
-                else if (ret_rcrd == UICC_RET_SUCCESS)
+                else if (ret_rcrd == SWICC_RET_SUCCESS)
                 {
                     /* Check if the expected response length is as expected. */
                     if (*cmd->p3 != rcrd_len)
@@ -1009,10 +1010,10 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
                          * Asking the interface to retry the command but this
                          * time with correct expected response length.
                          */
-                        res->sw1 = UICC_APDU_SW1_CHER_LE;
+                        res->sw1 = SWICC_APDU_SW1_CHER_LE;
                         res->sw2 = rcrd_len;
                         res->data.len = 0U;
-                        return UICC_RET_SUCCESS;
+                        return SWICC_RET_SUCCESS;
                     }
 
                     /**
@@ -1020,60 +1021,60 @@ static uicc_ret_et apduh_rcrd_read(uicc_st *const uicc_state,
                      * selected by SID).
                      * @warning If this fails, something weird is going on.
                      */
-                    uicc_ret_et const ret_file_select =
+                    swicc_ret_et const ret_file_select =
                         trgt == TRGT_EF_SID
-                            ? uicc_va_select_file_sid(&uicc_state->fs,
-                                                      ef_cur.hdr_file.sid)
-                            : UICC_RET_SUCCESS;
-                    if (ret_file_select == UICC_RET_SUCCESS)
+                            ? swicc_va_select_file_sid(&swicc_state->fs,
+                                                       ef_cur.hdr_file.sid)
+                            : SWICC_RET_SUCCESS;
+                    if (ret_file_select == SWICC_RET_SUCCESS)
                     {
                         /**
                          * In any case, have to select the record.
                          * @warning If this fails, something weird is going on.
                          */
-                        uicc_ret_et const ret_rcrd_select =
-                            uicc_va_select_record_idx(&uicc_state->fs,
-                                                      rcrd_idx);
-                        if (ret_rcrd_select == UICC_RET_SUCCESS)
+                        swicc_ret_et const ret_rcrd_select =
+                            swicc_va_select_record_idx(&swicc_state->fs,
+                                                       rcrd_idx);
+                        if (ret_rcrd_select == SWICC_RET_SUCCESS)
                         {
-                            res->sw1 = UICC_APDU_SW1_NORM_NONE;
+                            res->sw1 = SWICC_APDU_SW1_NORM_NONE;
                             res->sw2 = 0U;
                             res->data.len = rcrd_len;
                             memcpy(res->data.b, rcrd_buf, rcrd_len);
-                            return UICC_RET_SUCCESS;
+                            return SWICC_RET_SUCCESS;
                         }
                     }
                 }
             }
         }
     }
-    res->sw1 = UICC_APDU_SW1_CHER_UNK;
+    res->sw1 = SWICC_APDU_SW1_CHER_UNK;
     res->sw2 = 0U;
     res->data.len = 0U;
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
 /**
  * @brief Handle the GET RESPONSE command in the interindustry class.
- * @param uicc_state
+ * @param swicc_state
  * @param cmd
  * @param res
  * @param procedure_count
  * @return Return code.
  * @note As described in ISO 7816-4:2020 p.82 sec.11.4.3.
  */
-static uicc_apduh_ft apduh_res_get;
-static uicc_ret_et apduh_res_get(uicc_st *const uicc_state,
-                                 uicc_apdu_cmd_st const *const cmd,
-                                 uicc_apdu_res_st *const res,
-                                 uint32_t const procedure_count)
+static swicc_apduh_ft apduh_res_get;
+static swicc_ret_et apduh_res_get(swicc_st *const swicc_state,
+                                  swicc_apdu_cmd_st const *const cmd,
+                                  swicc_apdu_res_st *const res,
+                                  uint32_t const procedure_count)
 {
     if (procedure_count == 0U)
     {
-        res->sw1 = UICC_APDU_SW1_PROC_ACK_ALL;
+        res->sw1 = SWICC_APDU_SW1_PROC_ACK_ALL;
         res->sw2 = 0U;
         res->data.len = 0U; /* 0 bytes expected. */
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
     else if (cmd->data->len != 0U)
     {
@@ -1082,40 +1083,41 @@ static uicc_ret_et apduh_res_get(uicc_st *const uicc_state,
          * not present so if it sends data then the command is malformed since
          * Lc should have been present.
          */
-        res->sw1 = UICC_APDU_SW1_CHER_LEN;
+        res->sw1 = SWICC_APDU_SW1_CHER_LEN;
         res->sw2 =
             0x01; /* "Command APDU format not compliant with this standard" */
         res->data.len = 0U;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 
     /* P1 and P2 need to be 0, other values are RFU. */
     if (cmd->hdr->p1 != 0U || cmd->hdr->p2 != 0U)
     {
-        res->sw1 = UICC_APDU_SW1_CHER_P1P2_INFO;
+        res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
         res->sw2 = 0x86; /* "Incorrect parameters P1-P2" */
         res->data.len = 0U;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 
     /* Did not request any data. */
     if (*cmd->p3 == 0U)
     {
-        res->sw1 = UICC_APDU_SW1_NORM_NONE;
+        res->sw1 = SWICC_APDU_SW1_NORM_NONE;
         res->sw2 = 0U;
         res->data.len = 0U;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 
     uint32_t rc_len = *cmd->p3;
-    uicc_ret_et const ret_rc =
-        uicc_apdu_rc_deq(&uicc_state->apdu_rc, res->data.b, &rc_len);
-    if (ret_rc == UICC_RET_SUCCESS)
+    swicc_ret_et const ret_rc =
+        swicc_apdu_rc_deq(&swicc_state->apdu_rc, res->data.b, &rc_len);
+    if (ret_rc == SWICC_RET_SUCCESS)
     {
-        uint32_t const rc_len_rem = uicc_apdu_rc_len_rem(&uicc_state->apdu_rc);
+        uint32_t const rc_len_rem =
+            swicc_apdu_rc_len_rem(&swicc_state->apdu_rc);
         if (rc_len_rem > 0U)
         {
-            res->sw1 = UICC_APDU_SW1_NORM_BYTES_AVAILABLE;
+            res->sw1 = SWICC_APDU_SW1_NORM_BYTES_AVAILABLE;
             if (rc_len_rem > UINT8_MAX)
             {
                 /**
@@ -1130,102 +1132,103 @@ static uicc_ret_et apduh_res_get(uicc_st *const uicc_state,
                 res->sw2 = (uint8_t)rc_len_rem;
             }
             res->data.len = *cmd->p3;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
         else
         {
-            res->sw1 = UICC_APDU_SW1_NORM_NONE;
+            res->sw1 = SWICC_APDU_SW1_NORM_NONE;
             res->sw2 = 0U;
             res->data.len = *cmd->p3;
-            return UICC_RET_SUCCESS;
+            return SWICC_RET_SUCCESS;
         }
     }
     else
     {
         /* Not enough data in the RC buffer to give back to the interface. */
-        res->sw1 = UICC_APDU_SW1_WARN_NVM_CHGN;
+        res->sw1 = SWICC_APDU_SW1_WARN_NVM_CHGN;
         res->sw2 = 0x82; /* "End of file, record or DO reached before
                             reading Ne bytes, or unsuccessful search" */
         res->data.len = 0U;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
-    return UICC_RET_ERROR;
+    return SWICC_RET_ERROR;
 }
 
-uicc_ret_et uicc_apduh_pro_register(uicc_st *const uicc_state,
-                                    uicc_apduh_ft *const handler)
+swicc_ret_et swicc_apduh_pro_register(swicc_st *const swicc_state,
+                                      swicc_apduh_ft *const handler)
 {
-    uicc_state->internal.apduh_pro = handler;
-    return UICC_RET_SUCCESS;
+    swicc_state->internal.apduh_pro = handler;
+    return SWICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_apduh_demux(uicc_st *const uicc_state,
-                             uicc_apdu_cmd_st const *const cmd,
-                             uicc_apdu_res_st *const res,
-                             uint32_t const procedure_count)
+swicc_ret_et swicc_apduh_demux(swicc_st *const swicc_state,
+                               swicc_apdu_cmd_st const *const cmd,
+                               swicc_apdu_res_st *const res,
+                               uint32_t const procedure_count)
 {
-    uicc_ret_et ret = UICC_RET_APDU_UNHANDLED;
+    swicc_ret_et ret = SWICC_RET_APDU_UNHANDLED;
     switch (cmd->hdr->cla.type)
     {
-    case UICC_APDU_CLA_TYPE_INVALID:
-    case UICC_APDU_CLA_TYPE_RFU:
-        res->sw1 = UICC_APDU_SW1_CHER_CLA; /* Marked as unsupported class. */
+    case SWICC_APDU_CLA_TYPE_INVALID:
+    case SWICC_APDU_CLA_TYPE_RFU:
+        res->sw1 = SWICC_APDU_SW1_CHER_CLA; /* Marked as unsupported class. */
         res->sw2 = 0;
         res->data.len = 0;
-        ret = UICC_RET_SUCCESS;
+        ret = SWICC_RET_SUCCESS;
         break;
-    case UICC_APDU_CLA_TYPE_INTERINDUSTRY:
+    case SWICC_APDU_CLA_TYPE_INTERINDUSTRY:
         if (cmd->hdr->ins != 0xC0 /* GET RESPONSE instruction */)
         {
             /* Make GET RESPONSE deterministically not work if resumed. */
-            uicc_apdu_rc_reset(&uicc_state->apdu_rc);
+            swicc_apdu_rc_reset(&swicc_state->apdu_rc);
         }
 
         /**
          * Let the interindustry implementations to be overridden by proprietary
          * ones.
          */
-        if (uicc_state->internal.apduh_pro != NULL)
+        if (swicc_state->internal.apduh_pro != NULL)
         {
-            ret = uicc_state->internal.apduh_pro(uicc_state, cmd, res,
-                                                 procedure_count);
-            if (ret == UICC_RET_SUCCESS)
+            ret = swicc_state->internal.apduh_pro(swicc_state, cmd, res,
+                                                  procedure_count);
+            if (ret == SWICC_RET_SUCCESS)
             {
                 break;
             }
-            else if (ret != UICC_RET_APDU_UNHANDLED)
+            else if (ret != SWICC_RET_APDU_UNHANDLED)
             {
                 /* Something went wrong. */
                 break;
             }
         }
 
-        ret = uicc_apduh[cmd->hdr->ins](uicc_state, cmd, res, procedure_count);
+        ret =
+            swicc_apduh[cmd->hdr->ins](swicc_state, cmd, res, procedure_count);
         break;
-    case UICC_APDU_CLA_TYPE_PROPRIETARY:
-        if (uicc_state->internal.apduh_pro == NULL)
+    case SWICC_APDU_CLA_TYPE_PROPRIETARY:
+        if (swicc_state->internal.apduh_pro == NULL)
         {
-            ret = UICC_RET_APDU_UNHANDLED;
+            ret = SWICC_RET_APDU_UNHANDLED;
             break;
         }
-        return uicc_state->internal.apduh_pro(uicc_state, cmd, res,
-                                              procedure_count);
+        return swicc_state->internal.apduh_pro(swicc_state, cmd, res,
+                                               procedure_count);
     default:
-        ret = UICC_RET_APDU_UNHANDLED;
+        ret = SWICC_RET_APDU_UNHANDLED;
         break;
     }
 
-    if (ret == UICC_RET_APDU_UNHANDLED)
+    if (ret == SWICC_RET_APDU_UNHANDLED)
     {
-        ret = UICC_RET_SUCCESS;
-        res->sw1 = UICC_APDU_SW1_CHER_INS;
+        ret = SWICC_RET_SUCCESS;
+        res->sw1 = SWICC_APDU_SW1_CHER_INS;
         res->sw2 = 0;
         res->data.len = 0;
     }
     return ret;
 }
 
-static uicc_apduh_ft *const uicc_apduh[0xFF + 1U] = {
+static swicc_apduh_ft *const swicc_apduh[0xFF + 1U] = {
     [0x00] = apduh_unk,      [0x01] = apduh_unk,       [0x02] = apduh_unk,
     [0x03] = apduh_unk,      [0x04] = apduh_unk,       [0x05] = apduh_unk,
     [0x06] = apduh_unk,      [0x07] = apduh_unk,       [0x08] = apduh_unk,

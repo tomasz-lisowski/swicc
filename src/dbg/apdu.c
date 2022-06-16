@@ -1,9 +1,9 @@
 #include <stdio.h>
-#include <uicc/uicc.h>
+#include <swicc/swicc.h>
 
 #ifdef DEBUG
 /* ISO 7816-4:2020 p.15-16 */
-static char const *const uicc_dbg_table_str_ins[0xFF + 1U] = {
+static char const *const swicc_dbg_table_str_ins[0xFF + 1U] = {
     [0x00] = "RFU",
     [0x01] = "RFU",
     [0x02] = "RFU",
@@ -262,92 +262,92 @@ static char const *const uicc_dbg_table_str_ins[0xFF + 1U] = {
     [0xFF] = "RFU",
 };
 
-static char const *const uicc_dbg_table_str_cla_chain[3U] = {
-    [UICC_APDU_CLA_CCC_INVALID] = "???",
-    [UICC_APDU_CLA_CCC_LAST] = "last",
-    [UICC_APDU_CLA_CCC_MORE] = "more",
+static char const *const swicc_dbg_table_str_cla_chain[3U] = {
+    [SWICC_APDU_CLA_CCC_INVALID] = "???",
+    [SWICC_APDU_CLA_CCC_LAST] = "last",
+    [SWICC_APDU_CLA_CCC_MORE] = "more",
 };
-static char const *const uicc_dbg_table_str_cla_sm[5U] = {
-    [UICC_APDU_CLA_SM_INVALID] = "???",
-    [UICC_APDU_CLA_SM_NO] = "not indicated",
-    [UICC_APDU_CLA_SM_PROPRIETARY] = "SM is proprietary",
-    [UICC_APDU_CLA_SM_CMD_HDR_SKIP] =
+static char const *const swicc_dbg_table_str_cla_sm[5U] = {
+    [SWICC_APDU_CLA_SM_INVALID] = "???",
+    [SWICC_APDU_CLA_SM_NO] = "not indicated",
+    [SWICC_APDU_CLA_SM_PROPRIETARY] = "SM is proprietary",
+    [SWICC_APDU_CLA_SM_CMD_HDR_SKIP] =
         "standard but command header is not processed",
-    [UICC_APDU_CLA_SM_CMD_HDR_AUTH] =
+    [SWICC_APDU_CLA_SM_CMD_HDR_AUTH] =
         "standard and command header is authenticated",
 };
-static char const *const uicc_dbg_table_str_cla_info[5U] = {
-    [UICC_APDU_CLA_TYPE_INVALID] = "???",
-    [UICC_APDU_CLA_TYPE_INTERINDUSTRY] = "interindustry",
-    [UICC_APDU_CLA_TYPE_PROPRIETARY] = "proprietary",
-    [UICC_APDU_CLA_TYPE_RFU] = "reserved for future use",
+static char const *const swicc_dbg_table_str_cla_info[5U] = {
+    [SWICC_APDU_CLA_TYPE_INVALID] = "???",
+    [SWICC_APDU_CLA_TYPE_INTERINDUSTRY] = "interindustry",
+    [SWICC_APDU_CLA_TYPE_PROPRIETARY] = "proprietary",
+    [SWICC_APDU_CLA_TYPE_RFU] = "reserved for future use",
 };
 #endif /* DEBUG */
 
-char const *uicc_dbg_apdu_cla_ccc_str(uicc_apdu_cla_st const cla)
+char const *swicc_dbg_apdu_cla_ccc_str(swicc_apdu_cla_st const cla)
 {
 #ifdef DEBUG
     uint8_t cla_chain_str_idx =
         (uint8_t)cla.ccc; /* Safe case, all enum members are positive. */
-    uint8_t arr_el_count = (sizeof(uicc_dbg_table_str_cla_chain) /
-                            sizeof(uicc_dbg_table_str_cla_chain[0U]));
+    uint8_t arr_el_count = (sizeof(swicc_dbg_table_str_cla_chain) /
+                            sizeof(swicc_dbg_table_str_cla_chain[0U]));
     if (cla_chain_str_idx > arr_el_count - 1)
     {
-        cla_chain_str_idx = UICC_APDU_CLA_CCC_INVALID;
+        cla_chain_str_idx = SWICC_APDU_CLA_CCC_INVALID;
     }
-    return uicc_dbg_table_str_cla_chain[cla_chain_str_idx];
+    return swicc_dbg_table_str_cla_chain[cla_chain_str_idx];
 #else
     return NULL;
 #endif
 }
 
-char const *uicc_dbg_apdu_cla_sm_str(uicc_apdu_cla_st const cla)
+char const *swicc_dbg_apdu_cla_sm_str(swicc_apdu_cla_st const cla)
 {
 #ifdef DEBUG
     uint32_t cla_sm_str_idx =
         (uint8_t)cla.sm; /* Safe case, all enum members are positive. */
-    uint8_t arr_el_count = (sizeof(uicc_dbg_table_str_cla_sm) /
-                            sizeof(uicc_dbg_table_str_cla_sm[0U]));
+    uint8_t arr_el_count = (sizeof(swicc_dbg_table_str_cla_sm) /
+                            sizeof(swicc_dbg_table_str_cla_sm[0U]));
     if (cla_sm_str_idx > arr_el_count - 1U)
     {
-        cla_sm_str_idx = UICC_APDU_CLA_SM_INVALID;
+        cla_sm_str_idx = SWICC_APDU_CLA_SM_INVALID;
     }
-    return uicc_dbg_table_str_cla_sm[cla_sm_str_idx];
+    return swicc_dbg_table_str_cla_sm[cla_sm_str_idx];
 #else
     return NULL;
 #endif
 }
 
-char const *uicc_dbg_apdu_cla_type_str(uicc_apdu_cla_st const cla)
+char const *swicc_dbg_apdu_cla_type_str(swicc_apdu_cla_st const cla)
 {
 #ifdef DEBUG
     uint32_t cla_info_str_idx =
         (uint8_t)cla.type; /* Safe case, all enum members are positive. */
-    uint8_t arr_el_count = (sizeof(uicc_dbg_table_str_cla_info) /
-                            sizeof(uicc_dbg_table_str_cla_info[0U]));
+    uint8_t arr_el_count = (sizeof(swicc_dbg_table_str_cla_info) /
+                            sizeof(swicc_dbg_table_str_cla_info[0U]));
     if (cla_info_str_idx > arr_el_count - 1U)
     {
-        cla_info_str_idx = UICC_APDU_CLA_TYPE_INVALID;
+        cla_info_str_idx = SWICC_APDU_CLA_TYPE_INVALID;
     }
-    return uicc_dbg_table_str_cla_info[cla_info_str_idx];
+    return swicc_dbg_table_str_cla_info[cla_info_str_idx];
 #else
     return NULL;
 #endif
 }
 
-char const *uicc_dbg_apdu_ins_str(uint8_t const ins)
+char const *swicc_dbg_apdu_ins_str(uint8_t const ins)
 {
 #ifdef DEBUG
-    char const *const ins_str_cpy = uicc_dbg_table_str_ins[ins];
+    char const *const ins_str_cpy = swicc_dbg_table_str_ins[ins];
     return ins_str_cpy == NULL ? "???" : ins_str_cpy;
 #else
     return NULL;
 #endif
 }
 
-uicc_ret_et uicc_dbg_apdu_cmd_str(char *const buf_str,
-                                  uint16_t *const buf_str_len,
-                                  uicc_apdu_cmd_st const *const apdu_cmd)
+swicc_ret_et swicc_dbg_apdu_cmd_str(char *const buf_str,
+                                    uint16_t *const buf_str_len,
+                                    swicc_apdu_cmd_st const *const apdu_cmd)
 {
 #ifdef DEBUG
     int bytes_written = snprintf(
@@ -359,37 +359,37 @@ uicc_ret_et uicc_dbg_apdu_cmd_str(char *const buf_str,
         "\n  ("CLR_KND("P1")" "CLR_VAL("0x%02X")")"
         "\n  ("CLR_KND("P2")" "CLR_VAL("0x%02X")"))\n",
         // clang-format on
-        uicc_dbg_apdu_cla_ccc_str(apdu_cmd->hdr->cla),
-        uicc_dbg_apdu_cla_sm_str(apdu_cmd->hdr->cla),
-        uicc_dbg_apdu_cla_type_str(apdu_cmd->hdr->cla),
+        swicc_dbg_apdu_cla_ccc_str(apdu_cmd->hdr->cla),
+        swicc_dbg_apdu_cla_sm_str(apdu_cmd->hdr->cla),
+        swicc_dbg_apdu_cla_type_str(apdu_cmd->hdr->cla),
         apdu_cmd->hdr->cla.lchan, apdu_cmd->hdr->ins,
-        apdu_cmd->hdr->cla.type == UICC_APDU_CLA_TYPE_INTERINDUSTRY
-            ? uicc_dbg_apdu_ins_str(apdu_cmd->hdr->ins)
+        apdu_cmd->hdr->cla.type == SWICC_APDU_CLA_TYPE_INTERINDUSTRY
+            ? swicc_dbg_apdu_ins_str(apdu_cmd->hdr->ins)
             : "???",
         apdu_cmd->hdr->p1, apdu_cmd->hdr->p2);
     if (bytes_written < 0)
     {
-        return UICC_RET_BUFFER_TOO_SHORT;
+        return SWICC_RET_BUFFER_TOO_SHORT;
     }
     else
     {
         *buf_str_len =
             (uint16_t)bytes_written; /* Safe cast due to args of snprintf */
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 #else
     *buf_str_len = 0U;
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 #endif
 }
 
-uicc_ret_et uicc_dbg_apdu_res_str(char *const buf_str,
-                                  uint16_t *const buf_str_len,
-                                  uicc_apdu_res_st const *const apdu_res)
+swicc_ret_et swicc_dbg_apdu_res_str(char *const buf_str,
+                                    uint16_t *const buf_str_len,
+                                    swicc_apdu_res_st const *const apdu_res)
 {
 #ifdef DEBUG
-    return UICC_RET_UNKNOWN;
+    return SWICC_RET_UNKNOWN;
 #else
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 #endif
 }

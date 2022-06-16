@@ -1,17 +1,17 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <uicc/uicc.h>
+#include <swicc/swicc.h>
 
-void uicc_etu(uint32_t *const etu, uint16_t const fi, uint8_t const di,
-              uint32_t const fmax)
+void swicc_etu(uint32_t *const etu, uint16_t const fi, uint8_t const di,
+               uint32_t const fmax)
 {
     assert(fmax != 0U);
     assert(di != 0U);
     *etu = fi / (di * fmax);
 }
 
-uint8_t uicc_ck(uint8_t const *const buf_raw, uint16_t const buf_raw_len)
+uint8_t swicc_ck(uint8_t const *const buf_raw, uint16_t const buf_raw_len)
 {
     uint8_t tck = 0U;
     for (uint16_t buf_idx = 0U; buf_idx < buf_raw_len; ++buf_idx)
@@ -21,21 +21,21 @@ uint8_t uicc_ck(uint8_t const *const buf_raw, uint16_t const buf_raw_len)
     return tck;
 }
 
-uicc_ret_et uicc_hexstr_bytearr(char const *const hexstr,
-                                uint32_t const hexstr_len,
-                                uint8_t *const bytearr,
-                                uint32_t *const bytearr_len)
+swicc_ret_et swicc_hexstr_bytearr(char const *const hexstr,
+                                  uint32_t const hexstr_len,
+                                  uint8_t *const bytearr,
+                                  uint32_t *const bytearr_len)
 {
     if (hexstr_len % 2U != 0U)
     {
         /* Hex string must be even. */
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
     for (uint32_t hexstr_idx = 0U; hexstr_idx < hexstr_len; hexstr_idx += 2U)
     {
         if ((hexstr_idx / 2U) >= *bytearr_len)
         {
-            return UICC_RET_BUFFER_TOO_SHORT;
+            return SWICC_RET_BUFFER_TOO_SHORT;
         }
         uint8_t nibble[2U] = {(uint8_t)hexstr[hexstr_idx + 0U],
                               (uint8_t)hexstr[hexstr_idx + 1U]};
@@ -54,7 +54,7 @@ uicc_ret_et uicc_hexstr_bytearr(char const *const hexstr,
             }
             else
             {
-                return UICC_RET_PARAM_BAD;
+                return SWICC_RET_PARAM_BAD;
             }
         }
         /**
@@ -66,34 +66,35 @@ uicc_ret_et uicc_hexstr_bytearr(char const *const hexstr,
                                                           check on nibble. */
     }
     *bytearr_len = hexstr_len / 2U;
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_reset(uicc_st *const uicc_state)
+swicc_ret_et swicc_reset(swicc_st *const swicc_state)
 {
-    uicc_ret_et ret = UICC_RET_ERROR;
-    ret = uicc_va_reset(&uicc_state->fs);
-    if (ret != UICC_RET_SUCCESS)
+    swicc_ret_et ret = SWICC_RET_ERROR;
+    ret = swicc_va_reset(&swicc_state->fs);
+    if (ret != SWICC_RET_SUCCESS)
     {
         return ret;
     }
-    uicc_state->internal.fsm_state = UICC_FSM_STATE_OFF;
-    uicc_state->internal.tp.fi = uicc_io_fi[UICC_TP_CONF_DEFAULT];
-    uicc_state->internal.tp.di = uicc_io_di[UICC_TP_CONF_DEFAULT];
-    uicc_state->internal.tp.fmax = uicc_io_fmax[UICC_TP_CONF_DEFAULT];
-    uicc_etu(&uicc_state->internal.tp.etu, uicc_io_fi[UICC_TP_CONF_DEFAULT],
-             uicc_io_di[UICC_TP_CONF_DEFAULT],
-             uicc_io_fmax[UICC_TP_CONF_DEFAULT]);
-    memset(&uicc_state->apdu_rc, 0U, sizeof(uicc_state->apdu_rc));
-    return UICC_RET_SUCCESS;
+    swicc_state->internal.fsm_state = SWICC_FSM_STATE_OFF;
+    swicc_state->internal.tp.fi = swicc_io_fi[SWICC_TP_CONF_DEFAULT];
+    swicc_state->internal.tp.di = swicc_io_di[SWICC_TP_CONF_DEFAULT];
+    swicc_state->internal.tp.fmax = swicc_io_fmax[SWICC_TP_CONF_DEFAULT];
+    swicc_etu(&swicc_state->internal.tp.etu, swicc_io_fi[SWICC_TP_CONF_DEFAULT],
+              swicc_io_di[SWICC_TP_CONF_DEFAULT],
+              swicc_io_fmax[SWICC_TP_CONF_DEFAULT]);
+    memset(&swicc_state->apdu_rc, 0U, sizeof(swicc_state->apdu_rc));
+    return SWICC_RET_SUCCESS;
 }
 
-void uicc_terminate(uicc_st *const uicc_state)
+void swicc_terminate(swicc_st *const swicc_state)
 {
-    uicc_disk_unload(&uicc_state->fs.disk);
+    swicc_disk_unload(&swicc_state->fs.disk);
 }
 
-void uicc_fsm_state(uicc_st *const uicc_state, uicc_fsm_state_et *const state)
+void swicc_fsm_state(swicc_st *const swicc_state,
+                     swicc_fsm_state_et *const state)
 {
-    *state = uicc_state->internal.fsm_state;
+    *state = swicc_state->internal.fsm_state;
 }

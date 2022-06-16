@@ -1,7 +1,7 @@
 #include <string.h>
-#include <uicc/uicc.h>
+#include <swicc/swicc.h>
 
-void uicc_apdu_rc_reset(uicc_apdu_rc_st *const rc)
+void swicc_apdu_rc_reset(swicc_apdu_rc_st *const rc)
 {
     if (rc != NULL)
     {
@@ -9,12 +9,12 @@ void uicc_apdu_rc_reset(uicc_apdu_rc_st *const rc)
     }
 }
 
-uicc_ret_et uicc_apdu_rc_enq(uicc_apdu_rc_st *const rc,
-                             uint8_t const *const buf, uint32_t const buf_len)
+swicc_ret_et swicc_apdu_rc_enq(swicc_apdu_rc_st *const rc,
+                               uint8_t const *const buf, uint32_t const buf_len)
 {
     if (rc == NULL || buf == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
     static_assert(sizeof(rc->b) <= UINT32_MAX,
@@ -23,21 +23,21 @@ uicc_ret_et uicc_apdu_rc_enq(uicc_apdu_rc_st *const rc,
     /* Check if the new data will fit. */
     if (rc->len + buf_len > sizeof(rc->b))
     {
-        return UICC_RET_BUFFER_TOO_SHORT;
+        return SWICC_RET_BUFFER_TOO_SHORT;
     }
 
     memcpy(&rc->b[rc->len], buf, buf_len);
     /* Safe cast since it was checked to not overflow the type. */
     rc->len = (uint32_t)(rc->len + buf_len);
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_apdu_rc_deq(uicc_apdu_rc_st *const rc, uint8_t *const buf,
-                             uint32_t *const buf_len)
+swicc_ret_et swicc_apdu_rc_deq(swicc_apdu_rc_st *const rc, uint8_t *const buf,
+                               uint32_t *const buf_len)
 {
     if (rc == NULL || buf == NULL || buf_len == NULL)
     {
-        return UICC_RET_PARAM_BAD;
+        return SWICC_RET_PARAM_BAD;
     }
 
     /**
@@ -54,16 +54,16 @@ uicc_ret_et uicc_apdu_rc_deq(uicc_apdu_rc_st *const rc, uint8_t *const buf,
          * which fits in uint32.
          */
         rc->offset = (uint32_t)(rc->offset + *buf_len);
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
     else
     {
         *buf_len = rc_len_rem;
-        return UICC_RET_BUFFER_TOO_SHORT;
+        return SWICC_RET_BUFFER_TOO_SHORT;
     }
 }
 
-uint32_t uicc_apdu_rc_len_rem(uicc_apdu_rc_st *const rc)
+uint32_t swicc_apdu_rc_len_rem(swicc_apdu_rc_st *const rc)
 {
     if (rc == NULL)
     {

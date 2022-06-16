@@ -1,10 +1,10 @@
 #include <stdbool.h>
 #include <stdio.h>
-#include <uicc/uicc.h>
+#include <swicc/swicc.h>
 
-uicc_ret_et uicc_dbg_pps_str(char *const buf_str, uint16_t *const buf_str_len,
-                             uint8_t const *const buf_pps,
-                             uint16_t const buf_pps_len)
+swicc_ret_et swicc_dbg_pps_str(char *const buf_str, uint16_t *const buf_str_len,
+                               uint8_t const *const buf_pps,
+                               uint16_t const buf_pps_len)
 {
 #ifdef DEBUG
     uint8_t const pps0 = buf_pps[1U];
@@ -13,10 +13,10 @@ uicc_ret_et uicc_dbg_pps_str(char *const buf_str, uint16_t *const buf_str_len,
     uint8_t buf_pps_next = 2U;
 
     uint16_t const di = pps1_present && buf_pps_next < buf_pps_len
-                            ? uicc_io_di[buf_pps[buf_pps_next] & 0x0F]
+                            ? swicc_io_di[buf_pps[buf_pps_next] & 0x0F]
                             : 0;
     uint16_t const fi = pps1_present && buf_pps_next < buf_pps_len
-                            ? uicc_io_fi[(buf_pps[buf_pps_next] & 0xF0) >> 4U]
+                            ? swicc_io_fi[(buf_pps[buf_pps_next] & 0xF0) >> 4U]
                             : 0;
     if (pps1_present)
     {
@@ -40,16 +40,16 @@ uicc_ret_et uicc_dbg_pps_str(char *const buf_str, uint16_t *const buf_str_len,
         pps0 & 0x0F, fi, di, spu);
     if (bytes_written < 0)
     {
-        return UICC_RET_BUFFER_TOO_SHORT;
+        return SWICC_RET_BUFFER_TOO_SHORT;
     }
     else
     {
         *buf_str_len =
             (uint16_t)bytes_written; /* Safe cast due to args of snprintf */
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 #else
     *buf_str_len = 0U;
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 #endif
 }

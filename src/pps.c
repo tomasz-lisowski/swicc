@@ -1,14 +1,14 @@
 #include <string.h>
-#include <uicc/uicc.h>
+#include <swicc/swicc.h>
 
-static uicc_ret_et pps_xchg_success(uint8_t const *const buf_rx,
-                                    uint16_t const buf_rx_len,
-                                    uint8_t const *const buf_tx,
-                                    uint16_t const buf_tx_len)
+static swicc_ret_et pps_xchg_success(uint8_t const *const buf_rx,
+                                     uint16_t const buf_rx_len,
+                                     uint8_t const *const buf_tx,
+                                     uint16_t const buf_tx_len)
 {
     if (buf_tx_len == buf_rx_len && memcmp(buf_tx, buf_rx, buf_tx_len) == 0)
     {
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
     else
     {
@@ -16,25 +16,25 @@ static uicc_ret_et pps_xchg_success(uint8_t const *const buf_rx,
          * The interface sent parameters that are not supported by the card so
          * the PPS exchange is not done.
          */
-        return UICC_RET_PPS_FAILED;
+        return SWICC_RET_PPS_FAILED;
     }
 }
 
-static uicc_ret_et pps_parse(uicc_pps_params_st *const pps_params,
-                             uint8_t const *const buf_rx,
-                             uint16_t const buf_rx_len)
+static swicc_ret_et pps_parse(swicc_pps_params_st *const pps_params,
+                              uint8_t const *const buf_rx,
+                              uint16_t const buf_rx_len)
 {
-    if (buf_rx_len < 2U || buf_rx_len > UICC_PPS_LEN_MAX ||
-        buf_rx[0U] != UICC_PPS_PPSS || uicc_ck(buf_rx, buf_rx_len) != 0U)
+    if (buf_rx_len < 2U || buf_rx_len > SWICC_PPS_LEN_MAX ||
+        buf_rx[0U] != SWICC_PPS_PPSS || swicc_ck(buf_rx, buf_rx_len) != 0U)
     {
-        return UICC_RET_PPS_INVALID;
+        return SWICC_RET_PPS_INVALID;
     }
 
     uint8_t const pps0 = buf_rx[1U];
     if ((pps0 & 0b10000000) != 0U)
     {
         /* PPS0 bit 8 is RFU and should be 0 */
-        return UICC_RET_PPS_INVALID;
+        return SWICC_RET_PPS_INVALID;
     }
     uint8_t const t_proposed = pps0 & 0x0F;
 
@@ -42,7 +42,7 @@ static uicc_ret_et pps_parse(uicc_pps_params_st *const pps_params,
     uint8_t pps_mask = 0b00010000;
 
     /**
-     * @todo Use 'uicc_pps_len'.
+     * @todo Use 'swicc_pps_len'.
      */
 
     for (uint8_t pps_idx = 1U; pps_idx <= 3U; ++pps_idx)
@@ -68,7 +68,7 @@ static uicc_ret_et pps_parse(uicc_pps_params_st *const pps_params,
                 if (ppsi != 0U)
                 {
                     /* PPS3 is RFU and should be 0 */
-                    return UICC_RET_PPS_INVALID;
+                    return SWICC_RET_PPS_INVALID;
                 }
                 break;
             }
@@ -81,7 +81,7 @@ static uicc_ret_et pps_parse(uicc_pps_params_st *const pps_params,
                  * PPS0 indicated presence of the PPSi byte but RX buf is too
                  * short to contain them.
                  */
-                return UICC_RET_PPS_INVALID;
+                return SWICC_RET_PPS_INVALID;
             }
             else
             {
@@ -95,21 +95,21 @@ static uicc_ret_et pps_parse(uicc_pps_params_st *const pps_params,
             (uint8_t)(pps_mask << 1U); /* Safe cast due to range of for loop. */
     }
     pps_params->t = t_proposed;
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
-static uicc_ret_et pps_deparse(uicc_pps_params_st *const pps_params,
-                               uint8_t const pps0, uint8_t *const buf_tx,
-                               uint16_t *const buf_tx_len)
+static swicc_ret_et pps_deparse(swicc_pps_params_st *const pps_params,
+                                uint8_t const pps0, uint8_t *const buf_tx,
+                                uint16_t *const buf_tx_len)
 {
     /* The PPS response message */
-    uint8_t ppsi[UICC_PPS_LEN_MAX];
+    uint8_t ppsi[SWICC_PPS_LEN_MAX];
     uint8_t ppsi_next = 0U;
-    ppsi[ppsi_next++] = UICC_PPS_PPSS;
+    ppsi[ppsi_next++] = SWICC_PPS_PPSS;
     ppsi[ppsi_next++] = pps0; /* PPS0 */
 
-    if ((pps_params->fi_idx == UICC_TP_CONF_DEFAULT &&
-         pps_params->di_idx == UICC_TP_CONF_DEFAULT) ||
+    if ((pps_params->fi_idx == SWICC_TP_CONF_DEFAULT &&
+         pps_params->di_idx == SWICC_TP_CONF_DEFAULT) ||
         (pps0 & 0b00010000) == 0 /* PPS1 was not present? */)
     {
         /**
@@ -139,55 +139,55 @@ static uicc_ret_et pps_deparse(uicc_pps_params_st *const pps_params,
 
     if (ppsi_next > *buf_tx_len)
     {
-        return UICC_RET_BUFFER_TOO_SHORT;
+        return SWICC_RET_BUFFER_TOO_SHORT;
     }
     else
     {
         /* Compute check byte for the PPS response */
-        ppsi[ppsi_next] = uicc_ck(ppsi, ppsi_next);
+        ppsi[ppsi_next] = swicc_ck(ppsi, ppsi_next);
         ppsi_next++;
 
         memcpy(buf_tx, ppsi, ppsi_next);
         *buf_tx_len = ppsi_next;
-        return UICC_RET_SUCCESS;
+        return SWICC_RET_SUCCESS;
     }
 }
 
-uicc_ret_et uicc_pps(uicc_pps_params_st *const pps_params,
-                     uint8_t const *const buf_rx, uint16_t const buf_rx_len,
-                     uint8_t *const buf_tx, uint16_t *const buf_tx_len)
+swicc_ret_et swicc_pps(swicc_pps_params_st *const pps_params,
+                       uint8_t const *const buf_rx, uint16_t const buf_rx_len,
+                       uint8_t *const buf_tx, uint16_t *const buf_tx_len)
 {
-    uicc_ret_et ret = pps_parse(pps_params, buf_rx, buf_rx_len);
-    if (ret != UICC_RET_SUCCESS)
+    swicc_ret_et ret = pps_parse(pps_params, buf_rx, buf_rx_len);
+    if (ret != SWICC_RET_SUCCESS)
     {
         return ret;
     }
 
     ret = pps_deparse(pps_params, buf_rx[1U], buf_tx, buf_tx_len);
-    if (ret != UICC_RET_SUCCESS)
+    if (ret != SWICC_RET_SUCCESS)
     {
         return ret;
     }
 
     ret = pps_xchg_success(buf_rx, buf_rx_len, buf_tx, *buf_tx_len);
-    if (ret != UICC_RET_SUCCESS)
+    if (ret != SWICC_RET_SUCCESS)
     {
         return ret;
     }
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
 
-uicc_ret_et uicc_pps_len(uint8_t const *const pps, uint8_t const pps_len,
-                         uint8_t *const pps_len_exp)
+swicc_ret_et swicc_pps_len(uint8_t const *const pps, uint8_t const pps_len,
+                           uint8_t *const pps_len_exp)
 {
-    if (pps_len < 2 || pps[0U] != UICC_PPS_PPSS)
+    if (pps_len < 2 || pps[0U] != SWICC_PPS_PPSS)
     {
-        return UICC_RET_PPS_INVALID;
+        return SWICC_RET_PPS_INVALID;
     }
     uint8_t const pps0 = pps[1U];
     /* Safe cast since this will be at most 6. */
     *pps_len_exp =
         (uint8_t)(3U + ((pps0 & 0b00010000) > 0U) + ((pps0 & 0b00100000) > 0U) +
                   ((pps0 & 0b01000000) > 0U));
-    return UICC_RET_SUCCESS;
+    return SWICC_RET_SUCCESS;
 }
