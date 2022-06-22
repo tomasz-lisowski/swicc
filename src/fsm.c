@@ -435,16 +435,15 @@ static void fsm_handle_s_cmd_procedure(swicc_st *const swicc_state)
                     return;
                 }
             }
-            /**
-             * Contact state is still fine so just return to waiting for
-             * command.
-             */
-            swicc_state->internal.tpdu_processed = true;
-            swicc_state->internal.fsm_state = SWICC_FSM_STATE_CMD_WAIT;
-            swicc_state->buf_tx_len = 0U;
-            swicc_state->buf_rx_len = 5U; /* Receive a new header. */
-            return;
         }
+        /**
+         * Contact state is still fine so just return to waiting for command.
+         */
+        swicc_state->internal.tpdu_processed = true;
+        swicc_state->internal.fsm_state = SWICC_FSM_STATE_CMD_WAIT;
+        swicc_state->buf_tx_len = 0U;
+        swicc_state->buf_rx_len = 5U; /* Receive a new header. */
+        return;
     }
     swicc_state->internal.fsm_state = SWICC_FSM_STATE_OFF;
     swicc_state->buf_tx_len = 0U;

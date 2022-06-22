@@ -107,26 +107,7 @@ swicc_ret_et swicc_apdu_res_deparse(uint8_t *const buf_raw,
     *buf_raw_len = res->data.len;
     memcpy(buf_raw, res->data.b, res->data.len);
     uint8_t *const status = &buf_raw[res->data.len];
-
-    static uint8_t const sw1_raw[] = {
-        [SWICC_APDU_SW1_NORM_NONE] = 0x90,
-        [SWICC_APDU_SW1_PROC_NULL] = 0x60,
-        [SWICC_APDU_SW1_NORM_BYTES_AVAILABLE] = 0x61,
-        [SWICC_APDU_SW1_WARN_NVM_CHGN] = 0x62,
-        [SWICC_APDU_SW1_WARN_NVM_CHGM] = 0x63,
-        [SWICC_APDU_SW1_EXER_NVM_CHGN] = 0x64,
-        [SWICC_APDU_SW1_EXER_NVM_CHGM] = 0x65,
-        [SWICC_APDU_SW1_EXER_SEC] = 0x66,
-        [SWICC_APDU_SW1_CHER_LEN] = 0x67,
-        [SWICC_APDU_SW1_CHER_CLA_FUNC] = 0x68,
-        [SWICC_APDU_SW1_CHER_CMD] = 0x69,
-        [SWICC_APDU_SW1_CHER_P1P2_INFO] = 0x6A,
-        [SWICC_APDU_SW1_CHER_P1P2] = 0x6B,
-        [SWICC_APDU_SW1_CHER_LE] = 0x6C,
-        [SWICC_APDU_SW1_CHER_INS] = 0x6D,
-        [SWICC_APDU_SW1_CHER_CLA] = 0x6E,
-        [SWICC_APDU_SW1_CHER_UNK] = 0x6F,
-    };
+    uint8_t const sw1_raw = (uint8_t)res->sw1;
 
     switch (res->sw1)
     {
@@ -152,7 +133,7 @@ swicc_ret_et swicc_apdu_res_deparse(uint8_t *const buf_raw,
     case SWICC_APDU_SW1_CHER_CMD:
     case SWICC_APDU_SW1_CHER_P1P2_INFO:
     case SWICC_APDU_SW1_CHER_LE:
-        status[0U] = sw1_raw[res->sw1];
+        status[0U] = sw1_raw;
         status[1U] = res->sw2;
         /* Safe cast due to check at the start that ensures res will fit. */
         *buf_raw_len = (uint16_t)(*buf_raw_len + 2U);
@@ -162,7 +143,7 @@ swicc_ret_et swicc_apdu_res_deparse(uint8_t *const buf_raw,
         {
             return SWICC_RET_APDU_RES_INVALID;
         }
-        buf_raw[0U] = sw1_raw[res->sw1];
+        buf_raw[0U] = sw1_raw;
         *buf_raw_len = 1U;
         return SWICC_RET_SUCCESS;
     case SWICC_APDU_SW1_PROC_ACK_ALL:
@@ -189,7 +170,14 @@ swicc_ret_et swicc_apdu_res_deparse(uint8_t *const buf_raw,
         }
         *buf_raw_len = 1U;
         return SWICC_RET_SUCCESS;
+    default:
+        /**
+         * Treat all other cases as valid status messages that are non-standard.
+         */
+        status[0U] = sw1_raw;
+        status[1U] = res->sw2;
+        /* Safe cast due to check at the start that ensures res will fit. */
+        *buf_raw_len = (uint16_t)(*buf_raw_len + 2U);
+        return SWICC_RET_SUCCESS;
     }
-    /* All cases shall be handled in the switch. */
-    __builtin_unreachable();
 }

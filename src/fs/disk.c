@@ -318,10 +318,10 @@ swicc_ret_et swicc_disk_save(swicc_disk_st const *const disk,
     return ret;
 }
 
-swicc_ret_et swicc_disk_tree_file_foreach(swicc_disk_tree_st *const tree,
-                                          swicc_fs_file_st *const file,
-                                          fs_file_foreach_cb *const cb,
-                                          void *const userdata)
+swicc_ret_et swicc_disk_file_foreach(swicc_disk_tree_st *const tree,
+                                     swicc_fs_file_st *const file,
+                                     fs_file_foreach_cb *const cb,
+                                     void *const userdata, bool const recurse)
 {
     /* User-data can be null, other params not. */
     if (tree == NULL || file == NULL || cb == NULL)
@@ -384,19 +384,26 @@ swicc_ret_et swicc_disk_tree_file_foreach(swicc_disk_tree_st *const tree,
             case SWICC_FS_ITEM_TYPE_FILE_MF:
             case SWICC_FS_ITEM_TYPE_FILE_ADF:
             case SWICC_FS_ITEM_TYPE_FILE_DF:
-                stack_data_idx[depth] = stack_data_idx[depth - 1U];
-                depth += 1U;
-                uint64_t const data_idx_new =
-                    stack_data_idx[depth - 1U] + nstd_hdr_len;
-                if (data_idx_new > UINT32_MAX)
+                if (recurse)
                 {
-                    /* Data index would overflow. */
-                    ret = SWICC_RET_ERROR;
+                    stack_data_idx[depth] = stack_data_idx[depth - 1U];
+                    depth += 1U;
+                    uint64_t const data_idx_new =
+                        stack_data_idx[depth - 1U] + nstd_hdr_len;
+                    if (data_idx_new > UINT32_MAX)
+                    {
+                        /* Data index would overflow. */
+                        ret = SWICC_RET_ERROR;
+                        break;
+                    }
+                    /* Safe cast due to overflow check. */
+                    stack_data_idx[depth - 1U] = (uint32_t)(data_idx_new);
                     break;
                 }
-                /* Safe cast due to overflow check. */
-                stack_data_idx[depth - 1U] = (uint32_t)(data_idx_new);
-                break;
+                else
+                {
+                    __attribute__((fallthrough));
+                }
             case SWICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
             case SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
             case SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC:
@@ -621,8 +628,8 @@ swicc_ret_et swicc_disk_lutid_rebuild(swicc_disk_st *const disk)
             swicc_disk_lutid_empty(disk);
             break;
         }
-        ret = swicc_disk_tree_file_foreach(tree, &file_root, lutid_rebuild_cb,
-                                           &userdata);
+        ret = swicc_disk_file_foreach(tree, &file_root, lutid_rebuild_cb,
+                                      &userdata, true);
         if (ret != SWICC_RET_SUCCESS)
         {
             swicc_disk_lutid_empty(disk);
@@ -686,8 +693,8 @@ swicc_ret_et swicc_disk_lutsid_rebuild(swicc_disk_st *const disk,
         swicc_disk_lutsid_empty(tree);
         return ret;
     }
-    ret =
-        swicc_disk_tree_file_foreach(tree, &file_root, lutsid_rebuild_cb, NULL);
+    ret = swicc_disk_file_foreach(tree, &file_root, lutsid_rebuild_cb, NULL,
+                                  true);
     if (ret != SWICC_RET_SUCCESS)
     {
         swicc_disk_lutsid_empty(tree);

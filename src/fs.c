@@ -1,3 +1,4 @@
+#include <netinet/in.h>
 #include <string.h>
 #include <swicc/swicc.h>
 
@@ -144,7 +145,7 @@ swicc_ret_et swicc_fs_file_descr(
     if (file->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED ||
         file->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
     {
-        *(uint16_t *)&buf[2U] = rcrd_len;
+        *(uint16_t *)&buf[2U] = htons(rcrd_len);
         if (rcrd_cnt > UINT8_MAX)
         {
             return SWICC_RET_ERROR;

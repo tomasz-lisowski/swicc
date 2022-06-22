@@ -37,36 +37,45 @@ typedef enum swicc_apdu_cla_type_e
 typedef enum swicc_apdu_sw1_e
 {
     /* Normal processing. */
-    SWICC_APDU_SW1_NORM_NONE,            /* 9000 */
-    SWICC_APDU_SW1_NORM_BYTES_AVAILABLE, /* SW2 indicates number of bytes
+    SWICC_APDU_SW1_NORM_NONE = 0x90,            /* 9000 */
+    SWICC_APDU_SW1_NORM_BYTES_AVAILABLE = 0x61, /* SW2 indicates number of bytes
                                            available. */
 
     /* Warning processing. */
-    SWICC_APDU_SW1_WARN_NVM_CHGN, /* No change in NVM. */
-    SWICC_APDU_SW1_WARN_NVM_CHGM, /* Possible change in NVM. */
+    SWICC_APDU_SW1_WARN_NVM_CHGN = 0x62, /* No change in NVM. */
+    SWICC_APDU_SW1_WARN_NVM_CHGM = 0x63, /* Possible change in NVM. */
 
     /* Execution error. */
-    SWICC_APDU_SW1_EXER_NVM_CHGN, /* No change in NVM. */
-    SWICC_APDU_SW1_EXER_NVM_CHGM, /* Possible change in NVM. */
-    SWICC_APDU_SW1_EXER_SEC,      /* Security related. */
+    SWICC_APDU_SW1_EXER_NVM_CHGN = 0x64, /* No change in NVM. */
+    SWICC_APDU_SW1_EXER_NVM_CHGM = 0x65, /* Possible change in NVM. */
+    SWICC_APDU_SW1_EXER_SEC = 0x66,      /* Security related. */
 
     /* Checking error. */
-    SWICC_APDU_SW1_CHER_LEN,       /* Wrong length. */
-    SWICC_APDU_SW1_CHER_CLA_FUNC,  /* Functions in CLA unsupported. */
-    SWICC_APDU_SW1_CHER_CMD,       /* Command not allowed. */
-    SWICC_APDU_SW1_CHER_P1P2_INFO, /* P1 or P2 invalid + more info in SW2. */
-    SWICC_APDU_SW1_CHER_P1P2,      /* P1 or P2 invalid. */
-    SWICC_APDU_SW1_CHER_LE,        /* Wrong Le field. */
-    SWICC_APDU_SW1_CHER_INS,       /* INS not supported or invalid. */
-    SWICC_APDU_SW1_CHER_CLA,       /* CLA unsupported. */
-    SWICC_APDU_SW1_CHER_UNK,       /* No diagnosis. */
+    SWICC_APDU_SW1_CHER_LEN = 0x67,      /* Wrong length. */
+    SWICC_APDU_SW1_CHER_CLA_FUNC = 0x68, /* Functions in CLA unsupported. */
+    SWICC_APDU_SW1_CHER_CMD = 0x69,      /* Command not allowed. */
+    SWICC_APDU_SW1_CHER_P1P2_INFO =
+        0x6A,                        /* P1 or P2 invalid + more info in SW2. */
+    SWICC_APDU_SW1_CHER_P1P2 = 0x6B, /* P1 or P2 invalid. */
+    SWICC_APDU_SW1_CHER_LE = 0x6C,   /* Wrong Le field. */
+    SWICC_APDU_SW1_CHER_INS = 0x6D,  /* INS not supported or invalid. */
+    SWICC_APDU_SW1_CHER_CLA = 0x6E,  /* CLA unsupported. */
+    SWICC_APDU_SW1_CHER_UNK = 0x6F,  /* No diagnosis. */
 
     /* Procedure byte. ISO 7816-3:2006 p.23 sec.10.3.3 table.11. */
-    SWICC_APDU_SW1_PROC_NULL,    /* Request no action on data transfer */
-    SWICC_APDU_SW1_PROC_ACK_ONE, /* Acknowledgement leading to transfer of one
-                                   more byte of data.  */
-    SWICC_APDU_SW1_PROC_ACK_ALL, /* Acknowledgement leading to transfer of the
-                                   rest of data.  */
+    SWICC_APDU_SW1_PROC_NULL = 0x60, /* Request no action on data transfer */
+
+    /**
+     * The ACK_ONE and ACK_ALL depend on the instruction so the far end of the
+     * range is used in order to avoid collision with real status values.
+     * @warning When an ACK is desired, the APDU handler will use these special
+     * values instead of setting it to the actual INS or INS ^ 0xFF value unlike
+     * what the other values would suggest.
+     */
+    SWICC_APDU_SW1_PROC_ACK_ONE = 0xFE, /* Acknowledgement leading to transfer
+                                   of one more byte of data.  */
+    SWICC_APDU_SW1_PROC_ACK_ALL = 0xFF, /* Acknowledgement leading to transfer
+                                   of the rest of data.  */
     /**
      * The case where procedure byte is a regular SW1 is handled like the other
      * SW1 values.

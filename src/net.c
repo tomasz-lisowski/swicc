@@ -543,13 +543,20 @@ swicc_ret_et swicc_net_client(swicc_st *const swicc_state,
                 case SWICC_NET_MSG_CTRL_KEEPALIVE:
                     msg_tx.data.ctrl = SWICC_NET_MSG_CTRL_SUCCESS;
                     break;
-                case SWICC_NET_MSG_CTRL_MOCK_RESET_WARM:
+                case SWICC_NET_MSG_CTRL_MOCK_RESET_WARM_PPS_Y:
+                case SWICC_NET_MSG_CTRL_MOCK_RESET_WARM_PPS_N:
                     /**
                      * A warm reset is not a cold reset but functionally they
                      * are the same.
                      */
-                case SWICC_NET_MSG_CTRL_MOCK_RESET_COLD:
-                    if (swicc_mock_reset_cold(swicc_state, true) ==
+                case SWICC_NET_MSG_CTRL_MOCK_RESET_COLD_PPS_Y:
+                case SWICC_NET_MSG_CTRL_MOCK_RESET_COLD_PPS_N:
+                    if (swicc_mock_reset_cold(
+                            swicc_state,
+                            msg_rx.data.ctrl ==
+                                    SWICC_NET_MSG_CTRL_MOCK_RESET_WARM_PPS_Y ||
+                                msg_rx.data.ctrl ==
+                                    SWICC_NET_MSG_CTRL_MOCK_RESET_COLD_PPS_Y) ==
                         SWICC_RET_SUCCESS)
                     {
                         static_assert(sizeof(swicc_atr) <=

@@ -119,7 +119,7 @@ typedef swicc_ret_et fs_file_foreach_cb(swicc_disk_tree_st *const tree,
                                         swicc_fs_file_st *const file,
                                         void *const userdata);
 /**
- * @brief For every file in a file, perform some operation.
+ * @brief For every file in a given file, perform some operation.
  * @param tree Tree which contains the file.
  * @param file Will perform an action for all files in this file (including the
  * file itself). If the file is not a folder, the operation will succeed but it
@@ -127,12 +127,14 @@ typedef swicc_ret_et fs_file_foreach_cb(swicc_disk_tree_st *const tree,
  * @param cb A callback that will be run for every item in the tree.
  * @param userdata Pointer to any additional data the user needs access to in
  * the callback.
+ * @param recurse If should perform a recursive iteration (true) or just
+ * perform the operation on all files contained in the given file (false).
  * @return Return code.
  */
-swicc_ret_et swicc_disk_tree_file_foreach(swicc_disk_tree_st *const tree,
-                                          swicc_fs_file_st *const file,
-                                          fs_file_foreach_cb *const cb,
-                                          void *const userdata);
+swicc_ret_et swicc_disk_file_foreach(swicc_disk_tree_st *const tree,
+                                     swicc_fs_file_st *const file,
+                                     fs_file_foreach_cb *const cb,
+                                     void *const userdata, bool const recurse);
 
 /**
  * @brief Get a tree iterator for more efficient searches for trees.

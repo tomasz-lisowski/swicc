@@ -1,6 +1,6 @@
+#include "swicc/apdu.h"
 #include <netinet/in.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <string.h>
 #include <swicc/swicc.h>
 
@@ -1189,17 +1189,11 @@ swicc_ret_et swicc_apduh_demux(swicc_st *const swicc_state,
         {
             ret = swicc_state->internal.apduh_pro(swicc_state, cmd, res,
                                                   procedure_count);
-            if (ret == SWICC_RET_SUCCESS)
+            if (ret != SWICC_RET_APDU_UNHANDLED)
             {
-                break;
-            }
-            else if (ret != SWICC_RET_APDU_UNHANDLED)
-            {
-                /* Something went wrong. */
                 break;
             }
         }
-
         ret =
             swicc_apduh[cmd->hdr->ins](swicc_state, cmd, res, procedure_count);
         break;
@@ -1209,8 +1203,9 @@ swicc_ret_et swicc_apduh_demux(swicc_st *const swicc_state,
             ret = SWICC_RET_APDU_UNHANDLED;
             break;
         }
-        return swicc_state->internal.apduh_pro(swicc_state, cmd, res,
-                                               procedure_count);
+        ret = swicc_state->internal.apduh_pro(swicc_state, cmd, res,
+                                              procedure_count);
+        break;
     default:
         ret = SWICC_RET_APDU_UNHANDLED;
         break;
@@ -1220,6 +1215,13 @@ swicc_ret_et swicc_apduh_demux(swicc_st *const swicc_state,
     {
         ret = SWICC_RET_SUCCESS;
         res->sw1 = SWICC_APDU_SW1_CHER_INS;
+        res->sw2 = 0;
+        res->data.len = 0;
+    }
+    else if (ret != SWICC_RET_SUCCESS)
+    {
+        ret = SWICC_RET_SUCCESS;
+        res->sw1 = SWICC_APDU_SW1_CHER_UNK;
         res->sw2 = 0;
         res->data.len = 0;
     }

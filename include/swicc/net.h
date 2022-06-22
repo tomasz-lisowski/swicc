@@ -16,8 +16,10 @@ typedef enum swicc_net_msg_ctrl_e
     /* Control values for requests (server -> client). */
     SWICC_NET_MSG_CTRL_NONE = 0,
     SWICC_NET_MSG_CTRL_KEEPALIVE,
-    SWICC_NET_MSG_CTRL_MOCK_RESET_COLD,
-    SWICC_NET_MSG_CTRL_MOCK_RESET_WARM,
+    SWICC_NET_MSG_CTRL_MOCK_RESET_COLD_PPS_Y,
+    SWICC_NET_MSG_CTRL_MOCK_RESET_WARM_PPS_Y,
+    SWICC_NET_MSG_CTRL_MOCK_RESET_COLD_PPS_N,
+    SWICC_NET_MSG_CTRL_MOCK_RESET_WARM_PPS_N,
 
     /* Control values for responses (client -> server). */
     SWICC_NET_MSG_CTRL_SUCCESS = 0xF0,
