@@ -12,17 +12,21 @@
 #include <stdint.h>
 
 #define SWICC_DISK_MAGIC_LEN 16U
+/**
+ * Different file signatures to differentiate the endianness of the swICC FS
+ * file.
+ */
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define SWICC_DISK_MAGIC                                                       \
     {                                                                          \
-        0x01, 's', 'w', 'I', 'C', 'C', 0x93, 0x57, '.', '.', '.', '.', 'F',    \
-            'S', 0x11, 0x00                                                    \
+        0x00, 's', 'w', 'I', 'C', 'C', 0x91, 0xCC, '.', '.', '.', '.', 'F',    \
+            'S', 0xF0, 0x0F                                                    \
     }
 #elif __BYTE_ORDER == __BIG_ENDIAN
 #define SWICC_DISK_MAGIC                                                       \
     {                                                                          \
-        0x01, 's', 'w', 'I', 'C', 'C', 0x93, 0x57, '-', '-', '-', '-', 'F',    \
-            'S', 0x00, 0x11                                                    \
+        0x00, 's', 'w', 'I', 'C', 'C', 0x91, 0xCC, '-', '-', '-', '-', 'F',    \
+            'S', 0x0F, 0xF0                                                    \
     }
 #else
 #error "Invalid endianness."

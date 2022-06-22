@@ -34,6 +34,10 @@ typedef enum swicc_ret_e
     SWICC_RET_FS_NOT_FOUND, /* Requested FS item is not present. */
 
     SWICC_RET_DATO_END, /* Reached end of buffer/data. */
+
+    SWICC_RET_NET_CONN_QUEUE_EMPTY, /* (Client) Connection queue is empty i.e.
+                                       there are no pending connections to the
+                                       server. */
 } swicc_ret_et;
 
 /**
@@ -42,6 +46,7 @@ typedef enum swicc_ret_e
 typedef struct swicc_s swicc_st;
 typedef struct swicc_fs_file_s swicc_fs_file_st;
 typedef enum swicc_fsm_state_e swicc_fsm_state_et;
+typedef struct swicc_net_msg_s swicc_net_msg_st;
 
 /**
  * @brief Compute the elementary time unit (ETU) as described in ISO 7816-3:2006

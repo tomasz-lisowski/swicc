@@ -8,6 +8,14 @@
  */
 
 /**
+ * The contact state expected at any point after the cold or warm reset have
+ * been completed. It indicates the card is operating normally.
+ */
+#define FSM_STATE_CONT_READY                                                   \
+    (SWICC_IO_CONT_RST | SWICC_IO_CONT_VCC | SWICC_IO_CONT_IO |                \
+     SWICC_IO_CONT_CLK | SWICC_IO_CONT_VALID_ALL)
+
+/**
  * @brief A FSM state handler is defined as this function it must handle the
  * incoming RX/TX data/contact state then respond by writing to the RX and TX
  * buffer (and setting their lengths) and setting contact states.

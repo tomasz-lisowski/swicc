@@ -117,7 +117,7 @@
 #define JSITEM_PRS_FT__PARAM_CHECK(func)                                       \
     do                                                                         \
     {                                                                          \
-        cJSON const item_json;                                                 \
+        cJSON const item_json = {0U};                                          \
         uint8_t buf;                                                           \
         uint32_t buf_len = sizeof(buf);                                        \
         CHECK_EQ(func(NULL, 0U, &buf, &buf_len), SWICC_RET_PARAM_BAD);         \

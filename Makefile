@@ -51,9 +51,11 @@ all: main test
 .PHONY: all
 
 main: $(DIR_BUILD) $(DIR_BUILD)/$(MAIN_NAME)/dbg $(DIR_BUILD)/$(MAIN_NAME)/fs $(DIR_BUILD)/cjson $(DIR_BUILD)/$(LIB_PREFIX)$(MAIN_NAME).$(EXT_LIB_STATIC)
-main-dbg: MAIN_CC_FLAGS+=-g -DDEBUG -fsanitize=address
+main-dbg-asan: MAIN_CC_FLAGS+=-fsanitize=address
+main-dbg-asan: main-dbg
+main-dbg: MAIN_CC_FLAGS+=-g -DDEBUG
 main-dbg: main
-.PHONY: main main-dbg
+.PHONY: main main-dbg main-dbg-asan
 
 test: main-dbg $(DIR_BUILD) $(DIR_BUILD)/tmp $(DIR_BUILD)/$(DIR_TEST) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME)/fs $(DIR_BUILD)/$(DIR_TEST).$(EXT_BIN)
 test-dbg: TEST_CC_FLAGS+=-g -DDEBUG -fsanitize=address

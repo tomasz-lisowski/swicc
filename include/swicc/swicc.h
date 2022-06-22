@@ -8,6 +8,8 @@
 #include "swicc/fs.h"
 #include "swicc/fsm.h"
 #include "swicc/io.h"
+#include "swicc/mock.h"
+#include "swicc/net.h"
 #include "swicc/pps.h"
 #include "swicc/tpdu.h"
 

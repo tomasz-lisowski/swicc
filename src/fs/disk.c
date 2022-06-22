@@ -1,4 +1,5 @@
 #include "swicc/fs/common.h"
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -766,7 +767,7 @@ swicc_ret_et swicc_disk_lutid_lookup(swicc_disk_st const *const disk,
     while (entry_idx < lutid->count)
     {
         /* ID's are stored in big-endian inside the LUT. */
-        swicc_fs_id_kt const id_be = __builtin_bswap16(id);
+        swicc_fs_id_kt const id_be = htons(id);
 
         if (memcmp(&lutid->buf1[lutid->size_item1 * entry_idx], &id_be,
                    lutid->size_item1) == 0)

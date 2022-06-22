@@ -2,14 +2,6 @@
 #include <string.h>
 #include <swicc/swicc.h>
 
-/**
- * The contact state expected at any point after the cold or warm reset have
- * been completed. It indicates the card is operating normally.
- */
-#define FSM_STATE_CONT_READY                                                   \
-    (SWICC_IO_CONT_RST | SWICC_IO_CONT_VCC | SWICC_IO_CONT_IO |                \
-     SWICC_IO_CONT_CLK | SWICC_IO_CONT_VALID_ALL)
-
 static swicc_fsmh_ft fsm_handle_s_off;
 static void fsm_handle_s_off(swicc_st *const swicc_state)
 {
