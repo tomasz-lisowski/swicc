@@ -116,32 +116,32 @@ TEST(fs_disk, swicc_disk_unload__disk)
     CHECK_BUF_EQ(&disk, &disk_zero, sizeof(disk));
 }
 
-TEST(fs_disk, swicc_disk_tree_file_foreach__param_check)
+TEST(fs_disk, swicc_disk_file_foreach__param_check)
 {
     /* These are invalid pointers but they are not NULL. */
     swicc_disk_tree_st *const tree = (swicc_disk_tree_st *)1U;
     swicc_fs_file_st *const file = (swicc_fs_file_st *)1U;
     fs_file_foreach_cb *const cb = (fs_file_foreach_cb *)1U;
     void *const userdata = (void *)1U;
-    CHECK_EQ(swicc_disk_tree_file_foreach(NULL, file, cb, userdata),
+    CHECK_EQ(swicc_disk_file_foreach(NULL, file, cb, userdata, true),
              SWICC_RET_PARAM_BAD);
-    CHECK_EQ(swicc_disk_tree_file_foreach(tree, NULL, cb, userdata),
+    CHECK_EQ(swicc_disk_file_foreach(tree, NULL, cb, userdata, true),
              SWICC_RET_PARAM_BAD);
-    CHECK_EQ(swicc_disk_tree_file_foreach(tree, file, NULL, userdata),
+    CHECK_EQ(swicc_disk_file_foreach(tree, file, NULL, userdata, true),
              SWICC_RET_PARAM_BAD);
 }
 
-typedef struct swicc_disk_tree_file_foreach__disk_userdata_s
+typedef struct swicc_disk_file_foreach__disk_userdata_s
 {
     uint32_t file_count;
     uint32_t valid_count;
-} swicc_disk_tree_file_foreach__disk_userdata_st;
-static fs_file_foreach_cb swicc_disk_tree_file_foreach__disk_cb;
-static swicc_ret_et swicc_disk_tree_file_foreach__disk_cb(
+} swicc_disk_file_foreach__disk_userdata_st;
+static fs_file_foreach_cb swicc_disk_file_foreach__disk_cb;
+static swicc_ret_et swicc_disk_file_foreach__disk_cb(
     swicc_disk_tree_st *const tree, swicc_fs_file_st *const file,
     void *const userdata)
 {
-    swicc_disk_tree_file_foreach__disk_userdata_st *const data = userdata;
+    swicc_disk_file_foreach__disk_userdata_st *const data = userdata;
     bool valid = false;
     uint32_t const hdr_size = swicc_fs_item_hdr_raw_size[file->hdr_item.type];
     uint32_t file_size;
@@ -195,10 +195,10 @@ static swicc_ret_et swicc_disk_tree_file_foreach__disk_cb(
     return SWICC_RET_SUCCESS;
 }
 
-TEST(fs_disk, swicc_disk_tree_file_foreach__disk)
+TEST(fs_disk, swicc_disk_file_foreach__disk)
 {
-    swicc_disk_tree_file_foreach__disk_userdata_st data = {.file_count = 0U,
-                                                           .valid_count = 0U};
+    swicc_disk_file_foreach__disk_userdata_st data = {.file_count = 0U,
+                                                      .valid_count = 0U};
     swicc_disk_st disk = {0U};
     REQUIRE_EQ(swicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
                SWICC_RET_SUCCESS);
@@ -208,9 +208,9 @@ TEST(fs_disk, swicc_disk_tree_file_foreach__disk)
     if (ret_root == SWICC_RET_SUCCESS)
     {
 
-        CHECK_EQ(swicc_disk_tree_file_foreach(
-                     disk.root, &file_root,
-                     swicc_disk_tree_file_foreach__disk_cb, &data),
+        CHECK_EQ(swicc_disk_file_foreach(disk.root, &file_root,
+                                         swicc_disk_file_foreach__disk_cb,
+                                         &data, true),
                  SWICC_RET_SUCCESS);
         CHECK_EQ(data.valid_count, data.file_count);
     }

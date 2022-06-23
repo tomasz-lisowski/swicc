@@ -104,6 +104,11 @@ static swicc_ret_et jsitem_prs_file_raw(cJSON const *const item_json,
                     file_raw->hdr_file.id = be16toh(id);
                     ret_id = SWICC_RET_SUCCESS;
                 }
+                else
+                {
+                    printf("File: Failed to convert ID hex string to a byte "
+                           "array.\n");
+                }
             }
             else
             {
@@ -137,6 +142,11 @@ static swicc_ret_et jsitem_prs_file_raw(cJSON const *const item_json,
                 {
                     file_raw->hdr_file.sid = sid;
                     ret_sid = SWICC_RET_SUCCESS;
+                }
+                else
+                {
+                    printf("File: Failed to convert SID hex string to a byte "
+                           "array.\n");
                 }
             }
             else
@@ -935,6 +945,11 @@ static swicc_ret_et prs_bertlv(cJSON const *const bertlv_json,
                                     ret_enc = SWICC_RET_SUCCESS;
                                 }
                             }
+                            else
+                            {
+                                printf("Item dato BER-TLV: Failed to convert "
+                                       "value hex string to a byte array.\n");
+                            }
                             free(bytearr);
                         }
                         if (ret_enc == SWICC_RET_SUCCESS)
@@ -1109,6 +1124,11 @@ static swicc_ret_et jsitem_prs_item_hex(cJSON const *const item_json,
                         ret = SWICC_RET_BUFFER_TOO_SHORT;
                     }
                 }
+                else
+                {
+                    printf("Item hex: Failed to convert hex string to a byte "
+                           "array.\n");
+                }
             }
             else
             {
@@ -1252,6 +1272,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                     break;
                 }
                 disk->root = tree;
+                memset(disk->root, 0U, sizeof(*disk->root));
             }
             else
             {
@@ -1264,6 +1285,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                     break;
                 }
                 tree = tree->next;
+                memset(tree, 0U, sizeof(*tree));
             }
 
             memset(tree, 0U, sizeof(*tree));
