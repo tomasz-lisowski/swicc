@@ -1272,7 +1272,6 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                     break;
                 }
                 disk->root = tree;
-                memset(disk->root, 0U, sizeof(*disk->root));
             }
             else
             {
@@ -1285,7 +1284,6 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                     break;
                 }
                 tree = tree->next;
-                memset(tree, 0U, sizeof(*tree));
             }
 
             memset(tree, 0U, sizeof(*tree));

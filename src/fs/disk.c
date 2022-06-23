@@ -343,16 +343,17 @@ swicc_ret_et swicc_disk_file_foreach(swicc_disk_tree_st *const tree,
     if (file_root->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_MF ||
         file_root->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_ADF)
     {
-        uint32_t const hdr_len =
+        uint32_t const root_hdr_len =
             swicc_fs_item_hdr_raw_size[file_root->hdr_item.type];
-        uint32_t stack_data_idx[SWICC_FS_DEPTH_MAX] = {hdr_len, 0U, 0U};
+        uint32_t stack_data_idx[SWICC_FS_DEPTH_MAX] = {root_hdr_len, 0U, 0U};
         uint32_t depth = 1U; /* Inside the tree so 1 already. */
         while (depth < SWICC_FS_DEPTH_MAX)
         {
             if (stack_data_idx[depth - 1U] >= file_root->hdr_item.size)
             {
                 depth -= 1U;
-                if (depth < 1U)
+                if (depth < 1U ||
+                    stack_data_idx[depth] == file_root->hdr_item.size)
                 {
                     /* Not an error, just means we are done. */
                     ret = SWICC_RET_SUCCESS;
