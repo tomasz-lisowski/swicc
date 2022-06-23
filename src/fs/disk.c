@@ -602,7 +602,7 @@ swicc_ret_et swicc_disk_lutid_rebuild(swicc_disk_st *const disk)
     {
         return SWICC_RET_PARAM_BAD;
     }
-    swicc_ret_et ret = SWICC_RET_SUCCESS;
+    swicc_ret_et ret = SWICC_RET_ERROR;
     /* Cleanup the old ID LUT before rebuilding it. */
     swicc_disk_lutid_empty(disk);
     disk->lutid.size_item1 = sizeof(swicc_fs_id_kt);
