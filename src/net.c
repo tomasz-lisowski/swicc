@@ -16,11 +16,13 @@
 static swicc_net_logger_ft logger_default;
 static void logger_default(char const *const fmt, ...)
 {
+#ifdef DEBUG
     va_list argptr;
     va_start(argptr, fmt);
     vprintf(fmt, argptr);
     printf("\n");
     va_end(argptr);
+#endif
 }
 swicc_net_logger_ft *logger = logger_default;
 
