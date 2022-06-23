@@ -107,7 +107,8 @@ static swicc_ret_et jsitem_prs_file_raw(cJSON const *const item_json,
                 else
                 {
                     printf("File: Failed to convert ID hex string to a byte "
-                           "array.\n");
+                           "array: '%.*s'.\n",
+                           (uint32_t)sizeof(id) * 2U, id_str);
                 }
             }
             else
@@ -146,7 +147,8 @@ static swicc_ret_et jsitem_prs_file_raw(cJSON const *const item_json,
                 else
                 {
                     printf("File: Failed to convert SID hex string to a byte "
-                           "array.\n");
+                           "array: '%.*s'.\n",
+                           (uint32_t)sizeof(sid) * 2U, sid_str);
                 }
             }
             else
@@ -948,7 +950,9 @@ static swicc_ret_et prs_bertlv(cJSON const *const bertlv_json,
                             else
                             {
                                 printf("Item dato BER-TLV: Failed to convert "
-                                       "value hex string to a byte array.\n");
+                                       "value hex string to a byte array: "
+                                       "'%.*s'.\n",
+                                       (uint32_t)val_str_len, val_str);
                             }
                             free(bytearr);
                         }
@@ -1110,9 +1114,8 @@ static swicc_ret_et jsitem_prs_item_hex(cJSON const *const item_json,
             {
                 uint32_t bytearr_len = *buf_len;
                 /* Safe cast due to the boundary check. */
-                ret = swicc_hexstr_bytearr(contents_str,
-                                           (uint32_t)strlen(contents_str), buf,
-                                           &bytearr_len);
+                ret = swicc_hexstr_bytearr(contents_str, (uint32_t)hexstr_len,
+                                           buf, &bytearr_len);
                 if (ret == SWICC_RET_SUCCESS)
                 {
                     if (*buf_len >= bytearr_len)
@@ -1127,12 +1130,13 @@ static swicc_ret_et jsitem_prs_item_hex(cJSON const *const item_json,
                 else
                 {
                     printf("Item hex: Failed to convert hex string to a byte "
-                           "array.\n");
+                           "array: '%.*s'.\n",
+                           (uint32_t)hexstr_len, contents_str);
                 }
             }
             else
             {
-                printf("Item hex: hex string has an invalid length (got %lu, "
+                printf("Item hex: Hex string has an invalid length (got %lu, "
                        "expected <=%u and multiple of 2).\n",
                        hexstr_len, UINT32_MAX);
             }
@@ -1244,7 +1248,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
     swicc_ret_et ret = SWICC_RET_SUCCESS;
     if (disk->root != NULL)
     {
-        printf("Root: old disk must be unloaded first.\n");
+        printf("Root: Old disk must be unloaded first.\n");
         return SWICC_RET_ERROR;
     }
 
@@ -1265,7 +1269,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                 tree = malloc(sizeof(*tree));
                 if (tree == NULL)
                 {
-                    printf("Tree: failed to allocate space for a tree struct "
+                    printf("Tree: Failed to allocate space for a tree struct "
                            "for the root tree.\n");
                     /* Nothing should have been allocated before. */
                     ret = SWICC_RET_ERROR;
@@ -1278,7 +1282,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                 tree->next = malloc(sizeof(*tree));
                 if (tree->next == NULL)
                 {
-                    printf("Tree: failed to allocate a tree struct for next "
+                    printf("Tree: Failed to allocate a tree struct for next "
                            "tree.\n");
                     ret = SWICC_RET_ERROR;
                     break;
@@ -1290,7 +1294,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
             tree->buf = malloc(DISK_SIZE_START);
             if (tree->buf == NULL)
             {
-                printf("Tree: failed to allocate a tree buffer.\n");
+                printf("Tree: Failed to allocate a tree buffer.\n");
                 ret = SWICC_RET_ERROR;
                 break;
             }
@@ -1314,7 +1318,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                         if (tree_buf_size_new > UINT32_MAX)
                         {
                             printf(
-                                "Tree: buffer size limit has been reached.\n");
+                                "Tree: Buffer size limit has been reached.\n");
                             ret = SWICC_RET_ERROR;
                             /**
                              * No break because we still have to update the tree
@@ -1326,10 +1330,11 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                          * Safe cast due to the bound check against uint32 max.
                          */
                         tree->size = (uint32_t)tree_buf_size_new;
+                        printf("Tree: Allocated more memory, retring.\n");
                     }
                     else
                     {
-                        printf("Tree: failed to realloc tree buffer from %u "
+                        printf("Tree: Failed to realloc tree buffer from %u "
                                "bytes to %u bytes.\n",
                                tree->size, tree->size + DISK_SIZE_RESIZE);
                         ret = SWICC_RET_ERROR;
@@ -1338,13 +1343,13 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                 }
                 else if (ret != SWICC_RET_SUCCESS)
                 {
-                    printf("Tree: failed to parse tree JSON: %s.\n",
+                    printf("Tree: Failed to parse tree JSON: %s.\n",
                            swicc_dbg_ret_str(ret));
                 }
             } while (ret == SWICC_RET_BUFFER_TOO_SHORT);
             if (ret != SWICC_RET_SUCCESS)
             {
-                printf("Tree: failed to parse tree contents: %s.\n",
+                printf("Tree: Failed to parse tree contents: %s.\n",
                        swicc_dbg_ret_str(ret));
                 break;
             }
@@ -1363,7 +1368,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                  * No need to clean up SID LUT since this will be done when
                  * whole root get emptied due to this error.
                  */
-                printf("Tree: failed to create the SID LUT: %s.\n",
+                printf("Tree: Failed to create the SID LUT: %s.\n",
                        swicc_dbg_ret_str(ret));
                 break;
             }
@@ -1381,14 +1386,17 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
             swicc_disk_root_empty(disk);
             memset(disk, 0U, sizeof(*disk));
             ret = SWICC_RET_ERROR;
-            printf("Root: failed to create the forest of trees (parsed %u "
+            printf("Root: Failed to create the forest of trees (parsed %u "
                    "trees): %s.\n",
                    tree_count, swicc_dbg_ret_str(ret));
         }
-        ret = swicc_disk_lutid_rebuild(disk);
-        if (ret != SWICC_RET_SUCCESS)
+        else
         {
-            swicc_disk_lutid_empty(disk);
+            ret = swicc_disk_lutid_rebuild(disk);
+            if (ret != SWICC_RET_SUCCESS)
+            {
+                swicc_disk_lutid_empty(disk);
+            }
         }
     }
     else

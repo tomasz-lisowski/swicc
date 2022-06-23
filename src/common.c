@@ -33,7 +33,7 @@ swicc_ret_et swicc_hexstr_bytearr(char const *const hexstr,
     }
     for (uint32_t hexstr_idx = 0U; hexstr_idx < hexstr_len; hexstr_idx += 2U)
     {
-        if ((hexstr_idx / 2U) >= *bytearr_len)
+        if ((hexstr_idx / 2U) > *bytearr_len)
         {
             return SWICC_RET_BUFFER_TOO_SHORT;
         }
