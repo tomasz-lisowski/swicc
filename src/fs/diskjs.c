@@ -43,8 +43,8 @@ static_assert(sizeof(item_type_str) / sizeof(item_type_str[0U]) ==
  * Used when creating a swICC FS disk. The 'start' size is the initial buffer
  * size, and if it's not large enough, it will grow by the 'resize' amount.
  */
-#define DISK_SIZE_START 512U
-#define DISK_SIZE_RESIZE 256U
+#define DISK_SIZE_START 4096U
+#define DISK_SIZE_RESIZE 4096U
 
 /**
  * A function type for item type parsers i.e. parsers that parse a specific type
@@ -1390,11 +1390,12 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                    "trees): %s.\n",
                    tree_count, swicc_dbg_ret_str(ret));
         }
-        else
+        if (ret == SWICC_RET_SUCCESS)
         {
             ret = swicc_disk_lutid_rebuild(disk);
             if (ret != SWICC_RET_SUCCESS)
             {
+                printf("Root: Failed to rebuild ID LUT.\n");
                 swicc_disk_lutid_empty(disk);
             }
         }

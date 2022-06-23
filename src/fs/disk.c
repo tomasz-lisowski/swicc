@@ -30,8 +30,10 @@ static swicc_ret_et lut_insert(swicc_disk_lut_st *const lut,
     if (lut->count >= lut->count_max)
     {
         lut->count_max += LUT_COUNT_RESIZE;
-        uint8_t *const buf1_new = malloc(lut->count_max * lut->size_item1);
-        uint8_t *const buf2_new = malloc(lut->count_max * lut->size_item2);
+        uint8_t *const buf1_new =
+            realloc(lut->buf1, lut->count_max * lut->size_item1);
+        uint8_t *const buf2_new =
+            realloc(lut->buf2, lut->count_max * lut->size_item2);
         if (buf1_new == NULL || buf2_new == NULL)
         {
             free(buf1_new);
@@ -600,7 +602,7 @@ swicc_ret_et swicc_disk_lutid_rebuild(swicc_disk_st *const disk)
     {
         return SWICC_RET_PARAM_BAD;
     }
-    swicc_ret_et ret = SWICC_RET_ERROR;
+    swicc_ret_et ret = SWICC_RET_SUCCESS;
     /* Cleanup the old ID LUT before rebuilding it. */
     swicc_disk_lutid_empty(disk);
     disk->lutid.size_item1 = sizeof(swicc_fs_id_kt);
