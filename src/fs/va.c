@@ -57,7 +57,7 @@ static swicc_ret_et va_select_file(swicc_fs_st *const fs,
                 fs->va.cur_file = file;
                 break;
             default:
-                return SWICC_RET_ERROR;
+                return SWICC_RET_FS_NOT_FOUND;
             }
         }
     }
@@ -120,11 +120,101 @@ swicc_ret_et swicc_va_select_adf(swicc_fs_st *const fs,
     return ret;
 }
 
+typedef struct va_select_file_dfname_userdata_s
+{
+    uint8_t const name[SWICC_FS_NAME_LEN];
+    uint32_t const name_len;
+    bool found;
+    swicc_fs_file_st file_found;
+} va_select_file_dfname_userdata_st;
+static fs_file_foreach_cb va_select_file_dfname_cb;
+static swicc_ret_et va_select_file_dfname_cb(swicc_disk_tree_st *const tree,
+                                             swicc_fs_file_st *const file,
+                                             void *const userdata)
+{
+    va_select_file_dfname_userdata_st *const ud = userdata;
+    uint8_t const *name = NULL;
+    switch (file->hdr_item.type)
+    {
+    case SWICC_FS_ITEM_TYPE_FILE_MF:
+        name = file->hdr_spec.mf.name;
+        break;
+    case SWICC_FS_ITEM_TYPE_FILE_DF:
+        name = file->hdr_spec.df.name;
+        break;
+    default:
+        break;
+    }
+    if (name != NULL)
+    {
+        if (ud->name_len > SWICC_FS_NAME_LEN)
+        {
+            return SWICC_RET_PARAM_BAD;
+        }
+        if (memcmp(name, ud->name, ud->name_len) == 0)
+        {
+            ud->found = true;
+            ud->file_found = *file;
+            /* Make the foreach iterator stop early. */
+            return SWICC_RET_ERROR;
+        }
+    }
+    return SWICC_RET_SUCCESS;
+}
+
 swicc_ret_et swicc_va_select_file_dfname(swicc_fs_st *const fs,
-                                         char const *const df_name,
+                                         uint8_t const *const df_name,
                                          uint32_t const df_name_len)
 {
-    return SWICC_RET_UNKNOWN;
+    va_select_file_dfname_userdata_st userdata = {
+        .name = {*df_name},
+        .name_len = df_name_len,
+        .found = false,
+    };
+    swicc_disk_tree_iter_st tree_iter;
+    swicc_ret_et ret = swicc_disk_tree_iter(&fs->disk, &tree_iter);
+    if (ret == SWICC_RET_SUCCESS)
+    {
+        swicc_disk_tree_st *tree;
+        do
+        {
+            ret = swicc_disk_tree_iter_next(&tree_iter, &tree);
+            if (ret == SWICC_RET_SUCCESS)
+            {
+                swicc_fs_file_st file_root;
+                ret = swicc_disk_tree_file_root(tree, &file_root);
+                if (ret == SWICC_RET_SUCCESS)
+                {
+                    ret = swicc_disk_file_foreach(tree, &file_root,
+                                                  va_select_file_dfname_cb,
+                                                  &userdata, true);
+                    if (ret == SWICC_RET_SUCCESS)
+                    {
+                        /**
+                         * No DF/MF with the name was found and foreach did not
+                         * fail.
+                         */
+                        ret = SWICC_RET_FS_NOT_FOUND;
+                        continue;
+                    }
+                    else
+                    {
+                        if (userdata.found == true)
+                        {
+                            ret = va_select_file(fs, tree, userdata.file_found);
+                            if (ret == SWICC_RET_SUCCESS)
+                            {
+                                return SWICC_RET_SUCCESS;
+                            }
+                        }
+                        /* Stop looking on any non-successful return. */
+                        return ret;
+                    }
+                }
+            }
+        } while (ret == SWICC_RET_SUCCESS);
+    }
+    return ret;
 }
 
 swicc_ret_et swicc_va_select_file_id(swicc_fs_st *const fs,

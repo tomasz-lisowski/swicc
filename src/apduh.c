@@ -251,7 +251,7 @@ static swicc_ret_et apduh_select(swicc_st *const swicc_state,
             else
             {
                 ret_select = swicc_va_select_file_id(
-                    &swicc_state->fs, htons(*(swicc_fs_id_kt *)cmd->data->b));
+                    &swicc_state->fs, ntohs(*(swicc_fs_id_kt *)cmd->data->b));
             }
             break;
         case METH_DF_NAME:
@@ -260,22 +260,22 @@ static swicc_ret_et apduh_select(swicc_st *const swicc_state,
                 cmd->data->len < SWICC_FS_ADF_AID_RID_LEN ||
                 occ != SWICC_FS_OCC_FIRST)
             {
-                /* Try to select by DF name at least. */
-                if (cmd->data->len == 0 || occ != SWICC_FS_OCC_FIRST)
-                {
-                    ret_select = SWICC_RET_ERROR;
-                }
-                else
-                {
-                    ret_select = swicc_va_select_file_dfname(
-                        &swicc_state->fs, (char *)cmd->data->b, cmd->data->len);
-                }
+                ret_select = SWICC_RET_ERROR;
             }
             else
             {
+                /**
+                 * Try selecting an ADF by name, if that fails fall back to
+                 * selecting a DF by name.
+                 */
                 ret_select = swicc_va_select_adf(&swicc_state->fs, cmd->data->b,
                                                  cmd->data->len -
                                                      SWICC_FS_ADF_AID_RID_LEN);
+                if (ret_select == SWICC_RET_FS_NOT_FOUND)
+                {
+                    ret_select = swicc_va_select_file_dfname(
+                        &swicc_state->fs, cmd->data->b, cmd->data->len);
+                }
             }
             break;
         case METH_MF_PATH:
@@ -1175,7 +1175,7 @@ swicc_ret_et swicc_apduh_demux(swicc_st *const swicc_state,
         ret = SWICC_RET_SUCCESS;
         break;
     case SWICC_APDU_CLA_TYPE_INTERINDUSTRY:
-        if (cmd->hdr->ins != 0xC0 /* GET RESPONSE instruction */)
+        if (cmd->hdr->ins != 0xC0) /* GET RESPONSE instruction */
         {
             /* Make GET RESPONSE deterministically not work if resumed. */
             swicc_apdu_rc_reset(&swicc_state->apdu_rc);

@@ -41,6 +41,13 @@ typedef struct swicc_fs_s
 typedef struct swicc_s
 {
     /**
+     * If card implementations utilizing swICC need to keep some internal state,
+     * this could be used to store a pointer to that state. This is never used
+     * by swICC internally.
+     */
+    void *userdata;
+
+    /**
      * State of the contacts as seen by the SIM.
      */
     uint32_t cont_state_rx;

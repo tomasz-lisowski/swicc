@@ -63,12 +63,13 @@ swicc_ret_et swicc_va_select_adf(swicc_fs_st *const fs,
 /**
  * @brief Select a file by DF name.
  * @param fs
- * @param df_name String for the DF name. No need for it to be NULL-terminated.
+ * @param df_name The name to look for in all DFs. No need for it to be
+ * NULL-terminated.
  * @param df_name_len Length of the DF name string.
  * @return Return code.
  */
 swicc_ret_et swicc_va_select_file_dfname(swicc_fs_st *const fs,
-                                         char const *const df_name,
+                                         uint8_t const *const df_name,
                                          uint32_t const df_name_len);
 
 /**
