@@ -71,29 +71,117 @@ typedef struct swicc_net_client_s
     int32_t sock_client;
 } swicc_net_client_st;
 
+/**
+ * @brief Basically a printf function.
+ * @param fmt
+ */
 typedef void swicc_net_logger_ft(char const *const fmt, ...);
+
+/**
+ * @brief Since things can break in networking, and swICC does not log anything
+ * ever, a logger must be registered to get useful logging output from the
+ * network module.
+ * @param logger_func This function shall work like printf but output in
+ * whatever way is most suited by the user.
+ */
 void swicc_net_logger_register(swicc_net_logger_ft *const logger_func);
 
+/**
+ * @brief Helper for setting a signal handler (SIGINT, SIGHUP, SIGTERM). This is
+ * useful as the network client is an infinite loop that will not return unless
+ * a network error occurs. To gracefully disconnect, best to handle the signal
+ * correctly.
+ * @param sigh_exit Signal handler for when the client wants to exit.
+ * @return Return code.
+ */
 swicc_ret_et swicc_net_client_sig_register(void (*const sigh_exit)(int));
+
+/**
+ * @brief Reset the signal handler for SIGINT, SIGHUP, and SIGTERM to the
+ * default.
+ */
 void swicc_net_client_sig_default();
 
+/**
+ * @brief Create a network server on some port. This will initialize the server
+ * context basically.
+ * @param server_ctx The server context that will be initialized.
+ * @param port_str Port the server will bind to and listen on.
+ * @return Return code.
+ * @note Server socket is non-blocking.
+ */
 swicc_ret_et swicc_net_server_create(swicc_net_server_st *const server_ctx,
                                      char const *const port_str);
+
+/**
+ * @brief Destroy the network server. This includes all the sockets (both server
+ * and client).
+ * @param server_ctx
+ */
 void swicc_net_server_destroy(swicc_net_server_st *const server_ctx);
 
+/**
+ * @brief Create a network client and connect it to a host on some port.
+ * @param client_ctx The network client context that will be initialized.
+ * @param hostname_str String of the server hostname.
+ * @param port_str String of the server port.
+ * @return Return code.
+ * @note Client socket is blocking.
+ */
 swicc_ret_et swicc_net_client_create(swicc_net_client_st *const client_ctx,
                                      char const *const hostname_str,
                                      char const *const port_str);
+/**
+ * @brief Destroy the network client.
+ * @param client_ctx The client to destroy.
+ */
 void swicc_net_client_destroy(swicc_net_client_st *const client_ctx);
 
+/**
+ * @brief Receive a message on a given socket.
+ * @param sock Where to receive from.
+ * @param msg Where to write the received message.
+ * @return Return code.
+ */
 swicc_ret_et swicc_net_recv(int32_t const sock, swicc_net_msg_st *const msg);
+
+/**
+ * @brief Send a message to some socket.
+ * @param sock Where to send message.
+ * @param msg The message that will be sent.
+ * @return Return code.
+ */
 swicc_ret_et swicc_net_send(int32_t const sock,
                             swicc_net_msg_st const *const msg);
 
+/**
+ * @brief Attempt to accept a client connection. Since the server socket is
+ * non-blocking, this will indicate if no clients were present in queue, if a
+ * client was connected, or if this failed.
+ * @param server_ctx The server that wants to accept a connection.
+ * @param slot On which slot to accept the client.
+ * @return Return code.
+ */
 swicc_ret_et swicc_net_server_client_connect(
     swicc_net_server_st *const server_ctx, uint16_t const slot);
+
+/**
+ * @brief Disconnect a client from a server.
+ * @param server_ctx
+ * @param slot Which client to disconnect.
+ */
 void swicc_net_server_client_disconnect(swicc_net_server_st *const server_ctx,
                                         uint16_t const slot);
 
+/**
+ * @brief An implementation of a complete network client with a receive loop
+ * which gets messages, processes them using swICC functions, and sends back a
+ * response.
+ * @param swicc_state An initialized swICC state.
+ * @param client_ctx An initialized network client context.
+ * @return Return code.
+ * @note Best to register a signal handler before calling this since this will
+ * not return until a network error occurs.
+ */
 swicc_ret_et swicc_net_client(swicc_st *const swicc_state,
                               swicc_net_client_st *const client_ctx);
