@@ -1,7 +1,7 @@
 #include <arpa/inet.h>
+#include <endian.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -250,7 +250,7 @@ swicc_ret_et swicc_net_server_create(swicc_net_server_st *const server_ctx,
             .sin_zero = {0U},
             .sin_family = AF_INET,
             .sin_addr.s_addr = INADDR_ANY,
-            .sin_port = htons(port),
+            .sin_port = htobe16(port),
         };
         if (bind(sock, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) != -1)
         {
@@ -330,7 +330,7 @@ swicc_ret_et swicc_net_client_create(swicc_net_client_st *const client_ctx,
         .sin_zero = {0U},
         .sin_family = AF_INET,
         .sin_addr = hostname,
-        .sin_port = htons(port),
+        .sin_port = htobe16(port),
     };
 
     int32_t const sock = socket(AF_INET, SOCK_STREAM, 0);

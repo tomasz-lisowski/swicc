@@ -1,5 +1,5 @@
 #include "swicc/fs/common.h"
-#include <netinet/in.h>
+#include <endian.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -331,44 +331,29 @@ swicc_ret_et swicc_disk_file_foreach(swicc_disk_tree_st *const tree,
         return SWICC_RET_PARAM_BAD;
     }
 
-    swicc_ret_et ret = SWICC_RET_ERROR;
+    /**
+     * If file is an empty folder, 'while' loop doesn't run so should end in
+     * success by default.
+     */
+    swicc_ret_et ret = SWICC_RET_SUCCESS;
 
-    swicc_fs_file_st *const file_root = file;
-
-    /* Perform the per-file operation also for the tree. */
-    ret = cb(tree, file_root, userdata);
+    /* Perform the per-file operation on root file. */
+    ret = cb(tree, file, userdata);
     if (ret != SWICC_RET_SUCCESS)
     {
         return ret;
     }
 
-    uint32_t const root_hdr_len =
-        swicc_fs_item_hdr_raw_size[file_root->hdr_item.type];
-    uint32_t stack_data_idx[SWICC_FS_DEPTH_MAX] = {root_hdr_len, 0U, 0U};
-    uint32_t depth = 1U; /* Inside the tree so 1 already. */
-    while (depth < SWICC_FS_DEPTH_MAX)
+    uint32_t offset = swicc_fs_item_hdr_raw_size[file->hdr_item.type];
+    while (offset < file->hdr_item.size)
     {
-        if (stack_data_idx[depth - 1U] >= file_root->hdr_item.size)
-        {
-            depth -= 1U;
-            if (depth < 1U || stack_data_idx[depth] == file_root->hdr_item.size)
-            {
-                /* Not an error, just means we are done. */
-                ret = SWICC_RET_SUCCESS;
-                break;
-            }
-            /* Restore old data idx. */
-            stack_data_idx[depth - 1U] = stack_data_idx[depth];
-        }
-
         swicc_fs_file_st file_nstd;
-        ret = swicc_fs_file_prs(tree, stack_data_idx[depth - 1U], &file_nstd);
+        ret = swicc_fs_file_prs(tree, file->hdr_item.offset_trel + offset,
+                                &file_nstd);
         if (ret != SWICC_RET_SUCCESS)
         {
             break;
         }
-        uint32_t const nstd_hdr_len =
-            swicc_fs_item_hdr_raw_size[file_nstd.hdr_item.type];
 
         /* Perform the per-file operation. */
         ret = cb(tree, &file_nstd, userdata);
@@ -384,35 +369,26 @@ swicc_ret_et swicc_disk_file_foreach(swicc_disk_tree_st *const tree,
         case SWICC_FS_ITEM_TYPE_FILE_DF:
             if (recurse)
             {
-                stack_data_idx[depth] = stack_data_idx[depth - 1U];
-                depth += 1U;
-                uint64_t const data_idx_new =
-                    stack_data_idx[depth - 1U] + nstd_hdr_len;
-                if (data_idx_new > UINT32_MAX)
-                {
-                    /* Data index would overflow. */
-                    ret = SWICC_RET_ERROR;
-                    break;
-                }
-                /* Safe cast due to overflow check. */
-                stack_data_idx[depth - 1U] = (uint32_t)(data_idx_new);
+                ret = swicc_disk_file_foreach(tree, &file_nstd, cb, userdata,
+                                              true);
                 break;
             }
-            else
-            {
-                __attribute__((fallthrough));
-            }
+            __attribute__((fallthrough));
         case SWICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
         case SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
         case SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC:
-            stack_data_idx[depth - 1U] += file_nstd.hdr_item.size;
-            break;
-        case SWICC_FS_ITEM_TYPE_INVALID:
-            ret = SWICC_RET_ERROR;
             break;
         default:
+            ret = SWICC_RET_ERROR;
             break;
         }
+
+        if (offset + file_nstd.hdr_item.size > UINT32_MAX)
+        {
+            ret = SWICC_RET_ERROR;
+            break;
+        }
+        offset += file_nstd.hdr_item.size;
 
         if (ret != SWICC_RET_SUCCESS)
         {
@@ -763,11 +739,10 @@ swicc_ret_et swicc_disk_lutid_lookup(swicc_disk_st const *const disk,
 
     /* Find the file by ID. */
     uint32_t entry_idx = 0U;
+    /* ID's are stored in big-endian inside the LUT. */
+    swicc_fs_id_kt const id_be = htobe16(id);
     while (entry_idx < lutid->count)
     {
-        /* ID's are stored in big-endian inside the LUT. */
-        swicc_fs_id_kt const id_be = htons(id);
-
         if (memcmp(&lutid->buf1[lutid->size_item1 * entry_idx], &id_be,
                    lutid->size_item1) == 0)
         {

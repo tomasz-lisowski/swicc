@@ -1,4 +1,6 @@
 #include "swicc/fs/common.h"
+#include <endian.h>
+#include <stdio.h>
 #include <string.h>
 #include <swicc/swicc.h>
 

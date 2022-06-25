@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <string.h>
 #include <swicc/swicc.h>
 
@@ -13,7 +12,7 @@ swicc_ret_et swicc_mock_reset_cold(swicc_st *const swicc_state,
     /* All contact states are set to valid. */
     swicc_state->cont_state_rx = SWICC_IO_CONT_VALID_ALL;
 
-    uint16_t const buf_tx_size = swicc_state->buf_tx_len;
+    uint16_t const buf_tx_size = SWICC_DATA_MAX;
 
     swicc_fsm_state_et state_fsm;
 
@@ -126,6 +125,7 @@ swicc_ret_et swicc_mock_reset_cold(swicc_st *const swicc_state,
         case 3:
             state_change_invalid = state_fsm != SWICC_FSM_STATE_RESET_COLD ||
                                    swicc_state->buf_rx_len != 0U;
+
             break;
         case 4:
             state_change_invalid = state_fsm != SWICC_FSM_STATE_ATR_REQ ||

@@ -77,14 +77,15 @@ swicc_ret_et swicc_reset(swicc_st *const swicc_state)
     {
         return ret;
     }
-    swicc_state->internal.fsm_state = SWICC_FSM_STATE_OFF;
-    swicc_state->internal.tp.fi = swicc_io_fi[SWICC_TP_CONF_DEFAULT];
-    swicc_state->internal.tp.di = swicc_io_di[SWICC_TP_CONF_DEFAULT];
-    swicc_state->internal.tp.fmax = swicc_io_fmax[SWICC_TP_CONF_DEFAULT];
-    swicc_etu(&swicc_state->internal.tp.etu, swicc_io_fi[SWICC_TP_CONF_DEFAULT],
-              swicc_io_di[SWICC_TP_CONF_DEFAULT],
-              swicc_io_fmax[SWICC_TP_CONF_DEFAULT]);
+
+    swicc_apduh_ft *const apduh_pro = swicc_state->internal.apduh_pro;
+    memset(&swicc_state->internal, 0U, sizeof(swicc_state->internal));
     memset(&swicc_state->apdu_rc, 0U, sizeof(swicc_state->apdu_rc));
+    memset(swicc_state->buf_tx, 0U, sizeof(*swicc_state->buf_tx));
+    swicc_state->buf_tx_len = 0U;
+    swicc_state->cont_state_tx = 0U;
+    swicc_state->internal.apduh_pro = apduh_pro;
+
     return SWICC_RET_SUCCESS;
 }
 

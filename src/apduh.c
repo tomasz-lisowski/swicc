@@ -1,6 +1,7 @@
 #include "swicc/apdu.h"
-#include <netinet/in.h>
+#include <endian.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include <swicc/swicc.h>
 
@@ -250,8 +251,8 @@ static swicc_ret_et apduh_select(swicc_st *const swicc_state,
             }
             else
             {
-                ret_select = swicc_va_select_file_id(
-                    &swicc_state->fs, ntohs(*(swicc_fs_id_kt *)cmd->data->b));
+                swicc_fs_id_kt const fid = be16toh(*(uint16_t *)cmd->data->b);
+                ret_select = swicc_va_select_file_id(&swicc_state->fs, fid);
             }
             break;
         case METH_DF_NAME:
@@ -376,8 +377,8 @@ static swicc_ret_et apduh_select(swicc_st *const swicc_state,
             }
 
             /* Create data for BER-TLV DOs. */
-            uint32_t const data_size_be = htonl(file_selected->data_size);
-            uint16_t const data_id_be = htons(file_selected->hdr_file.id);
+            uint32_t const data_size_be = htobe32(file_selected->data_size);
+            uint16_t const data_id_be = htobe16(file_selected->hdr_file.id);
             uint8_t const data_sid[] = {file_selected->hdr_file.sid};
             uint8_t lcs_be;
             uint8_t descr_be[SWICC_FS_FILE_DESCR_LEN_MAX];
