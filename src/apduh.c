@@ -38,7 +38,6 @@ static swicc_ret_et apduh_unk(swicc_st *const swicc_state,
  * @param procedure_count
  * @return Return code.
  * @note As described in ISO 7816-4:2020 p.74 sec.11.2.2.
- * @todo Handle special (reserved) IDs.
  */
 static swicc_apduh_ft apduh_select;
 static swicc_ret_et apduh_select(swicc_st *const swicc_state,
@@ -280,36 +279,26 @@ static swicc_ret_et apduh_select(swicc_st *const swicc_state,
             }
             break;
         case METH_MF_PATH:
-            /* Must contain at least 1 ID in the path. */
-            if (cmd->data->len < sizeof(swicc_fs_id_kt) ||
-                occ != SWICC_FS_OCC_FIRST)
-            {
-                ret_select = SWICC_RET_ERROR;
-            }
-            else
-            {
-                swicc_fs_path_st const path = {
-                    .b = cmd->data->b,
-                    .len = cmd->data->len,
-                    .type = SWICC_FS_PATH_TYPE_MF,
-                };
-                ret_select = swicc_va_select_file_path(&swicc_state->fs, path);
-            }
-            break;
         case METH_DF_PATH:
             /* Must contain at least 1 ID in the path. */
             if (cmd->data->len < sizeof(swicc_fs_id_kt) ||
-                occ != SWICC_FS_OCC_FIRST)
+                occ != SWICC_FS_OCC_FIRST || cmd->data->len % 2 != 0)
             {
                 ret_select = SWICC_RET_ERROR;
             }
             else
             {
                 swicc_fs_path_st const path = {
-                    .b = cmd->data->b,
-                    .len = cmd->data->len,
-                    .type = SWICC_FS_PATH_TYPE_DF,
+                    .b = (swicc_fs_id_kt *)cmd->data->b,
+                    .len = cmd->data->len / 2,
+                    .type = meth == METH_MF_PATH ? SWICC_FS_PATH_TYPE_MF
+                                                 : SWICC_FS_PATH_TYPE_DF,
                 };
+                /* Convert path to host endianness. */
+                for (uint32_t path_idx = 0U; path_idx < path.len; ++path_idx)
+                {
+                    path.b[path_idx] = be16toh(path.b[path_idx]);
+                }
                 ret_select = swicc_va_select_file_path(&swicc_state->fs, path);
             }
             break;
@@ -678,7 +667,7 @@ static swicc_ret_et apduh_bin_read(swicc_st *const swicc_state,
         if (ret_lookup == SWICC_RET_FS_NOT_FOUND)
         {
             res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
-            res->sw2 = 0x82; /* "File or application not found" */
+            res->sw2 = 0x82; /* "File or application not found." */
             res->data.len = 0U;
             return SWICC_RET_SUCCESS;
         }
@@ -723,27 +712,20 @@ static swicc_ret_et apduh_bin_read(swicc_st *const swicc_state,
             res->data.len = 0U;
             return SWICC_RET_SUCCESS;
         }
+        else if (offset + len_expected > file.data_size)
+        {
+            res->sw1 = SWICC_APDU_SW1_CHER_LE;
+            /* Safe cast since offset is less than data size. */
+            res->sw2 = (uint8_t)(file.data_size - offset);
+            res->data.len = 0U;
+            return SWICC_RET_SUCCESS;
+        }
 
         /* Read data into response. */
-        /* Safe cast due to the check against offset. */
-        uint8_t const len_readable = (uint8_t)(file.data_size - offset);
-        uint8_t const len_read =
-            len_expected > len_readable ? len_readable : len_expected;
-        memcpy(res->data.b, &swicc_state->fs.va.cur_ef.data[offset], len_read);
-        res->data.len = len_read;
-        if (len_read < len_expected)
-        {
-            /* Read fewer bytes than were requested. */
-            res->sw1 = SWICC_APDU_SW1_WARN_NVM_CHGN;
-            res->sw2 = 0x82; /* "End of file, record or DO reached before
-                                reading Ne bytes, or unsuccessful search" */
-        }
-        else
-        {
-            /* Read exactly the number of bytes requested. */
-            res->sw1 = SWICC_APDU_SW1_NORM_NONE;
-            res->sw2 = 0U;
-        }
+        memcpy(res->data.b, &file.data[offset], len_expected);
+        res->data.len = len_expected;
+        res->sw1 = SWICC_APDU_SW1_NORM_NONE;
+        res->sw2 = 0U;
 
         if (sid_use)
         {

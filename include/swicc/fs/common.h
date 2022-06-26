@@ -220,7 +220,7 @@ typedef struct swicc_fs_rcrd_s
 typedef struct swicc_fs_path_s
 {
     swicc_fs_path_type_et type;
-    uint8_t *b;
+    swicc_fs_id_kt *b;
     uint32_t len;
 } swicc_fs_path_st;
 

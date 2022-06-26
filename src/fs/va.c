@@ -1,6 +1,5 @@
 #include "swicc/fs/common.h"
 #include <endian.h>
-#include <stdio.h>
 #include <string.h>
 #include <swicc/swicc.h>
 
@@ -26,24 +25,47 @@ static swicc_ret_et va_select_file(swicc_fs_st *const fs,
         {
             switch (file.hdr_item.type)
             {
-            case SWICC_FS_ITEM_TYPE_FILE_MF:
+            case SWICC_FS_ITEM_TYPE_FILE_MF: {
+                swicc_fs_file_st const file_adf = fs->va.cur_adf;
+                swicc_disk_tree_st *const tree_adf = fs->va.cur_tree_adf;
+                memset(&fs->va, 0U, sizeof(fs->va));
+                fs->va.cur_tree = tree;
+                fs->va.cur_adf = file_adf;
+                fs->va.cur_tree_adf = tree_adf;
+                fs->va.cur_df = file;
+                fs->va.cur_file = file;
+                break;
+            }
             case SWICC_FS_ITEM_TYPE_FILE_ADF:
                 memset(&fs->va, 0U, sizeof(fs->va));
                 fs->va.cur_tree = tree;
                 fs->va.cur_adf = file;
+                fs->va.cur_tree_adf = tree;
                 fs->va.cur_df = file;
                 fs->va.cur_file = file;
                 break;
-            case SWICC_FS_ITEM_TYPE_FILE_DF:
+            case SWICC_FS_ITEM_TYPE_FILE_DF: {
+                swicc_fs_file_st const file_adf = fs->va.cur_adf;
+                swicc_disk_tree_st *const tree_adf = fs->va.cur_tree_adf;
                 memset(&fs->va, 0U, sizeof(fs->va));
                 fs->va.cur_tree = tree;
-                fs->va.cur_adf = file_root;
+                if (file_root.hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_ADF)
+                {
+                    fs->va.cur_adf = file_root;
+                    fs->va.cur_tree_adf = tree;
+                }
+                else
+                {
+                    fs->va.cur_adf = file_adf;
+                    fs->va.cur_tree_adf = tree_adf;
+                }
                 fs->va.cur_df = file;
                 fs->va.cur_file = file;
                 break;
+            }
             case SWICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT:
             case SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
-            case SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC:
+            case SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC: {
                 /**
                  * @warning ISO 7816-4:2020 pg.23 sec.7.2.2 states that "When EF
                  * selection occurs as a side-effect of a C-RP using referencing
@@ -51,13 +73,25 @@ static swicc_ret_et va_select_file(swicc_fs_st *const fs,
                  * not change" but in this implementation, current DF always
                  * changes even for selections using SID.
                  */
+                swicc_fs_file_st const file_adf = fs->va.cur_adf;
+                swicc_disk_tree_st *const tree_adf = fs->va.cur_tree_adf;
                 memset(&fs->va, 0U, sizeof(fs->va));
                 fs->va.cur_tree = tree;
-                fs->va.cur_adf = file_root;
+                if (file_root.hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_ADF)
+                {
+                    fs->va.cur_adf = file_root;
+                    fs->va.cur_tree_adf = tree;
+                }
+                else
+                {
+                    fs->va.cur_adf = file_adf;
+                    fs->va.cur_tree_adf = tree_adf;
+                }
                 fs->va.cur_df = file_parent;
                 fs->va.cur_ef = file;
                 fs->va.cur_file = file;
                 break;
+            }
             default:
                 return SWICC_RET_FS_NOT_FOUND;
             }
@@ -245,10 +279,101 @@ swicc_ret_et swicc_va_select_file_sid(swicc_fs_st *const fs,
     return ret;
 }
 
+typedef struct va_select_file_path_userdata_s
+{
+    swicc_fs_id_kt fid_search;
+    bool found;
+    swicc_fs_file_st file_found;
+} va_select_file_path_userdata_st;
+static fs_file_foreach_cb va_select_file_path_cb;
+static swicc_ret_et va_select_file_path_cb(swicc_disk_tree_st *const tree,
+                                           swicc_fs_file_st *const file,
+                                           void *const userdata)
+{
+    va_select_file_path_userdata_st *const ud = userdata;
+    if (file->hdr_file.id == ud->fid_search)
+    {
+        ud->found = true;
+        ud->file_found = *file;
+        return SWICC_RET_ERROR;
+    }
+    return SWICC_RET_SUCCESS;
+}
+
 swicc_ret_et swicc_va_select_file_path(swicc_fs_st *const fs,
                                        swicc_fs_path_st const path)
 {
-    return SWICC_RET_UNKNOWN;
+    swicc_ret_et ret = SWICC_RET_ERROR;
+    swicc_fs_file_st file_root;
+    swicc_disk_tree_st *tree = NULL;
+    va_select_file_path_userdata_st userdata = {0U};
+
+    switch (path.type)
+    {
+    case SWICC_FS_PATH_TYPE_MF:
+        /* Reserved FID 0x7FFF refers to the current application. */
+        if (path.b[0U] == 0x7FFF)
+        {
+            if (fs->va.cur_adf.hdr_item.type != SWICC_FS_ITEM_TYPE_FILE_ADF ||
+                fs->va.cur_tree_adf == NULL)
+            {
+                return SWICC_RET_FS_NOT_FOUND;
+            }
+            tree = fs->va.cur_tree_adf;
+            ret = swicc_disk_lutid_lookup(
+                &fs->disk, &tree, fs->va.cur_adf.hdr_file.id, &file_root);
+            if (ret != SWICC_RET_SUCCESS)
+            {
+                return ret;
+            }
+            path.b[0U] = fs->va.cur_adf.hdr_file.id;
+        }
+        else
+        {
+            tree = fs->disk.root;
+            ret = swicc_disk_lutid_lookup(&fs->disk, &tree, 0x3F00, &file_root);
+            if (ret != SWICC_RET_SUCCESS)
+            {
+                return ret;
+            }
+        }
+        break;
+    case SWICC_FS_PATH_TYPE_DF:
+        tree = fs->va.cur_tree;
+        file_root = fs->va.cur_df;
+        break;
+    }
+
+    /* Traverse path. */
+    for (uint32_t path_idx = 0U; path_idx < path.len; ++path_idx)
+    {
+        swicc_fs_id_kt fid_next = path.b[path_idx];
+        userdata.fid_search = fid_next;
+        userdata.found = false;
+        ret = swicc_disk_file_foreach(tree, &file_root, va_select_file_path_cb,
+                                      &userdata, false);
+        if (ret == SWICC_RET_ERROR && userdata.found == true)
+        {
+            file_root = userdata.file_found;
+            ret = SWICC_RET_SUCCESS;
+        }
+        else if (ret == SWICC_RET_SUCCESS)
+        {
+            return SWICC_RET_FS_NOT_FOUND;
+        }
+        else
+        {
+            return ret;
+        }
+    }
+
+    /* After traversing path, try select it. */
+    if (ret == SWICC_RET_SUCCESS && userdata.found && tree != NULL)
+    {
+        ret = va_select_file(fs, tree, userdata.file_found);
+        return ret;
+    }
+    return ret;
 }
 
 swicc_ret_et swicc_va_select_record_idx(swicc_fs_st *const fs,

@@ -170,6 +170,10 @@ static swicc_ret_et jsitem_prs_file_raw(cJSON const *const item_json,
             file_raw->hdr_item.offset_prel = offset_prel;
             ret = SWICC_RET_SUCCESS;
         }
+        else
+        {
+            printf("File: Failed to parse ID and/or SID.\n");
+        }
     }
     return ret;
 }
@@ -326,6 +330,7 @@ static swicc_ret_et jsitem_prs_file_folder(cJSON const *const item_json,
             {
                 /* Unexpected so can't recover. */
                 ret = SWICC_RET_ERROR;
+                printf("Folder: Buffer too short to contain item.\n");
             }
         }
     }

@@ -8,6 +8,14 @@
 #include "swicc/apdu.h"
 #include "swicc/common.h"
 
+#define SWICC_APDUH_RES(res, sw1_val, sw2_val, res_len)                        \
+    {                                                                          \
+        res->sw1 = sw1_val;                                                    \
+        res->sw2 = sw2_val;                                                    \
+        res->data.len = res_len;                                               \
+    }                                                                          \
+    while (0)
+
 /**
  * @brief APDU handler.
  * @param swicc_state

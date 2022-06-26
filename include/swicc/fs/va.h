@@ -19,6 +19,7 @@
 typedef struct swicc_va_s
 {
     swicc_disk_tree_st *cur_tree;
+    swicc_disk_tree_st *cur_tree_adf;
     swicc_fs_file_st cur_adf;
     swicc_fs_file_st cur_df;
     swicc_fs_file_st cur_ef;
