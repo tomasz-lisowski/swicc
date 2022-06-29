@@ -1,4 +1,4 @@
-#include <netinet/in.h>
+#include <endian.h>
 #include <string.h>
 #include <swicc/swicc.h>
 

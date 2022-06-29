@@ -1,4 +1,3 @@
-#include "swicc/apdu.h"
 #include <endian.h>
 #include <stddef.h>
 #include <stdio.h>

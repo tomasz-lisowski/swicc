@@ -8,7 +8,6 @@
 #include "swicc/common.h"
 #include "swicc/fs/common.h"
 #include <assert.h>
-#include <endian.h>
 #include <stdint.h>
 
 #define SWICC_DISK_MAGIC_LEN 16U
@@ -25,7 +24,7 @@
 #elif __BYTE_ORDER == __BIG_ENDIAN
 #define SWICC_DISK_MAGIC                                                       \
     {                                                                          \
-        0x00, 's', 'w', 'I', 'C', 'C', 0x91, 0xCC, '-', '-', '-', '-', 'F',    \
+        0x00, 's', 'w', 'I', 'C', 'C', 0x91, 0xCC, '.', '.', '.', '.', 'F',    \
             'S', 0x0F, 0xF0                                                    \
     }
 #else

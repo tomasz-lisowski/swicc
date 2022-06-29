@@ -1,5 +1,4 @@
 #include <arpa/inet.h>
-#include <endian.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/tcp.h>
