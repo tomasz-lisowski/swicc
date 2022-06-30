@@ -59,11 +59,10 @@ uint8_t const swicc_atr[] = {
                  * TD2 =   4b T  = 15
                  *       + 4b Y3 = TA3 and TB3 are present
                  */
-    0b11000111, /**
+    0b00000111, /**
                  * LSB>MSB
                  * TA3 =   6b Y = 7 = A, B, and C (class indicator)
-                 *       + 2b X = 3 = No preference so can stop at L or H or not
-                 *                    at all (clock stop indicator)
+                 *       + 2b X = 0 = Clock stop not supported
                  */
     0b00000000, /**
                  * LSB>MSB
@@ -142,7 +141,7 @@ uint8_t const swicc_atr[] = {
                  * 't', 'z', 'y' with: 4y + 2z + t + 1 (when not all =1, else it
                  * means 8 or more)
                  */
-    0x1C,       /**
+    0xDC,       /**
                  * Check byte (TCK)
                  *  = XOR of all bytes (with TCK=0)
                  */
