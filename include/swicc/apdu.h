@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/* Command chaining control. */
 typedef enum swicc_apdu_cla_ccc_e
 {
     SWICC_APDU_CLA_CCC_INVALID,

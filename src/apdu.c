@@ -44,18 +44,9 @@ swicc_apdu_cla_st swicc_apdu_cmd_cla_parse(uint8_t const cla_raw)
     {
         cla.type = SWICC_APDU_CLA_TYPE_RFU;
     }
-    else if (cla_raw >> (8U - 4U) ==
-                 0b1010U || /* ETSI TS 102 221 V16.4.0 p.76 sec.10.1.1. */
-             cla_raw >> (8U - 4U) ==
-                 0b1000U /* ETSI TS 102 221 V16.4.0 p.76 sec.10.1.1 and
-                            GSM 11.11 4.21.1 pg.32 sec.9.1.*/
-    )
-    {
-        cla.type = SWICC_APDU_CLA_TYPE_PROPRIETARY;
-    }
     else
     {
-        cla.type = SWICC_APDU_CLA_TYPE_INVALID;
+        cla.type = SWICC_APDU_CLA_TYPE_PROPRIETARY;
     }
     return cla;
 }
