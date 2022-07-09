@@ -257,7 +257,7 @@ swicc_ret_et swicc_net_server_create(swicc_net_server_st *const server_ctx,
             {
                 if (fcntl(sock, F_SETFL, O_NONBLOCK) == 0U)
                 {
-                    logger("Listening on port %u.", port);
+                    logger("Listening on port %s.", port);
                     server_ctx->sock_server = sock;
                     return SWICC_RET_SUCCESS;
                 }

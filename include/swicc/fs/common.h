@@ -104,8 +104,6 @@ typedef uint8_t
 typedef struct swicc_fs_item_hdr_s
 {
     uint32_t size;
-    swicc_fs_lcs_et lcs;
-    swicc_fs_item_type_et type;
 
     /* Offset from top of the tree to the header of this item. */
     uint32_t offset_trel;
@@ -115,13 +113,16 @@ typedef struct swicc_fs_item_hdr_s
      * the item has no parent.
      */
     uint32_t offset_prel;
+
+    swicc_fs_item_type_et type;
+    swicc_fs_lcs_et lcs;
 } swicc_fs_item_hdr_st;
 typedef struct swicc_fs_item_hdr_raw_s
 {
     uint32_t size;
-    uint8_t lcs;
-    uint8_t type;
     uint32_t offset_prel;
+    uint8_t type;
+    uint8_t lcs;
 } __attribute__((packed)) swicc_fs_item_hdr_raw_st;
 
 /* Common header for all files (MF, EF, ADF, DF). */
