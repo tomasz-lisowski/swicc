@@ -17,7 +17,7 @@
 typedef struct swicc_tp_s
 {
     /**
-     * ETU is the elementary time unit (ISO 7816-3:2006 p.13 sec.7.1)
+     * ETU is the elementary time unit (ISO/IEC 7816-3:2006 p.13 sec.7.1)
      * and it dictates how many clock cycles will be used to transmit
      * each 'moment' of a character frame which consists of 10 moments.
      */

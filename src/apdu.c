@@ -149,8 +149,8 @@ swicc_ret_et swicc_apdu_res_deparse(uint8_t *const buf_raw,
             return SWICC_RET_APDU_RES_INVALID;
         }
         /**
-         * @note Older ISO 7816-3 standard editions defined two other ways of
-         * getting more data that have been deprecated now.
+         * @note Older ISO/IEC 7816-3 standard editions defined two other ways
+         * of getting more data that have been deprecated now.
          */
         if (res->sw1 == SWICC_APDU_SW1_PROC_ACK_ONE)
         {

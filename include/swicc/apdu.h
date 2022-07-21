@@ -66,7 +66,7 @@ typedef enum swicc_apdu_sw1_e
     SWICC_APDU_SW1_CHER_CLA = 0x6E,  /* CLA unsupported. */
     SWICC_APDU_SW1_CHER_UNK = 0x6F,  /* No diagnosis. */
 
-    /* Procedure byte. ISO 7816-3:2006 p.23 sec.10.3.3 table.11. */
+    /* Procedure byte. ISO/IEC 7816-3:2006 p.23 sec.10.3.3 table.11. */
     SWICC_APDU_SW1_PROC_NULL = 0x60, /* Request no action on data transfer */
 
     /**

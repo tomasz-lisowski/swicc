@@ -51,8 +51,8 @@ static void fsm_handle_s_reset_cold(swicc_st *const swicc_state)
     if (swicc_state->cont_state_rx == FSM_STATE_CONT_READY)
     {
         /**
-         * ISO 7816-3:2006 p.10 sec.6.2.2 states that the card should set I/O to
-         * state H within 200 clock cycles (delay t_a).
+         * ISO/IEC 7816-3:2006 p.10 sec.6.2.2 states that the card should set
+         * I/O to state H within 200 clock cycles (delay t_a).
          */
         swicc_state->cont_state_tx |= SWICC_IO_CONT_IO | SWICC_IO_CONT_VALID_IO;
 

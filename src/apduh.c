@@ -11,11 +11,6 @@ static swicc_apduh_ft *const swicc_apduh[0x100];
 
 /**
  * @brief Handle both invalid and unknown instructions.
- * @param swicc_state
- * @param cmd
- * @param res
- * @param procedure_count
- * @return Return code.
  */
 static swicc_apduh_ft apduh_unk;
 static swicc_ret_et apduh_unk(swicc_st *const swicc_state,
@@ -31,11 +26,6 @@ static swicc_ret_et apduh_unk(swicc_st *const swicc_state,
 
 /**
  * @brief Handle the SELECT command in the interindustry class.
- * @param swicc_state
- * @param cmd
- * @param res
- * @param procedure_count
- * @return Return code.
  * @note As described in ISO/IEC 7816-4:2020 p.74 sec.11.2.2.
  */
 static swicc_apduh_ft apduh_select;
@@ -576,12 +566,7 @@ static swicc_ret_et apduh_select(swicc_st *const swicc_state,
 
 /**
  * @brief Handle the READ BINARY command in the interindustry class.
- * @param swicc_state
- * @param cmd
- * @param res
- * @param procedure_count
- * @return Return code.
- * @note As described in ISO 7816-4:2020 p.74 sec.11.3.3.
+ * @note As described in ISO/IEC 7816-4:2020 p.74 sec.11.3.3.
  */
 static swicc_apduh_ft apduh_bin_read;
 static swicc_ret_et apduh_bin_read(swicc_st *const swicc_state,
@@ -764,12 +749,7 @@ static swicc_ret_et apduh_bin_read(swicc_st *const swicc_state,
 
 /**
  * @brief Handle the READ RECORD command in the interindustry class.
- * @param swicc_state
- * @param cmd
- * @param res
- * @param procedure_count
- * @return Return code.
- * @note As described in ISO 7816-4:2020 p.82 sec.11.4.3.
+ * @note As described in ISO/IEC 7816-4:2020 p.82 sec.11.4.3.
  */
 static swicc_apduh_ft apduh_rcrd_read;
 static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
@@ -922,7 +902,7 @@ static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
         /**
          * RFU values should never be received.
          * P1 = 0x00 is used for "special purposes" and P1 = 0xFF is RFU per
-         * ISO 7816-4:2020 p.82 sec.11.4.2.
+         * ISO/IEC 7816-4:2020 p.82 sec.11.4.2.
          */
         if ((p2_val == 0b11111 && meth == METH_RCRD_ID) ||
             (p2_val == 0b11111 && meth == METH_RCRD_NUM) || what == WHAT_RFU ||
@@ -1036,12 +1016,7 @@ static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
 
 /**
  * @brief Handle the GET RESPONSE command in the interindustry class.
- * @param swicc_state
- * @param cmd
- * @param res
- * @param procedure_count
- * @return Return code.
- * @note As described in ISO 7816-4:2020 p.82 sec.11.4.3.
+ * @note As described in ISO/IEC 7816-4:2020 p.82 sec.11.4.3.
  */
 static swicc_apduh_ft apduh_res_get;
 static swicc_ret_et apduh_res_get(swicc_st *const swicc_state,

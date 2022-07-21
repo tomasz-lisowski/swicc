@@ -62,7 +62,8 @@ static_assert(SWICC_FS_ITEM_TYPE_INVALID == 0U,
      file_p->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
 
 /**
- * Life cycle status as specified in ISO 7816-4:2020 p.31 sec.7.4.10 table.15.
+ * Life cycle status as specified in ISO/IEC 7816-4:2020 p.31 sec.7.4.10
+ * table.15.
  */
 typedef enum swicc_fs_lcs_e
 {

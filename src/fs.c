@@ -7,7 +7,7 @@
  * @param file
  * @param file_descr
  * @return Return code.
- * @note Done according to ISO 7816-4:2020 p.29 sec.7.4.5 table.12.
+ * @note Done according to ISO/IEC 7816-4:2020 p.29 sec.7.4.5 table.12.
  */
 static swicc_ret_et swicc_fs_file_descr_byte(swicc_fs_file_st const *const file,
                                              uint8_t *const file_descr)
