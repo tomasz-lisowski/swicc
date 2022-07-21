@@ -3,7 +3,7 @@
 
 #pragma once
 /**
- * TPDU = Transmission protocol data unit
+ * TPDU = Transmission protocol data unit.
  */
 
 /**
@@ -13,7 +13,8 @@
 typedef struct swicc_tpdu_cmd_s
 {
     swicc_apdu_cmd_hdr_st hdr;
-    uint8_t p3;
+    uint8_t p3; /* Separate because it is not contained in the APDU header (only
+                   in the TPDU). */
     swicc_apdu_data_st data;
 } swicc_tpdu_cmd_st;
 
@@ -23,8 +24,8 @@ swicc_ret_et swicc_tpdu_cmd_parse(uint8_t const *const buf_raw,
 
 /**
  * @brief Extract the APDU contained in the TPDU.
- * @param apdu_cmd
- * @param tpdu_cmd
+ * @param[out] apdu_cmd
+ * @param[in] tpdu_cmd
  * @return Return code.
  * @note The APDU contains references to the TPDU data to avoid copying so the
  * TPDU must remain valid for as long as the APDU is needed.

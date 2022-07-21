@@ -8,7 +8,8 @@
 #define SWICC_ATR_LEN 25
 
 /**
- * Card ATR for use when the interface shall either enter a negotiation (PPS
- * exchange) or select the first offered transmission protofcol i.e. T=0.
+ * Card ATR is the first thing sent in the comms between the terminal and ICC.
+ * It describes the supported transmission protocols and other ICC
+ * configurations.
  */
 extern uint8_t const swicc_atr[SWICC_ATR_LEN];

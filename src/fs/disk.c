@@ -321,7 +321,7 @@ swicc_ret_et swicc_disk_save(swicc_disk_st const *const disk,
 
 swicc_ret_et swicc_disk_file_foreach(swicc_disk_tree_st *const tree,
                                      swicc_fs_file_st *const file,
-                                     fs_file_foreach_cb *const cb,
+                                     swicc_disk_file_foreach_cb *const cb,
                                      void *const userdata, bool const recurse)
 {
     /* User-data can be null, other params not. */
@@ -532,8 +532,9 @@ typedef struct lutid_rebuild_cb_userdata_s
  * @param tree
  * @param file
  * @param userdata This must point to the userdata struct.
+ * @return Return code.
  */
-static fs_file_foreach_cb lutid_rebuild_cb;
+static swicc_disk_file_foreach_cb lutid_rebuild_cb;
 static swicc_ret_et lutid_rebuild_cb(swicc_disk_tree_st *const tree,
                                      swicc_fs_file_st *const file,
                                      void *const userdata)
@@ -614,7 +615,15 @@ swicc_ret_et swicc_disk_lutid_rebuild(swicc_disk_st *const disk)
     return ret;
 }
 
-static fs_file_foreach_cb lutsid_rebuild_cb;
+/**
+ * @brief Callback used when rebuilding the SID LUT. It receives files and
+ * inserts their info into the SID LUT.
+ * @param tree
+ * @param file
+ * @param userdata
+ * @return Return code.
+ */
+static swicc_disk_file_foreach_cb lutsid_rebuild_cb;
 static swicc_ret_et lutsid_rebuild_cb(swicc_disk_tree_st *const tree,
                                       swicc_fs_file_st *const file,
                                       void *const userdata)

@@ -1,33 +1,26 @@
 #include "swicc/common.h"
 
 #pragma once
-/**
- * @todo Verify that the expected number of RX'd bytes is the actual number
- * provided by the user.
- */
 
 /**
  * Number of unique configurations of the transmission protocol.
- * ISO 7816-3:2006 p.18-19 sec.8.3
+ * ISO/IEC 7816-3:2006 p.18-19 sec.8.3
  */
 #define SWICC_TP_CONF_NUM 16U
 
 /**
  * Index in the lookup tables for Fi, Di, f(max) to get the default values (used
  * right after a reset of any kind).
- *
- * ISO 7816-3:2006 p.18 sec.8.3
+ * ISO/IEC 7816-3:2006 p.18 sec.8.3
  */
 #define SWICC_TP_CONF_DEFAULT 1U
 
 /**
- * An enum for representing the state of each contact state (apart from I/O and
- * ground).
+ * Represent the state of each contact state (apart from I/O and ground).
  * @note There are 4 definitions per contact to get both a member for the
  * contact ID and the assigned purpose as well as the 'valid' flag to have the
  * ability to indicate if a contact could be read or should be written to.
- *
- * ISO 7816-3:2006 p.6 sec.5.1.1
+ * ISO/IEC 7816-3:2006 p.6 sec.5.1.1.
  */
 typedef enum swicc_io_cont_e
 {

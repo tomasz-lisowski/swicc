@@ -63,7 +63,7 @@ swicc_ret_et swicc_apdu_rc_deq(swicc_apdu_rc_st *const rc, uint8_t *const buf,
     }
 }
 
-uint32_t swicc_apdu_rc_len_rem(swicc_apdu_rc_st *const rc)
+uint32_t swicc_apdu_rc_len_rem(swicc_apdu_rc_st const *const rc)
 {
     if (rc == NULL)
     {

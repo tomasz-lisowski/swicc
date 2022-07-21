@@ -17,6 +17,7 @@ typedef enum swicc_apdu_cla_ccc_e
     SWICC_APDU_CLA_CCC_MORE,
 } swicc_apdu_cla_ccc_et;
 
+/* Secure messaging. */
 typedef enum swicc_apdu_cla_sm_e
 {
     SWICC_APDU_CLA_SM_INVALID,      /* Invalid SM indication */
@@ -26,6 +27,7 @@ typedef enum swicc_apdu_cla_sm_e
     SWICC_APDU_CLA_SM_CMD_HDR_AUTH, /* Std SM and cmd header secure */
 } swicc_apdu_cla_sm_et;
 
+/* Command class type. */
 typedef enum swicc_apdu_cla_type_e
 {
     SWICC_APDU_CLA_TYPE_INVALID,
@@ -34,16 +36,17 @@ typedef enum swicc_apdu_cla_type_e
     SWICC_APDU_CLA_TYPE_RFU, /* Reserved for future use */
 } swicc_apdu_cla_type_et;
 
-/* First byte of status word. ISO 7816-4:2020 p.17 sec.5.6 table.6. */
+/* First byte of status word. ISO/IEC 7816-4:2020 p.17 sec.5.6 table.6. */
 typedef enum swicc_apdu_sw1_e
 {
     /* Normal processing. */
-    SWICC_APDU_SW1_NORM_NONE = 0x90,            /* 9000 */
+    SWICC_APDU_SW1_NORM_NONE = 0x90,            /* Success, 9000 */
     SWICC_APDU_SW1_NORM_BYTES_AVAILABLE = 0x61, /* SW2 indicates number of bytes
                                            available. */
 
     /* Warning processing. */
-    SWICC_APDU_SW1_WARN_NVM_CHGN = 0x62, /* No change in NVM. */
+    SWICC_APDU_SW1_WARN_NVM_CHGN =
+        0x62, /* No change in NVM (non-volatile memory). */
     SWICC_APDU_SW1_WARN_NVM_CHGM = 0x63, /* Possible change in NVM. */
 
     /* Execution error. */
@@ -67,8 +70,9 @@ typedef enum swicc_apdu_sw1_e
     SWICC_APDU_SW1_PROC_NULL = 0x60, /* Request no action on data transfer */
 
     /**
-     * The ACK_ONE and ACK_ALL depend on the instruction so the far end of the
-     * range is used in order to avoid collision with real status values.
+     * The value of ACK_ONE and ACK_ALL depend on the instruction so the far end
+     * of the enum range is used in order to avoid collision with
+     * hard-coded/constant status values.
      * @warning When an ACK is desired, the APDU handler will use these special
      * values instead of setting it to the actual INS or INS ^ 0xFF value unlike
      * what the other values would suggest.
@@ -78,13 +82,14 @@ typedef enum swicc_apdu_sw1_e
     SWICC_APDU_SW1_PROC_ACK_ALL = 0xFF, /* Acknowledgement leading to transfer
                                    of the rest of data.  */
     /**
-     * The case where procedure byte is a regular SW1 is handled like the other
-     * SW1 values.
+     * The case where procedure byte is a regular SW1 (followed by SW2) is
+     * handled like the other SW1 values.
      */
 } swicc_apdu_sw1_et;
 
 /**
- * Collection of flags describing all aspects of an APDU command class.
+ * APDU command class after parsing. No all interindustry classes make use of
+ * all these entries but some do.
  */
 typedef struct swicc_apdu_cla_s
 {
@@ -95,9 +100,7 @@ typedef struct swicc_apdu_cla_s
     uint16_t lchan; /* Logical channel number ((CLA >> 27) & 0x0F) */
 } swicc_apdu_cla_st;
 
-/**
- * The header as it comes on the "wire".
- */
+/* The header as it comes on the "wire". */
 typedef struct swicc_apdu_cmd_hdr_raw_s
 {
     uint8_t cla;
@@ -126,7 +129,8 @@ typedef struct swicc_apdu_data_s
 
 /**
  * An internal format of the APDU command which is the result of parsing a raw
- * APDU command.
+ * APDU command. Note that this refers to data contained in a TPDU which avoid
+ * copying  when mapping between the two.
  */
 typedef struct swicc_apdu_cmd_s
 {
@@ -148,7 +152,7 @@ typedef struct swicc_apdu_res_s
 
 /**
  * @brief Parse the raw CLA byte.
- * @param cla_raw The class byte of an APDU message.
+ * @param[in] cla_raw The class byte of an APDU message.
  * @return Parsed CLA.
  */
 swicc_apdu_cla_st swicc_apdu_cmd_cla_parse(uint8_t const cla_raw);
@@ -156,9 +160,9 @@ swicc_apdu_cla_st swicc_apdu_cmd_cla_parse(uint8_t const cla_raw);
 /**
  * @brief Given a buffer containing a raw interindustry APDU message, parse and
  * validate it into a more useful representation.
- * @param buf_raw Buffer containing the raw APDU message.
- * @param buf_raw_len Length of the raw APDU message.
- * @param apdu_cmd Where the parsed APDU will be written.
+ * @param[in] buf_raw Buffer containing the raw APDU message.
+ * @param[in] buf_raw_len Length of the raw APDU message.
+ * @param[out] apdu_cmd Where the parsed APDU will be written.
  * @return Return code.
  */
 swicc_ret_et swicc_apdu_cmd_parse(uint8_t const *const buf_raw,
@@ -166,13 +170,14 @@ swicc_ret_et swicc_apdu_cmd_parse(uint8_t const *const buf_raw,
                                   swicc_apdu_cmd_st *const cmd);
 
 /**
- * @brief Produce a response given a response structure. This also validates the
- * contents of the res struct.
- * @param buf_raw Where to write the raw response.
- * @param buf_raw_len Should contain the allocated size of the raw buffer. This
- * will receive the final length of the written response on success.
- * @param cmd The command for which we are creating the response.
- * @param res The response struct.
+ * @brief Produce a raw response (that will be sent) given an APDU response
+ * structure. This also validates the contents of the res struct.
+ * @param[out] buf_raw Where to write the raw response.
+ * @param[in, out] buf_raw_len Should contain the allocated size of the raw
+ * buffer. This will receive the final length of the written response on
+ * success.
+ * @param[in] cmd The command for which we are creating the response.
+ * @param[in] res The response struct.
  * @return Return code.
  */
 swicc_ret_et swicc_apdu_res_deparse(uint8_t *const buf_raw,

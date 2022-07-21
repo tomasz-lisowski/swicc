@@ -57,7 +57,7 @@ static void fsm_handle_s_reset_cold(swicc_st *const swicc_state)
         swicc_state->cont_state_tx |= SWICC_IO_CONT_IO | SWICC_IO_CONT_VALID_IO;
 
         /**
-         * TODO: Delay t_f is required here according to ISO 7816-3:2006
+         * @todo: Delay t_f is required here according to ISO/IEC 7816-3:2006
          * p.10 sec.6.2.2.
          */
         swicc_state->internal.fsm_state = SWICC_FSM_STATE_ATR_REQ;
@@ -111,7 +111,7 @@ static void fsm_handle_s_atr_res(swicc_st *const swicc_state)
         swicc_state->buf_rx_len == 1U)
     {
         /**
-         * Here we decide like described in ISO 7816-3:2006 p.11 sec.6.3.1
+         * Here we decide like described in ISO/IEC 7816-3:2006 p.11 sec.6.3.1
          */
         if (swicc_state->buf_rx[0U] == SWICC_PPS_PPSS)
         {
@@ -271,9 +271,9 @@ static void fsm_handle_s_pps_req(swicc_st *const swicc_state)
                 else if (ret == SWICC_RET_PPS_INVALID)
                 {
                     /**
-                     * ISO 7816-3:2006 p.20 sec.9.1 states that if an invalid
-                     * PPS request comes in, the card should not send anything
-                     * and just wait.
+                     * ISO/IEC 7816-3:2006 p.20 sec.9.1 states that if an
+                     * invalid PPS request comes in, the card should not send
+                     * anything and just wait.
                      */
                     swicc_state->internal.fsm_state = SWICC_FSM_STATE_ATR_RES;
                     swicc_state->buf_rx_len =

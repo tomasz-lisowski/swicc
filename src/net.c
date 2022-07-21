@@ -414,29 +414,32 @@ swicc_ret_et swicc_net_server_client_connect(
     int32_t const sock = accept(server_ctx->sock_server, NULL, NULL);
     if (sock >= 0)
     {
-#if SWICC_NET_SERVER_CLIENT_KEEPALIVE == 1
-        /**
-         * Enable keep-alive to detect when the ICC is ejected as soon as
-         * possible.
-         */
-        int32_t const tcp_keepalive_yes = 1,
-                      tcp_keepalive_idle = 1 /* seconds */,
-                      tcp_keepalive_intvl = 1 /* seconds */,
-                      tcp_keepalive_pcktmax = 2 /* packets */;
-        if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &tcp_keepalive_yes,
-                       sizeof(tcp_keepalive_yes)) != 0 ||
-            setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepalive_idle,
-                       sizeof(tcp_keepalive_idle)) != 0 ||
-            setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &tcp_keepalive_intvl,
-                       sizeof(tcp_keepalive_intvl)) != 0 ||
-            setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &tcp_keepalive_pcktmax,
-                       sizeof(tcp_keepalive_pcktmax)) != 0)
+        if (SWICC_NET_SERVER_CLIENT_KEEPALIVE == 1)
         {
-            logger("Failed to enable keep-alive for client socket.");
-            swicc_net_sock_close(sock);
-            return SWICC_RET_ERROR;
+            /**
+             * Enable keep-alive to detect when the ICC is ejected as soon as
+             * possible.
+             */
+            int32_t const tcp_keepalive_yes = 1,
+                          tcp_keepalive_idle = 1 /* seconds */,
+                          tcp_keepalive_intvl = 1 /* seconds */,
+                          tcp_keepalive_pcktmax = 2 /* packets */;
+            if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &tcp_keepalive_yes,
+                           sizeof(tcp_keepalive_yes)) != 0 ||
+                setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepalive_idle,
+                           sizeof(tcp_keepalive_idle)) != 0 ||
+                setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL,
+                           &tcp_keepalive_intvl,
+                           sizeof(tcp_keepalive_intvl)) != 0 ||
+                setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT,
+                           &tcp_keepalive_pcktmax,
+                           sizeof(tcp_keepalive_pcktmax)) != 0)
+            {
+                logger("Failed to enable keep-alive for client socket.");
+                swicc_net_sock_close(sock);
+                return SWICC_RET_ERROR;
+            }
         }
-#endif
         logger("Client connected.");
         server_ctx->sock_client[slot] = sock;
         return SWICC_RET_SUCCESS;

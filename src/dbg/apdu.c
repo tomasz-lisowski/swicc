@@ -2,7 +2,7 @@
 #include <swicc/swicc.h>
 
 #ifdef DEBUG
-/* ISO 7816-4:2020 p.15-16 */
+/* ISO/IEC 7816-4:2020 sec.5.5 table.4-5 p.15-16 */
 static char const *const swicc_dbg_table_str_ins[0xFF + 1U] = {
     [0x00] = "RFU",
     [0x01] = "RFU",
@@ -374,7 +374,7 @@ swicc_ret_et swicc_dbg_apdu_cmd_str(char *const buf_str,
     else
     {
         *buf_str_len =
-            (uint16_t)bytes_written; /* Safe cast due to args of snprintf */
+            (uint16_t)bytes_written; /* Safe cast due to args of snprintf. */
         return SWICC_RET_SUCCESS;
     }
 #else

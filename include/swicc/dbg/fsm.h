@@ -3,6 +3,9 @@
 #include "swicc/common.h"
 #include "swicc/fsm.h"
 
-swicc_ret_et swicc_dbg_fsm_state_str(char *const buf_str,
-                                     uint16_t *const buf_str_len,
-                                     swicc_fsm_state_et const fsm_state);
+/**
+ * @brief Get a string of the current FSM state.
+ * @param[in] fsm_state
+ * @return Return code.
+ */
+char const *swicc_dbg_fsm_state_str(swicc_fsm_state_et const fsm_state);

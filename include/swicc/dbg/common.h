@@ -26,4 +26,9 @@
 #define CLR_VAL(txt) CLR_CYN txt CLR_DEF
 #define CLR_KND(txt) CLR_GRN txt CLR_DEF
 
+/**
+ * @brief Get a short description for any swICC return value.
+ * @param[in] ret
+ * @return Pointer to a constant return string, do not free, just forget it.
+ */
 char const *swicc_dbg_ret_str(swicc_ret_et const ret);

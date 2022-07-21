@@ -1,8 +1,8 @@
 #include <swicc/swicc.h>
 
 /**
- * ATR defined according to ISO 7816-3:2006 p.15-20 sec.8 and ISO 7816-4:2020
- * p.120 sec.12.2.2.
+ * ATR defined according to ISO/IEC 7816-3:2006 p.15-20 sec.8 and ISO/IEC
+ * 7816-4:2020 p.120 sec.12.2.2.
  */
 uint8_t const swicc_atr[] = {
     0b00111011, /**
@@ -15,12 +15,13 @@ uint8_t const swicc_atr[] = {
                  *       + H (implicit character parity bit of moments 2 to 10
                  *            i.e. after character start and including this
                  *            moment)
-                 * ISO 7816-3:2006 p.15 sec.8.1
+                 * ISO/IEC 7816-3:2006 p.15 sec.8.1
                  */
 
     /**
-     * ISO 7816-3:2006 does a bad job explaining what the Y indicator is. ETSI
-     * TS 102 221 V16.4.0 only gives some examples but those do a better job.
+     * ISO/IEC 7816-3:2006 does a bad job explaining what the Y indicator is.
+     * ETSI TS 102 221 V16.4.0 only gives some examples but those do a better
+     * job.
      *
      * The 4 bits of Y indicate (from LSB to MSB) what bytes (TA, TB, TC, TD in
      * this order) will be present in the next set of interface bytes (TAi, TBi,

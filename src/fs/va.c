@@ -162,7 +162,7 @@ typedef struct va_select_file_dfname_userdata_s
     bool found;
     swicc_fs_file_st file_found;
 } va_select_file_dfname_userdata_st;
-static fs_file_foreach_cb va_select_file_dfname_cb;
+static swicc_disk_file_foreach_cb va_select_file_dfname_cb;
 static swicc_ret_et va_select_file_dfname_cb(swicc_disk_tree_st *const tree,
                                              swicc_fs_file_st *const file,
                                              void *const userdata)
@@ -284,7 +284,7 @@ typedef struct va_select_file_path_userdata_s
     bool found;
     swicc_fs_file_st file_found;
 } va_select_file_path_userdata_st;
-static fs_file_foreach_cb va_select_file_path_cb;
+static swicc_disk_file_foreach_cb va_select_file_path_cb;
 static swicc_ret_et va_select_file_path_cb(swicc_disk_tree_st *const tree,
                                            swicc_fs_file_st *const file,
                                            void *const userdata)
@@ -385,7 +385,17 @@ swicc_ret_et swicc_va_select_record_idx(swicc_fs_st *const fs,
         if (swicc_disk_file_rcrd_cnt(fs->va.cur_tree, &fs->va.cur_ef,
                                      &rcrd_cnt) == SWICC_RET_SUCCESS)
         {
-            swicc_fs_rcrd_st const rcrd = {.idx = idx};
+            swicc_fs_rcrd_idx_kt idx_abs = idx;
+            /* Cyclic EFs have records indexed relative current record. */
+            if (fs->va.cur_ef.hdr_item.type ==
+                SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
+            {
+                idx_abs =
+                    (swicc_fs_rcrd_idx_kt)((uint32_t)(fs->va.cur_rcrd.idx +
+                                                      idx) %
+                                           rcrd_cnt);
+            }
+            swicc_fs_rcrd_st const rcrd = {.idx = idx_abs};
             fs->va.cur_rcrd = rcrd;
             return SWICC_RET_SUCCESS;
         }

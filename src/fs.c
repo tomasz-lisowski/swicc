@@ -32,7 +32,7 @@ static swicc_ret_et swicc_fs_file_descr_byte(swicc_fs_file_st const *const file,
     else
     {
         /**
-         * TODO: Not sure what working and internal EFs are so just setting it
+         * @todo: Not sure what working and internal EFs are so just setting it
          * to "internal EF" i.e. EF for storing data interpreted by the card.
          */
         *file_descr |= 0b00001000;

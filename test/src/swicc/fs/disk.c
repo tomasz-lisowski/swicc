@@ -121,7 +121,7 @@ TEST(fs_disk, swicc_disk_file_foreach__param_check)
     /* These are invalid pointers but they are not NULL. */
     swicc_disk_tree_st *const tree = (swicc_disk_tree_st *)1U;
     swicc_fs_file_st *const file = (swicc_fs_file_st *)1U;
-    fs_file_foreach_cb *const cb = (fs_file_foreach_cb *)1U;
+    swicc_disk_file_foreach_cb *const cb = (swicc_disk_file_foreach_cb *)1U;
     void *const userdata = (void *)1U;
     CHECK_EQ(swicc_disk_file_foreach(NULL, file, cb, userdata, true),
              SWICC_RET_PARAM_BAD);
@@ -136,7 +136,7 @@ typedef struct swicc_disk_file_foreach__disk_userdata_s
     uint32_t file_count;
     uint32_t valid_count;
 } swicc_disk_file_foreach__disk_userdata_st;
-static fs_file_foreach_cb swicc_disk_file_foreach__disk_cb;
+static swicc_disk_file_foreach_cb swicc_disk_file_foreach__disk_cb;
 static swicc_ret_et swicc_disk_file_foreach__disk_cb(
     swicc_disk_tree_st *const tree, swicc_fs_file_st *const file,
     void *const userdata)

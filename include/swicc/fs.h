@@ -9,8 +9,8 @@
 
 /**
  * @brief Mount the given disk in the swICC.
- * @param swicc_state
- * @param disk
+ * @param[in, out] swicc_state
+ * @param[in] disk
  * @return Return code.
  */
 swicc_ret_et swicc_fs_disk_mount(swicc_st *const swicc_state,
@@ -18,8 +18,8 @@ swicc_ret_et swicc_fs_disk_mount(swicc_st *const swicc_state,
 
 /**
  * @brief Create an LCS byte for a file.
- * @param file
- * @param lcs
+ * @param[in] file
+ * @param[out] lcs
  * @return Return code.
  * @note Done according to ISO 7816-4:2020 p.31 sec.7.4.10 table.15.
  */
@@ -28,11 +28,11 @@ swicc_ret_et swicc_fs_file_lcs(swicc_fs_file_st const *const file,
 
 /**
  * @brief Create a file descriptor for a given file.
- * @param tree Tree containing the file.
- * @param file
- * @param buf Where to write the file descriptor.
- * @param descr_len Length of the file descriptor written into the buffer will
- * be written here.
+ * @param[in] tree Tree containing the file.
+ * @param[in] file
+ * @param[out] buf Where to write the file descriptor.
+ * @param[out] descr_len Length of the file descriptor written into the buffer
+ * will be written here.
  * @return Return code.
  */
 swicc_ret_et swicc_fs_file_descr(

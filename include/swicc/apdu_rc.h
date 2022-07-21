@@ -22,20 +22,20 @@ typedef struct swicc_apdu_rc_s
 
 /**
  * @brief Reset the response chaining buffer.
- * @warning ISO 7816-4:2020 p.12 sec.5.3.4 states that the behavior of the card,
- * if the interface tries to resume response chaining after another command is
- * run in between GET RESPONSE instructions, is undefined. By resetting the
- * buffer at the start of instructions, the behavior can be made deterministic
- * i.e. resuming response chaining would always fail.
- * @param rc
+ * @param[in, out] rc
+ * @warning ISO/IEC 7816-4:2020 p.12 sec.5.3.4 states that the behavior of the
+ * card, if the interface tries to resume response chaining after another
+ * command is run in between GET RESPONSE instructions, is undefined. By
+ * resetting the buffer at the start of instructions, the behavior can be made
+ * deterministic i.e. resuming response chaining would always fail.
  */
 void swicc_apdu_rc_reset(swicc_apdu_rc_st *const rc);
 
 /**
  * @brief Enqueue data in the RC buffer.
- * @param rc
- * @param buf Shall contain the data to enqueue.
- * @param buf_len Shall contain the length of the buffer.
+ * @param[in, out] rc
+ * @param[in] buf Shall contain the data to enqueue.
+ * @param[in] buf_len Shall contain the length of the buffer.
  * @return Return code.
  */
 swicc_ret_et swicc_apdu_rc_enq(swicc_apdu_rc_st *const rc,
@@ -44,10 +44,11 @@ swicc_ret_et swicc_apdu_rc_enq(swicc_apdu_rc_st *const rc,
 
 /**
  * @brief Dequeue data from the RC buffer.
- * @param buf Buffer to write the dequeued data into.
- * @param buf_len Shall contain the size of the given buffer (or if trying to
- * dequeue less data, set this to the requested amount). It will receive the
- * dequeued data length on success.
+ * @param[in, out] rc
+ * @param[out] buf Buffer to write the dequeued data into.
+ * @param[in, out] buf_len Shall contain the size of the given buffer (or if
+ * trying to dequeue less data, set this to the requested amount). It will
+ * receive the dequeued data length on success.
  * @return Return code.
  * @note If more data was requested than was available, the function will fail
  * and store the length of available data in the buffer length parameter.
@@ -57,7 +58,7 @@ swicc_ret_et swicc_apdu_rc_deq(swicc_apdu_rc_st *const rc, uint8_t *const buf,
 
 /**
  * @brief Return how much data is left in the RC buffer.
- * @param rc
+ * @param[in] rc
  * @return Number of bytes left in the RC buffer.
  */
-uint32_t swicc_apdu_rc_len_rem(swicc_apdu_rc_st *const rc);
+uint32_t swicc_apdu_rc_len_rem(swicc_apdu_rc_st const *const rc);

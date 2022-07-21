@@ -35,8 +35,8 @@ typedef enum swicc_fs_item_type_e
     SWICC_FS_ITEM_TYPE_FILE_DF,
     SWICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT,
     SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED,
-    // SWICC_FS_ITEM_TYPE_FILE_EF_LINEARVARIABLE,
     SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC,
+    // SWICC_FS_ITEM_TYPE_FILE_EF_LINEARVARIABLE,
     // SWICC_FS_ITEM_TYPE_FILE_EF_DATO,
 
     SWICC_FS_ITEM_TYPE_DATO_BERTLV,
@@ -46,18 +46,16 @@ typedef enum swicc_fs_item_type_e
 static_assert(SWICC_FS_ITEM_TYPE_INVALID == 0U,
               "Invalid file type must be equal to 0");
 
+/* Some helpers for checking the category of an item type. */
 #define SWICC_FS_FILE_FOLDER_CHECK(file_p)                                     \
     (file_p->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_MF ||                    \
      file_p->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_DF ||                    \
      file_p->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_ADF)
-
 #define SWICC_FS_FILE_EF_CHECK(file_p)                                         \
     (file_p->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT ||        \
      file_p->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED ||        \
      file_p->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC)
-
 #define SWICC_FS_FILE_EF_BERTLV_CHECK(file_p) (false)
-
 #define SWICC_FS_FILE_EF_BERTLV_NOT_CHECK(file_p)                              \
     (file_p->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT ||        \
      file_p->hdr_item.type == SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED ||        \
@@ -98,9 +96,12 @@ typedef uint16_t swicc_fs_id_kt; /* ID like FID. */
 typedef uint8_t swicc_fs_sid_kt; /* Short ID like SFI. */
 typedef uint8_t
     swicc_fs_rcrd_idx_kt; /* Record index (NOT the record number whose indexing
-                            begins at 1, the IDX begins at 0). */
+                             begins at 1, the IDX begins at 0). */
 
-/* A header of any item in the swICC FS. */
+/**
+ * A base header for any item in the swICC FS. The raw version is the header
+ * stored in the in-memory swICC FS representation.
+ */
 typedef struct swicc_fs_item_hdr_s
 {
     uint32_t size;
@@ -137,7 +138,7 @@ typedef struct swicc_fs_file_hdr_raw_s
     swicc_fs_sid_kt sid;
 } __attribute__((packed)) swicc_fs_file_hdr_raw_st;
 
-/* Extra header data of a MF. */
+/* Extra header data of an MF. */
 typedef struct swicc_fs_mf_hdr_s
 {
     uint8_t name[SWICC_FS_NAME_LEN];
@@ -157,12 +158,12 @@ typedef struct swicc_fs_df_hdr_raw_s
     uint8_t name[SWICC_FS_NAME_LEN];
 } __attribute__((packed)) swicc_fs_df_hdr_raw_st;
 
-/* Extra header data of a ADF. */
+/* Extra header data of an ADF. */
 typedef struct swicc_fs_adf_hdr_s
 {
     /**
      * This is for the Application IDentifier which is present ONLY for ADFs.
-     * ETSI TS 101 220 v15.2.0.
+     * ETSI TS 101 220 v15.2.0 and ISO/IEC 7816-4:2020 12.3.4.
      */
     struct
     {
@@ -227,7 +228,7 @@ typedef struct swicc_fs_path_s
 
 /**
  * Outside of the disk and diskjs modules, this shall be the struct that
- * abstract away the implementation of files on disk.
+ * abstracts away the implementation of files on disk.
  */
 typedef struct swicc_fs_file_s
 {
@@ -254,67 +255,68 @@ typedef struct swicc_fs_file_raw_s
 {
     swicc_fs_item_hdr_raw_st hdr_item;
     swicc_fs_file_hdr_raw_st hdr_file;
-    uint8_t data[];
+    uint8_t data[]; /* If there is a spec header, it will be contained in the
+                       data. */
 } __attribute__((packed)) swicc_fs_file_raw_st;
 
 extern uint32_t const swicc_fs_item_hdr_raw_size[];
 
 /**
  * @brief Convert a raw item header to big endian.
- * @param item_hdr_raw
+ * @param[in, out] item_hdr_raw
  */
 void swicc_fs_item_hdr_raw_be(swicc_fs_item_hdr_raw_st *const item_hdr_raw);
 
 /**
  * @brief Convert a raw file header to big endian.
- * @param file_hdr_raw
+ * @param[in, out] file_hdr_raw
  */
 void swicc_fs_file_hdr_raw_be(swicc_fs_file_hdr_raw_st *const file_hdr_raw);
 
 /**
  * @brief Convert a raw MF header to big endian.
- * @param mf_hdr_raw
+ * @param[in, out] mf_hdr_raw
  */
 void swicc_fs_mf_hdr_raw_be(swicc_fs_mf_hdr_raw_st *const mf_hdr_raw);
 
 /**
  * @brief Convert a raw DF header to big endian.
- * @param df_hdr_raw
+ * @param[in, out] df_hdr_raw
  */
 void swicc_fs_df_hdr_raw_be(swicc_fs_df_hdr_raw_st *const df_hdr_raw);
 
 /**
  * @brief Convert a raw transparent EF header to big endian.
- * @param ef_transparent_hdr_raw
+ * @param[in, out] ef_transparent_hdr_raw
  */
 void swicc_fs_ef_transparent_hdr_raw_be(
     swicc_fs_ef_transparent_hdr_raw_st *const ef_transparent_hdr_raw);
 
 /**
  * @brief Convert a raw linear-fixed EF header to big endian.
- * @param ef_linearfixed_hdr_raw
+ * @param[in, out] ef_linearfixed_hdr_raw
  */
 void swicc_fs_ef_linearfixed_hdr_raw_be(
     swicc_fs_ef_linearfixed_hdr_raw_st *const ef_linearfixed_hdr_raw);
 
 /**
  * @brief Convert a raw cyclic EF header to big endian.
- * @param ef_cyclic_hdr_raw
+ * @param[in, out] ef_cyclic_hdr_raw
  */
 void swicc_fs_ef_cyclic_hdr_raw_be(
     swicc_fs_ef_cyclic_hdr_raw_st *const ef_cyclic_hdr_raw);
 
 /**
  * @brief Convert a raw ADF header to big endian.
- * @param adf_hdr_raw
+ * @param[in, out] adf_hdr_raw
  */
 void swicc_fs_adf_hdr_raw_be(swicc_fs_adf_hdr_raw_st *const adf_hdr_raw);
 
 /**
  * @brief Parse an item header.
- * @param item_hdr_raw Pointer to the raw item header.
- * @param offset_trel Tree-relative offset of the file.
- * @param item_hdr Where to store the parsed item header.
+ * @param[in] item_hdr_raw Pointer to the raw item header.
+ * @param[in] offset_trel Tree-relative offset of the file.
+ * @param[out] item_hdr Where to store the parsed item header.
  */
 void swicc_fs_item_hdr_prs(swicc_fs_item_hdr_raw_st const *const item_hdr_raw,
                            uint32_t const offset_trel,
@@ -322,18 +324,18 @@ void swicc_fs_item_hdr_prs(swicc_fs_item_hdr_raw_st const *const item_hdr_raw,
 
 /**
  * @brief Parse a file header.
- * @param file_hdr_raw Pointer to the raw file header.
- * @param file_hdr Where to store the parsed file header.
+ * @param[in] file_hdr_raw Pointer to the raw file header.
+ * @param[out] file_hdr Where to store the parsed file header.
  */
 void swicc_fs_file_hdr_prs(swicc_fs_file_hdr_raw_st const *const file_hdr_raw,
                            swicc_fs_file_hdr_st *const file_hdr);
 
 /**
  * @brief Parse some location of the tree as a file.
- * @param tree The tree containing the file.
- * @param offset_trel Offset (inside the tree buffer) to the beginning of the
- * file.
- * @param file Where the parsed file will be written.
+ * @param[in] tree The tree containing the file.
+ * @param[in] offset_trel Offset (inside the tree buffer) to the beginning of
+ * the file.
+ * @param[out] file Where the parsed file will be written.
  * @return Return code.
  */
 swicc_ret_et swicc_fs_file_prs(swicc_disk_tree_st const *const tree,
