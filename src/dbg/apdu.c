@@ -357,7 +357,7 @@ swicc_ret_et swicc_dbg_apdu_cmd_str(char *const buf_str,
         "\n  ("CLR_KND("CLA")" ("CLR_KND("Chain")" "CLR_VAL("'%s'")") ("CLR_KND("SM")" "CLR_VAL("'%s'")") ("CLR_KND("Info")" "CLR_VAL("'%s'")") ("CLR_KND("Logical Channel")" "CLR_VAL("%u")"))"
         "\n  ("CLR_KND("INS")" " CLR_VAL("0x%02X") " = "CLR_VAL("'%s'")")"
         "\n  ("CLR_KND("P1")" "CLR_VAL("0x%02X")")"
-        "\n  ("CLR_KND("P2")" "CLR_VAL("0x%02X")"))\n",
+        "\n  ("CLR_KND("P2")" "CLR_VAL("0x%02X")"))",
         // clang-format on
         swicc_dbg_apdu_cla_ccc_str(apdu_cmd->hdr->cla),
         swicc_dbg_apdu_cla_sm_str(apdu_cmd->hdr->cla),

@@ -257,7 +257,7 @@ swicc_ret_et swicc_net_server_create(swicc_net_server_st *const server_ctx,
             {
                 if (fcntl(sock, F_SETFL, O_NONBLOCK) == 0U)
                 {
-                    logger("Listening on port %s.", port);
+                    logger("Listening on port %u.", port);
                     server_ctx->sock_server = sock;
                     return SWICC_RET_SUCCESS;
                 }
@@ -446,7 +446,7 @@ swicc_ret_et swicc_net_server_client_connect(
     }
     else if (errno == EAGAIN || errno == EWOULDBLOCK)
     {
-        logger("Tried accepting connections but no client was queued.");
+        /* logger("Tried accepting connections but no client was queued."); */
         return SWICC_RET_NET_CONN_QUEUE_EMPTY;
     }
     else if (errno == ECONNABORTED || errno == EPERM || errno == EPROTO)
@@ -576,8 +576,9 @@ swicc_ret_et swicc_net_client(swicc_st *const swicc_state,
                 }
 
                 /**
-                 * These shall not be modified by the control operations because
-                 * they represent the state of the ICC after the request.
+                 * These data members shall not be modified by the control
+                 * operations because they represent the state of the ICC after
+                 * the request.
                  */
                 msg_tx.data.cont_state = swicc_state->cont_state_tx;
                 msg_tx.data.buf_len_exp = swicc_state->buf_rx_len;
@@ -597,6 +598,34 @@ swicc_ret_et swicc_net_client(swicc_st *const swicc_state,
                     (uint16_t)buf_rx_len; /* Safe cast due to bound check. */
                 swicc_state->buf_tx = msg_tx.data.buf;
                 swicc_state->buf_tx_len = sizeof(msg_tx.data.buf);
+#ifdef DEBUG_MSG
+                static_assert(offsetof(swicc_net_msg_data_st, buf) < UINT16_MAX,
+                              "Unsafe cast since offset is larger than what "
+                              "uint16 can hold.");
+                swicc_tpdu_cmd_st tpdu_debug;
+                if (swicc_tpdu_cmd_parse(
+                        msg_rx.data.buf,
+                        (uint16_t)(msg_rx.hdr.size -
+                                   offsetof(swicc_net_msg_data_st, buf)),
+                        &tpdu_debug) == SWICC_RET_SUCCESS)
+                {
+                    dbg_buf_len = sizeof(dbg_buf);
+                    if (swicc_dbg_tpdu_cmd_str(dbg_buf, &dbg_buf_len,
+                                               &tpdu_debug) ==
+                        SWICC_RET_SUCCESS)
+                    {
+                        logger("%.*s", dbg_buf_len, dbg_buf);
+                    }
+                    else
+                    {
+                        logger("Failed to create debug string of TPDU.");
+                    }
+                }
+                else
+                {
+                    logger("Failed to parse data as a TPDU.");
+                }
+#endif
                 swicc_io(swicc_state);
 
                 /* Prepare response. */

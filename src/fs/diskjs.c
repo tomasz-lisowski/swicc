@@ -1360,8 +1360,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
 
             /**
              * Each tree contains exactly one file so the tree length equals to
-             * the root element length. Safe cast due to check to see if it
-             * overflows the type.
+             * the root element length.
              */
             tree->len = item_size;
 

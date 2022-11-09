@@ -35,7 +35,7 @@ swicc_ret_et swicc_dbg_pps_str(char *const buf_str, uint16_t *const buf_str_len,
         "(" CLR_KND("PPS")
         "\n  (" CLR_KND("T") " " CLR_VAL("%u") ")"
         "\n  (" CLR_KND("Fi") " " CLR_VAL("%u") ") (" CLR_KND("Di") " " CLR_VAL("%u") ")"
-        "\n  (" CLR_KND("SPU") " " CLR_VAL("%u") "))\n",
+        "\n  (" CLR_KND("SPU") " " CLR_VAL("%u") "))",
         // clang-format on
         pps0 & 0x0F, fi, di, spu);
     if (bytes_written < 0)

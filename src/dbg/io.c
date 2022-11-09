@@ -17,7 +17,7 @@ swicc_ret_et swicc_dbg_io_cont_str(char *const buf_str,
         "("CLR_KND("Cont")
         "\n  ("CLR_KND("RX")" ("CLR_KND("C1")" "CLR_VAL("'%s'")") ("CLR_KND("C2")" "CLR_VAL("'%s'")") ("CLR_KND("C3")" "CLR_VAL("'%s'")") ("CLR_KND("C6")" "CLR_VAL("'%s'")") ("CLR_KND("C7")" "CLR_VAL("'%s'")"))"
         "\n  ("CLR_KND("TX")" ("CLR_KND("C1")" "CLR_VAL("'%s'")") ("CLR_KND("C2")" "CLR_VAL("'%s'")") ("CLR_KND("C3")" "CLR_VAL("'%s'")") ("CLR_KND("C6")" "CLR_VAL("'%s'")") ("CLR_KND("C7")" "CLR_VAL("'%s'")"))"
-        ")\n",
+        ")",
         // clang-format on
         cont_state_rx & SWICC_IO_CONT_VALID_C1
             ? cont_str[(cont_state_rx & SWICC_IO_CONT_C1) > 0]

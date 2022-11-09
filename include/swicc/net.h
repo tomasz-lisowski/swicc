@@ -38,7 +38,7 @@ typedef enum swicc_net_msg_ctrl_e
 
 typedef struct swicc_net_msg_hdr_s
 {
-    uint32_t size;
+    uint32_t size; /* The size of the data. */
 } __attribute__((packed)) swicc_net_msg_hdr_st;
 
 typedef struct swicc_net_msg_data_s
@@ -106,7 +106,7 @@ swicc_ret_et swicc_net_client_sig_register(void (*const sigh_exit)(int));
  * @brief Reset the signal handler for SIGINT, SIGHUP, and SIGTERM to the
  * default.
  */
-void swicc_net_client_sig_default();
+void swicc_net_client_sig_default(void);
 
 /**
  * @brief Create a network server on some port. This will initialize the server

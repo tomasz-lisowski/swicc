@@ -50,17 +50,14 @@ TEST_CC_FLAGS:=\
 all: main test
 .PHONY: all
 
+# To add CC flags run make with `ARG="-DDEBUG -DDEBUG_CLR -DDEBUG_MSG"` and so on.
 main: $(DIR_BUILD) $(DIR_BUILD)/$(MAIN_NAME)/dbg $(DIR_BUILD)/$(MAIN_NAME)/fs $(DIR_BUILD)/cjson $(DIR_BUILD)/$(LIB_PREFIX)$(MAIN_NAME).$(EXT_LIB_STATIC)
-main-dbg-asan: MAIN_CC_FLAGS+=-fsanitize=address
-main-dbg-asan: main-dbg-clr
-main-dbg-clr: MAIN_CC_FLAGS+=-DDEBUG_CLR
-main-dbg-clr: main-dbg
-main-dbg: MAIN_CC_FLAGS+=-g -DDEBUG
+main-dbg: MAIN_CC_FLAGS+=-g -fsanitize=address -DDEBUG $(ARG)
 main-dbg: main
-.PHONY: main main-dbg main-dbg-clr main-dbg-asan
+.PHONY: main main-dbg
 
-test: main-dbg $(DIR_BUILD) $(DIR_BUILD)/tmp $(DIR_BUILD)/$(DIR_TEST) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME)/fs $(DIR_BUILD)/$(DIR_TEST).$(EXT_BIN)
-test-dbg: TEST_CC_FLAGS+=-g -DDEBUG -fsanitize=address
+test: main $(DIR_BUILD) $(DIR_BUILD)/tmp $(DIR_BUILD)/$(DIR_TEST) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME)/fs $(DIR_BUILD)/$(DIR_TEST).$(EXT_BIN)
+test-dbg: TEST_CC_FLAGS+=-g -fsanitize=address -DDEBUG
 test-dbg: test
 .PHONY: test test-dbg
 

@@ -15,7 +15,7 @@ swicc_ret_et swicc_dbg_tpdu_cmd_str(char *const buf_str,
         "\n  (" CLR_KND("P1") " " CLR_VAL("0x%02X") ")"
         "\n  (" CLR_KND("P2") " " CLR_VAL("0x%02X") ")"
         "\n  (" CLR_KND("P3") " " CLR_VAL("0x%02X") "))"
-        "\n  (" CLR_KND("Data Len") " " CLR_VAL("%u") "))\n",
+        "\n  (" CLR_KND("Data Len") " " CLR_VAL("%u") "))",
         // clang-format on
         swicc_dbg_apdu_cla_ccc_str(tpdu_cmd->hdr.cla),
         swicc_dbg_apdu_cla_sm_str(tpdu_cmd->hdr.cla),
