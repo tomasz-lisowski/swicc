@@ -1,30 +1,104 @@
 # swICC Library
-Software ICC (or swICC) is a framework providing an easy and flexible way to develop most types of smart cards. It also allows any swICC-based card to be connected to the PC through the [PC/SC](https://en.wikipedia.org/wiki/PC/SC) interface (using a [software PC/SC reader](https://github.com/tomasz-lisowski/swicc-drv-ifd)) which is the de facto standard for connecting smart cards to PCs.
-In summary:
-- A framework for developing smart cards with contacts in software, without any hardware dependencies.
-- Allows any swICC-based card to be connected to the PC via PC/SC using a [software reader](https://github.com/tomasz-lisowski/swicc-drv-ifd).
-- Allows for the smart card file system to be defined using JSON.
-- Can save the file system of a card to a proprietary file which can later be loaded back into the card.
-- Offers many debug utilities to help parse various data coming in and out of the card.
-- Keeps all state in a single struct allowing for many instances to be spawned if needed.
-- Offers a BER-TLV implementation which is clear and easy to use (this is useful for forming responses to some instructions).
-- Implements a simple proprietary protocol which allows for transport-layer exchanges with the card (unlike PC/SC which operates at the  application-layer).
 
-## Building
-The build process requires that `make` and `gcc` are present. Also make sure that you clone the repository recursively so that all sub-modules get cloned as expected.
-The make targets are as follows:
-- **main**: This builds a static library without any debug information or debug utilities.
-- **main-dbg**: This builds a static library with all debug information, debug utilities, and an address sanitizer.
-- **test**: Build the testing binary and link it with the non-debug version of the swICC library.
-- **test-dbg**: Build the testing binary with debug information and an address sanitizer. and link it with the non-debug version of the swICC library.
-- **clean**: Performs a cleanup of the project and all sub-modules.
+> Project **needs** to be cloned recursively. Downloading the ZIP is not enough.
 
-For adding additional C flags, just pass them inside an `ARG` variable when calling make: `make target ARG="-DDEBUG_CLR -DEXAMPLE_DEFINE"`.
+Software ICC (or swICC) is a framework providing an easy and flexible way to develop most types of smart cards. It also allows any swICC-based card to be connected to the PC through the [PC/SC](https://en.wikipedia.org/wiki/PC/SC) interface (using the [swICC PC/SC reader](https://github.com/tomasz-lisowski/swicc-drv-ifd)) which is the de facto standard for connecting smart cards to PCs.
 
-All possible arguments:
-- `DEBUG_CLR` to add color to the debug output.
+## Scope
+- Framework for developing smart cards in software, with no hardware dependencies.
+- Any swICC-based card can connect to the PC via PC/SC using the [swICC PC/SC reader](https://github.com/tomasz-lisowski/swicc-drv-ifd).
+- Smart card file system can be defined using JSON, examples present in `./test/data/disk`. The FS can be saved to disk as a `.swicc` file, and loaded back into the card.
+- Plenty debug utilities.
+- Includes an easy-to-use BER-TLV implementation.
 
-## Instructions
-A vanilla (minimal) smart card can be implemented by simply calling the `swicc_net_client` function. This will connect the card to a desired server and handle all requests as a barebones smart card.
-To implement a custom card, one also needs to register an APDU demuxer (before running the network client) through `swicc_apduh_pro_register`, as well as APDU handlers that get called by the demuxer depending on command that was received.
-A good example for using the framework is the [swSIM](https://github.com/tomasz-lisowski/swsim) project which implements a SIM card using swICC.
+## Install
+- You need `make`, `cmake`, and `gcc` to compile the project. No extra runtime dependencies.
+1. `sudo apt-get install make cmake gcc`
+2. `git clone --recurse-submodules git@github.com:tomasz-lisowski/swicc.git`
+3. `cd swicc`
+4. `make main-dbg` (for more info on building, take a look at `./doc/install.md`).
+5. Link with `./build/libswicc.a` (e.g. `-Llib/swicc/build -lswicc`) and add `./include` to the include path (e.g. `-Ilib/swicc/include`).
+6. In your project add `#include <swicc/swicc.h>` to include all headers.
+
+## Usage
+To create a minimal smart card do the following:
+1. Make sure to follow the installation instructions first and make sure `./build/libswicc.a` exists.
+2. `mkdir card`
+3. `cd card`
+4. Copy the following code into a `main.c` file inside the `./card` directory.
+<details>
+    <summary>Click to see source code.</summary>
+
+```C
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <swicc/swicc.h>
+
+swicc_net_client_st client_ctx = {0U};
+
+static void sig_exit_handler(__attribute__((unused)) int signum)
+{
+    printf("Shutting down...\n");
+    swicc_net_client_destroy(&client_ctx);
+    exit(0);
+}
+
+int32_t main(int32_t const argc, char const *const argv[const argc])
+{
+    swicc_disk_st disk = {0U};
+    swicc_ret_et ret = swicc_diskjs_disk_create(&disk, "../test/data/disk/006-in.json");
+    if (ret == SWICC_RET_SUCCESS)
+    {
+        swicc_st swicc_ctx = {0U};
+        ret = swicc_fs_disk_mount(&swicc_ctx, &disk);
+        if (ret == SWICC_RET_SUCCESS)
+        {
+            ret = swicc_net_client_sig_register(sig_exit_handler);
+            if (ret == SWICC_RET_SUCCESS)
+            {
+                ret =
+                    swicc_net_client_create(&client_ctx, "127.0.0.1", "37324");
+                if (ret == SWICC_RET_SUCCESS)
+                {
+                    ret = swicc_net_client(&swicc_ctx, &client_ctx);
+                    if (ret != SWICC_RET_SUCCESS)
+                    {
+                        printf("Failed to run network client.\n");
+                    }
+                    swicc_net_client_destroy(&client_ctx);
+                }
+                else
+                {
+                    printf("Failed to create a client.\n");
+                }
+            }
+            else
+            {
+                printf("Failed to register signal handler.\n");
+            }
+            swicc_terminate(&swicc_ctx);
+        }
+        else
+        {
+            printf("Failed to mount disk.\n");
+            swicc_disk_unload(&disk);
+        }
+    }
+    else
+    {
+        printf("Failed to create disk.\n");
+    }
+
+    return 0;
+}
+```
+</details>
+
+5. `gcc main.c -I../include -L../build -lswicc -o card.elf` to build the card.
+6. To interact with the card over PC/SC, you will need to start a swICC card server, e.g., the [swICC PC/SC reader](https://github.com/tomasz-lisowski/swicc-drv-ifd).
+7. `./card.elf` which will connect the card to the card reader.
+8. `pcsc_scan` (part of the `pcsc-tools` package) will show some details of the card.
+9. You can begin interacting with the card through PC/SC as you would with a real card.
+
+To implement a custom card, one needs to register an APDU demuxer (before running the network client) through `swicc_apduh_pro_register`, as well as APDU handlers that get called by the demuxer depending on command that was received. A good example for using the framework in a more advanced way is the [swSIM](https://github.com/tomasz-lisowski/swsim) project which implements a SIM card using swICC.

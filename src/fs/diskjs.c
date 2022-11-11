@@ -1334,7 +1334,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                          * Safe cast due to the bound check against uint32 max.
                          */
                         tree->size = (uint32_t)tree_buf_size_new;
-                        printf("Tree: Allocated more memory, retring.\n");
+                        printf("Tree: Allocated more memory, retrying.\n");
                     }
                     else
                     {

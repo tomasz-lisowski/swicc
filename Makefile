@@ -25,7 +25,8 @@ MAIN_CC_FLAGS:=\
 	-I$(DIR_INCLUDE) \
 	-I$(DIR_LIB)/cjson \
 	-L$(DIR_LIB)/cjson/build \
-	-Wl,-whole-archive -lcjson -Wl,-no-whole-archive
+	-Wl,-whole-archive -lcjson -Wl,-no-whole-archive \
+	$(ARG)
 
 TEST_SRC:=$(wildcard $(DIR_TEST)/$(DIR_SRC)/*.c) $(wildcard $(DIR_TEST)/$(DIR_SRC)/$(MAIN_NAME)/*.c) $(wildcard $(DIR_TEST)/$(DIR_SRC)/$(MAIN_NAME)/fs/*.c)
 TEST_OBJ:=$(TEST_SRC:$(DIR_TEST)/$(DIR_SRC)/%.c=$(DIR_BUILD)/$(DIR_TEST)/%.o)
@@ -50,14 +51,13 @@ TEST_CC_FLAGS:=\
 all: main test
 .PHONY: all
 
-# To add CC flags run make with `ARG="-DDEBUG -DDEBUG_CLR -DDEBUG_MSG"` and so on.
 main: $(DIR_BUILD) $(DIR_BUILD)/$(MAIN_NAME)/dbg $(DIR_BUILD)/$(MAIN_NAME)/fs $(DIR_BUILD)/cjson $(DIR_BUILD)/$(LIB_PREFIX)$(MAIN_NAME).$(EXT_LIB_STATIC)
-main-dbg: MAIN_CC_FLAGS+=-g -fsanitize=address -DDEBUG $(ARG)
+main-dbg: MAIN_CC_FLAGS+=-g -DDEBUG
 main-dbg: main
 .PHONY: main main-dbg
 
 test: main $(DIR_BUILD) $(DIR_BUILD)/tmp $(DIR_BUILD)/$(DIR_TEST) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME)/fs $(DIR_BUILD)/$(DIR_TEST).$(EXT_BIN)
-test-dbg: TEST_CC_FLAGS+=-g -fsanitize=address -DDEBUG
+test-dbg: TEST_CC_FLAGS+=-g -DDEBUG -fsanitize=address
 test-dbg: test
 .PHONY: test test-dbg
 
