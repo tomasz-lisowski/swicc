@@ -100,7 +100,7 @@ uint8_t const swicc_atr[] = {
                  * Len = 7
                  */
 
-    'l', 'i', 'b', 'u', 'i', 0xCC, 0x00,
+    's', 'w', 'i', 'c', 'c', 0x00, 0x00,
 
     0x73,       /**
                  * Tag = 7 (card capabilities)
