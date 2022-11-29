@@ -7,7 +7,7 @@ Software ICC (or swICC) is a framework providing an easy and flexible way to dev
 ## Scope
 - Framework for developing smart cards in software, with no hardware dependencies.
 - Any swICC-based card can connect to the PC via PC/SC using the [swICC PC/SC reader](https://github.com/tomasz-lisowski/swicc-drv-ifd).
-- Smart card file system can be defined using JSON, examples present in `./test/data/disk`. The FS can be saved to disk as a `.swicc` file, and loaded back into the card.
+- Smart card file system can be defined using JSON, examples present in `./test/data/disk`. The FS can be saved to disk as a `.swiccfs` file, and loaded back into the card.
 - Plenty debug utilities.
 - Includes an easy-to-use BER-TLV implementation.
 
