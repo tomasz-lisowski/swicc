@@ -21,7 +21,8 @@ static char const *const swicc_dbg_table_str_ret[] = {
     [SWICC_RET_FS_NOT_FOUND] = "not found in FS",
 
     [SWICC_RET_DATO_END] = "DO end of data",
-    [SWICC_RET_NET_CONN_QUEUE_EMPTY] = "Connection queue is empty",
+    [SWICC_RET_NET_CONN_QUEUE_EMPTY] = "connection queue is empty",
+    [SWICC_RET_NET_DISCONNECTED] = "client got disconnected",
 };
 #endif
 

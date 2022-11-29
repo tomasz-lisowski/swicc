@@ -41,6 +41,8 @@ typedef enum swicc_ret_e
     SWICC_RET_NET_CONN_QUEUE_EMPTY, /* Client connection queue is empty i.e.
                                        there are no pending connections to the
                                        server. */
+    SWICC_RET_NET_DISCONNECTED, /* Client connected to server and exchanged at
+                                   least 1 message before getting an error. */
 } swicc_ret_et;
 
 /**
