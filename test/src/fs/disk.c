@@ -42,7 +42,7 @@ TEST(fs_disk, swicc_disk_save__disk)
         uint8_t disk_buf[disk_filesize];
         memset(disk_buf, 0U, disk_filesize);
 
-        char const *const disk_path = "build/tmp/3LkgKmhtzapMe5bz.swicc";
+        char const *const disk_path = "build/tmp/3LkgKmhtzapMe5bz.swiccfs";
         swicc_disk_st disk = {0U};
         REQUIRE_EQ(
             swicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
@@ -80,8 +80,8 @@ TEST(fs_disk, swicc_disk_load__disk)
         uint8_t disk_buf[disk_filesize];
         memset(disk_buf, 0U, sizeof(disk_buf));
 
-        char const *const disk_path0 = "build/tmp/Z0fnnIBCykwwaiLJ.swicc";
-        char const *const disk_path1 = "build/tmp/mP2F0I8XMnzLhBzR.swicc";
+        char const *const disk_path0 = "build/tmp/Z0fnnIBCykwwaiLJ.swiccfs";
+        char const *const disk_path1 = "build/tmp/mP2F0I8XMnzLhBzR.swiccfs";
         swicc_disk_st disk = {0U};
         REQUIRE_EQ(
             swicc_diskjs_disk_create(&disk, "test/data/disk/004-in.json"),
