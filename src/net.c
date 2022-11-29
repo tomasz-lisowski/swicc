@@ -209,14 +209,60 @@ swicc_ret_et swicc_net_client_sig_register(void (*const sigh_exit)(int))
                                     {
                                         return SWICC_RET_SUCCESS;
                                     }
+                                    else
+                                    {
+                                        logger("Failed to set new action for "
+                                               "SIGTERM: %s.",
+                                               strerror(errno));
+                                    }
+                                }
+                                else
+                                {
+                                    logger("Signal SIGTERM is ignored: %s.",
+                                           strerror(errno));
                                 }
                             }
+                            else
+                            {
+                                logger(
+                                    "Failed to get old action for SIGTERM: %s.",
+                                    strerror(errno));
+                            }
+                        }
+                        else
+                        {
+                            logger("Failed to set new action for SIGHUP: %s.",
+                                   strerror(errno));
                         }
                     }
+                    else
+                    {
+                        logger("Signal SIGHUP is ignored: %s.",
+                               strerror(errno));
+                    }
+                }
+                else
+                {
+                    logger("Failed to get old action for SIGHUP: %s.",
+                           strerror(errno));
                 }
             }
+            else
+            {
+                logger("Failed to set new action for SIGINT: %s.",
+                       strerror(errno));
+            }
+        }
+        else
+        {
+            logger("Signal SIGINT is ignored: %s.", strerror(errno));
         }
     }
+    else
+    {
+        logger("Failed to get old action for SIGINT: %s.", strerror(errno));
+    }
+    logger("Resetting to default signal handlers.");
     swicc_net_client_sig_default();
     return SWICC_RET_ERROR;
 }
