@@ -44,7 +44,7 @@ TEST_CC_FLAGS:=\
 	-Itest/$(DIR_INCLUDE) \
 	-I$(DIR_LIB)/cjson \
 	-I$(DIR_LIB)/tau \
-	-I.. \
+	-I. \
 	-L$(DIR_BUILD) \
 	-lswicc
 
@@ -56,7 +56,7 @@ main-dbg: MAIN_CC_FLAGS+=-g -DDEBUG
 main-dbg: main
 .PHONY: main main-dbg
 
-test: main $(DIR_BUILD) $(DIR_BUILD)/tmp $(DIR_BUILD)/$(DIR_TEST) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME)/fs $(DIR_BUILD)/$(DIR_TEST).$(EXT_BIN)
+test: main $(DIR_BUILD) $(DIR_BUILD)/tmp $(DIR_BUILD)/$(DIR_TEST) $(DIR_BUILD)/$(DIR_TEST)/fs $(DIR_BUILD)/$(DIR_TEST).$(EXT_BIN)
 test-dbg: TEST_CC_FLAGS+=-g -DDEBUG -fsanitize=address
 test-dbg: test
 .PHONY: test test-dbg
@@ -90,7 +90,7 @@ $(DIR_BUILD)/$(DIR_TEST)/%.o: $(DIR_TEST)/$(DIR_SRC)/%.c
 -include $(MAIN_DEP)
 -include $(TEST_DEP)
 
-$(DIR_BUILD) $(DIR_BUILD)/$(MAIN_NAME)/dbg $(DIR_BUILD)/$(MAIN_NAME)/fs $(DIR_BUILD)/cjson $(DIR_BUILD)/tmp $(DIR_BUILD)/$(DIR_TEST) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME) $(DIR_BUILD)/$(DIR_TEST)/$(MAIN_NAME)/fs:
+$(DIR_BUILD) $(DIR_BUILD)/$(MAIN_NAME)/dbg $(DIR_BUILD)/$(MAIN_NAME)/fs $(DIR_BUILD)/cjson $(DIR_BUILD)/tmp $(DIR_BUILD)/$(DIR_TEST) $(DIR_BUILD)/$(DIR_TEST)/fs:
 	$(call pal_mkdir,$(@))
 clean:
 	$(call pal_rmdir,$(DIR_BUILD))

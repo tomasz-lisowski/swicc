@@ -4,7 +4,7 @@
 #include <swicc/swicc.h>
 
 /* No other choice for testing static functions... */
-#include <swicc/src/fs/diskjs.c>
+#include <src/fs/diskjs.c>
 
 #define TEST_DATA_FOREACH(path_prefix, code)                                   \
     do                                                                         \
