@@ -28,7 +28,7 @@ MAIN_CC_FLAGS:=\
 	-Wl,-whole-archive -lcjson -Wl,-no-whole-archive \
 	$(ARG)
 
-TEST_SRC:=$(wildcard $(DIR_TEST)/$(DIR_SRC)/*.c) $(wildcard $(DIR_TEST)/$(DIR_SRC)/$(MAIN_NAME)/*.c) $(wildcard $(DIR_TEST)/$(DIR_SRC)/$(MAIN_NAME)/fs/*.c)
+TEST_SRC:=$(wildcard $(DIR_TEST)/$(DIR_SRC)/*.c) $(wildcard $(DIR_TEST)/$(DIR_SRC)/fs/*.c)
 TEST_OBJ:=$(TEST_SRC:$(DIR_TEST)/$(DIR_SRC)/%.c=$(DIR_BUILD)/$(DIR_TEST)/%.o)
 TEST_DEP:=$(TEST_OBJ:%.o=%.d)
 TEST_CC_FLAGS:=\
