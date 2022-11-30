@@ -190,79 +190,69 @@ swicc_ret_et swicc_net_client_sig_register(void (*const sigh_exit)(int))
 
     if (sigaction(SIGINT, NULL, &action_old) == 0)
     {
-        if (action_old.sa_handler != SIG_IGN)
+        if (action_old.sa_handler == SIG_IGN)
         {
-            if (sigaction(SIGINT, &action_new, NULL) == 0)
+            logger("Signal SIGINT is ignored.");
+        }
+
+        if (sigaction(SIGINT, &action_new, NULL) == 0)
+        {
+            if (sigaction(SIGHUP, NULL, &action_old) == 0)
             {
-                if (sigaction(SIGHUP, NULL, &action_old) == 0)
+                if (action_old.sa_handler == SIG_IGN)
                 {
-                    if (action_old.sa_handler != SIG_IGN)
+                    logger("Signal SIGHUP is ignored.");
+                }
+
+                if (sigaction(SIGHUP, &action_new, NULL) == 0)
+                {
+                    if (sigaction(SIGTERM, NULL, &action_old) == 0)
                     {
-                        if (sigaction(SIGHUP, &action_new, NULL) == 0)
+                        if (action_old.sa_handler == SIG_IGN)
                         {
-                            if (sigaction(SIGTERM, NULL, &action_old) == 0)
-                            {
-                                if (action_old.sa_handler != SIG_IGN)
-                                {
-                                    if (sigaction(SIGTERM, &action_new, NULL) ==
-                                        0)
-                                    {
-                                        return SWICC_RET_SUCCESS;
-                                    }
-                                    else
-                                    {
-                                        logger("Failed to set new action for "
-                                               "SIGTERM: %s.",
-                                               strerror(errno));
-                                    }
-                                }
-                                else
-                                {
-                                    logger("Signal SIGTERM is ignored: %s.",
-                                           strerror(errno));
-                                }
-                            }
-                            else
-                            {
-                                logger(
-                                    "Failed to get old action for SIGTERM: %s.",
-                                    strerror(errno));
-                            }
+                            logger("Signal SIGTERM is ignored: %s.",
+                                   strerror(errno));
+                        }
+
+                        if (sigaction(SIGTERM, &action_new, NULL) == 0)
+                        {
+                            return SWICC_RET_SUCCESS;
                         }
                         else
                         {
-                            logger("Failed to set new action for SIGHUP: %s.",
+                            logger("Failed to set new action for "
+                                   "SIGTERM: %s.",
                                    strerror(errno));
                         }
                     }
                     else
                     {
-                        logger("Signal SIGHUP is ignored: %s.",
+                        logger("Failed to get old action for SIGTERM: %s.",
                                strerror(errno));
                     }
                 }
                 else
                 {
-                    logger("Failed to get old action for SIGHUP: %s.",
+                    logger("Failed to set new action for SIGHUP: %s.",
                            strerror(errno));
                 }
             }
             else
             {
-                logger("Failed to set new action for SIGINT: %s.",
+                logger("Failed to get old action for SIGHUP: %s.",
                        strerror(errno));
             }
         }
         else
         {
-            logger("Signal SIGINT is ignored: %s.", strerror(errno));
+            logger("Failed to set new action for SIGINT: %s.", strerror(errno));
         }
     }
     else
     {
         logger("Failed to get old action for SIGINT: %s.", strerror(errno));
     }
-    logger("Resetting to default signal handlers.");
+    logger("Resetting to default signal handler.");
     swicc_net_client_sig_default();
     return SWICC_RET_ERROR;
 }
