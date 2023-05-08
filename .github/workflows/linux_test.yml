@@ -4,10 +4,10 @@ on: [push]
 
 jobs:
   arch-20221120:
-    name: Arch 20221120.0.103865
+    name: Arch 20230430.0.146624
     runs-on: ubuntu-latest
     container:
-        image: docker://archlinux:base-devel-20221120.0.103865
+        image: docker://archlinux:base-devel-20230430.0.146624
 
     steps:
       - name: Pacman Update

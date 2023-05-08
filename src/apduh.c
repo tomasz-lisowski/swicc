@@ -712,8 +712,13 @@ static swicc_ret_et apduh_bin_read(swicc_st *const swicc_state,
              * Select the file by SID now that the command is known to
              * succeed.
              */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+            /* SID is always initialized when sid_use is true so GCC is
+             * detecting a false positive here. */
             if (swicc_va_select_file_sid(&swicc_state->fs, sid) ==
                 SWICC_RET_SUCCESS)
+#pragma GCC diagnostic pop
             {
                 return SWICC_RET_SUCCESS;
             }
