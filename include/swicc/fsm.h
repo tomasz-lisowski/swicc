@@ -1,7 +1,8 @@
+#pragma once
+
 #include "swicc/common.h"
 #include "swicc/io.h"
 
-#pragma once
 /**
  * FSM (finite state machine) for the SIM state machine described in
  * ISO/IEC 7816-3:2006 p.11 sec.6

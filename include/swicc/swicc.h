@@ -83,7 +83,7 @@ typedef struct swicc_s
     swicc_fs_st fs;
     swicc_apdu_rc_st apdu_rc;
 
-    /* This shall not be modified by anything other than the swICC library. */
+    /* This shall not be modified by anything other than the swICC framework. */
     struct
     {
         /**

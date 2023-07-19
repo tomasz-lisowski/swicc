@@ -1,7 +1,8 @@
+#pragma once
+
 #include "swicc/apdu.h"
 #include "swicc/common.h"
 
-#pragma once
 /**
  * TPDU = Transmission protocol data unit.
  */

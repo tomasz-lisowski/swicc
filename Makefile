@@ -5,6 +5,7 @@ DIR_TEST:=test
 DIR_INCLUDE:=include
 DIR_BUILD:=build
 CC:=gcc
+CXX:=g++
 AR:=ar
 
 MAIN_NAME:=swicc

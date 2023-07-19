@@ -1377,7 +1377,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
             }
 
             /**
-             * Unsafe case which relies on there being fewer than 256 trees in
+             * Unsafe cast which relies on there being fewer than 256 trees in
              * the root.
              */
             tree_count = (uint8_t)(tree_count + 1U);

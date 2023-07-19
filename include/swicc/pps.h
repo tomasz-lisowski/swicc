@@ -1,6 +1,7 @@
+#pragma once
+
 #include "swicc/common.h"
 
-#pragma once
 /**
  * PPS = protocol and parameter selection.
  */

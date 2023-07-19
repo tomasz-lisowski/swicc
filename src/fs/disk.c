@@ -103,7 +103,7 @@ swicc_ret_et swicc_disk_load(swicc_disk_st *const disk,
             {
                 if (fseek(f, 0, SEEK_SET) == 0)
                 {
-                    uint8_t magic_expected[SWICC_DISK_MAGIC_LEN] =
+                    uint8_t const magic_expected[SWICC_DISK_MAGIC_LEN] =
                         SWICC_DISK_MAGIC;
                     uint8_t magic[SWICC_DISK_MAGIC_LEN];
                     if (fread(&magic, SWICC_DISK_MAGIC_LEN, 1U, f) == 1U)
