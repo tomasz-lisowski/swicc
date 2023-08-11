@@ -110,8 +110,8 @@ static swicc_ret_et msg_recv(int32_t const sock, swicc_net_msg_st *const msg)
             {
                 logger(
                     "Value of the size field in the message header is too large. Got %u, expected %lu >= n <= %lu.",
-                       msg->hdr.size, offsetof(swicc_net_msg_data_st, buf),
-                       sizeof(msg->data));
+                    msg->hdr.size, offsetof(swicc_net_msg_data_st, buf),
+                    sizeof(msg->data));
                 recv_failure = true;
                 break;
             }
@@ -131,7 +131,7 @@ static swicc_ret_et msg_recv(int32_t const sock, swicc_net_msg_st *const msg)
         {
             logger(
                 "Failed to receive message header: recvd_bytes=%u header_len=%u.",
-                   recvd_bytes, sizeof(swicc_net_msg_hdr_st));
+                recvd_bytes, sizeof(swicc_net_msg_hdr_st));
             recv_failure = true;
             break;
         }
@@ -634,9 +634,9 @@ swicc_ret_et swicc_net_client(swicc_st *const swicc_state,
                 swicc_state->buf_tx = msg_tx.data.buf;
                 swicc_state->buf_tx_len = sizeof(msg_tx.data.buf);
 #ifdef DEBUG_MSG
-                static_assert(offsetof(swicc_net_msg_data_st, buf) < UINT16_MAX,
-                              "Unsafe cast since offset is larger than what "
-                              "uint16 can hold.");
+                static_assert(
+                    offsetof(swicc_net_msg_data_st, buf) < UINT16_MAX,
+                    "Unsafe cast since offset is larger than what uint16 can hold.");
                 swicc_tpdu_cmd_st tpdu_debug;
                 if (swicc_tpdu_cmd_parse(
                         msg_rx.data.buf,

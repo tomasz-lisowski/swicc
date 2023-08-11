@@ -51,14 +51,14 @@ static void fsm_handle_s_reset_cold(swicc_st *const swicc_state)
     if (swicc_state->cont_state_rx == FSM_STATE_CONT_READY)
     {
         /**
-         * ISO/IEC 7816-3:2006 p.10 sec.6.2.2 states that the card should set
+         * ISO/IEC 7816-3:2006 clause.6.2.2 states that the card should set
          * I/O to state H within 200 clock cycles (delay t_a).
          */
         swicc_state->cont_state_tx |= SWICC_IO_CONT_IO | SWICC_IO_CONT_VALID_IO;
 
         /**
          * @todo: Delay t_f is required here according to ISO/IEC 7816-3:2006
-         * p.10 sec.6.2.2.
+         * clause.6.2.2.
          */
         swicc_state->internal.fsm_state = SWICC_FSM_STATE_ATR_REQ;
         swicc_state->buf_rx_len = 0U;
@@ -111,7 +111,8 @@ static void fsm_handle_s_atr_res(swicc_st *const swicc_state)
         swicc_state->buf_rx_len == 1U)
     {
         /**
-         * Here we decide like described in ISO/IEC 7816-3:2006 p.11 sec.6.3.1
+         * Here we decide like described in ISO/IEC 7816-3:2006
+         * clause.6.3.1
          */
         if (swicc_state->buf_rx[0U] == SWICC_PPS_PPSS)
         {
@@ -271,7 +272,7 @@ static void fsm_handle_s_pps_req(swicc_st *const swicc_state)
                 else if (ret == SWICC_RET_PPS_INVALID)
                 {
                     /**
-                     * ISO/IEC 7816-3:2006 p.20 sec.9.1 states that if an
+                     * ISO/IEC 7816-3:2006 clause.9.1 states that if an
                      * invalid PPS request comes in, the card should not send
                      * anything and just wait.
                      */

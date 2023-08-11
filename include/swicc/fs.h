@@ -21,7 +21,7 @@ swicc_ret_et swicc_fs_disk_mount(swicc_st *const swicc_state,
  * @param[in] file
  * @param[out] lcs
  * @return Return code.
- * @note Done according to ISO/IEC 7816-4:2020 p.31 sec.7.4.10 table.15.
+ * @note Done according to ISO/IEC 7816-4:2020 clause.7.4.10 table.15.
  */
 swicc_ret_et swicc_fs_file_lcs(swicc_fs_file_st const *const file,
                                uint8_t *const lcs);

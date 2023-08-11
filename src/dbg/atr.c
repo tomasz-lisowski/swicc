@@ -9,12 +9,12 @@ typedef struct swicc_atr_chunk
     uint8_t tabcd[4U];
     /**
      * Number of historical bytes.
-     * ISO/IEC 7816-4:2020 p.16 sec.8.2.1 table.6.
+     * ISO/IEC 7816-4:2020 clause.8.2.1 table.6.
      **/
     uint8_t k;
     /**
      * Tranmission protocol.
-     * ISO/IEC 7816-4:2020 p.17 sec.8.2.3.
+     * ISO/IEC 7816-4:2020 clause.8.2.3.
      **/
     uint8_t t;
 } swicc_atr_chunk_t;
@@ -65,7 +65,7 @@ swicc_ret_et swicc_dbg_atr_str(char *const buf_str, uint16_t *const buf_str_len,
     uint16_t buf_atr_idx = 1U; /* Skip over TS. */
     swicc_atr_chunk_t chunk = {0}, chunk_prev = {0};
 
-    /* To determine TCK presence. ISO/IEC 7816-3:2006 p.18 sec.8.2.5. */
+    /* To determine TCK presence. ISO/IEC 7816-3:2006 clause.8.2.5. */
     bool t0_present = false;
     bool t15_present = false;
     bool not_t0_or_t15_present = false;

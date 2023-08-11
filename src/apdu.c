@@ -5,7 +5,8 @@ swicc_apdu_cla_st swicc_apdu_cmd_cla_parse(uint8_t const cla_raw)
 {
     swicc_apdu_cla_st cla = {0U};
     cla.raw = cla_raw;
-    if (cla_raw >> (8U - 3U) == 0b000U) /* ISO/IEC 7816-4:2020 p.13 table.2 */
+    if (cla_raw >> (8U - 3U) ==
+        0b000U) /* ISO/IEC 7816-4:2020 clause.5.4.1 table.2 */
     {
         cla.lchan = cla_raw & 0b00000011U;
         cla.type = SWICC_APDU_CLA_TYPE_INTERINDUSTRY;
@@ -31,17 +32,18 @@ swicc_apdu_cla_st swicc_apdu_cmd_cla_parse(uint8_t const cla_raw)
         }
     }
     else if (cla_raw >> (8U - 2U) ==
-             0b01U) /* ISO/IEC 7816-4:2020 p.13 table.3 */
+             0b01U) /* ISO/IEC 7816-4:2020 clause.5.4.1 table.3 */
     {
         cla.lchan = (uint8_t)((cla_raw & 0b00001111U) +
-                              4U); /* ISO/IEC 7816-4:2020 p.13 */
+                              4U); /* ISO/IEC 7816-4:2020 clause.5.4.1 */
         cla.type = SWICC_APDU_CLA_TYPE_INTERINDUSTRY;
         cla.ccc = (cla_raw & 0b00010000U) == 0U ? SWICC_APDU_CLA_CCC_LAST
                                                 : SWICC_APDU_CLA_CCC_MORE;
         cla.sm = (cla_raw & 0b00100000U) == 0U ? SWICC_APDU_CLA_SM_NO
                                                : SWICC_APDU_CLA_SM_CMD_HDR_SKIP;
     }
-    else if (cla_raw >> (8U - 3U) == 0b001U) /* ISO/IEC 7816-4:2020 p.12 */
+    else if (cla_raw >> (8U - 3U) ==
+             0b001U) /* ISO/IEC 7816-4:2020 clause.5.4.1 */
     {
         cla.type = SWICC_APDU_CLA_TYPE_RFU;
     }

@@ -4,14 +4,14 @@
 
 /**
  * Number of unique configurations of the transmission protocol.
- * ISO/IEC 7816-3:2006 p.18-19 sec.8.3
+ * ISO/IEC 7816-3:2006 clause.8.3
  */
 #define SWICC_TP_CONF_NUM 16U
 
 /**
  * Index in the lookup tables for Fi, Di, f(max) to get the default values (used
  * right after a reset of any kind).
- * ISO/IEC 7816-3:2006 p.18 sec.8.3
+ * ISO/IEC 7816-3:2006 clause.8.3
  */
 #define SWICC_TP_CONF_DEFAULT 1U
 
@@ -20,7 +20,7 @@
  * @note There are 4 definitions per contact to get both a member for the
  * contact ID and the assigned purpose as well as the 'valid' flag to have the
  * ability to indicate if a contact could be read or should be written to.
- * ISO/IEC 7816-3:2006 p.6 sec.5.1.1.
+ * ISO/IEC 7816-3:2006 clause.5.1.1.
  */
 typedef enum swicc_io_cont_e
 {

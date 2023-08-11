@@ -2,7 +2,7 @@
 #include <swicc/swicc.h>
 
 #ifdef DEBUG
-/* ISO/IEC 7816-4:2020 sec.5.5 table.4-5 p.15-16 */
+/* ISO/IEC 7816-4:2020 clause.5.5 table.4-5 */
 static char const *const swicc_dbg_table_str_ins[0xFF + 1U] = {
     [0x00] = "RFU",
     [0x01] = "RFU",

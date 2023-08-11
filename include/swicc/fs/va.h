@@ -14,7 +14,7 @@
 
 /**
  * For a logical channel, a validity area (VA) summarizes the result
- * of all successful file selections. ISO/IEC 7816-4:2020 p.22 sec.7.2.1.
+ * of all successful file selections. ISO/IEC 7816-4:2020 clause.7.2.1.
  */
 typedef struct swicc_va_s
 {
@@ -33,7 +33,7 @@ typedef struct swicc_va_s
     /* swicc_fs_do_st cur_do_constr; */
     /* swicc_fs_do_st cur_do_prim; */
     /**
-     * 'curDO' described in ISO/IEC 7816-4:2020 p.22 sec.7.2.1 is
+     * 'curDO' described in ISO/IEC 7816-4:2020 clause.7.2.1 is
      * skipped because it will be computed using 'cur_do_constr' and
      * 'cur_do_prim'.
      */

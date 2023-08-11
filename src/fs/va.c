@@ -4,7 +4,7 @@
 
 /**
  * @brief Helper for performing file selection according to the standard. Rules
- * for modifying the VA are described in ISO/IEC 7816-4:2020 p.22 sec.7.2.2.
+ * for modifying the VA are described in ISO/IEC 7816-4:2020 clause.7.2.2.
  * @param fs
  * @param tree This tree must contain the file.
  * @param file File to select.
@@ -66,7 +66,7 @@ static swicc_ret_et va_select_file(swicc_fs_st *const fs,
             case SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED:
             case SWICC_FS_ITEM_TYPE_FILE_EF_CYCLIC: {
                 /**
-                 * @warning ISO/IEC 7816-4:2020 pg.23 sec.7.2.2 states that
+                 * @warning ISO/IEC 7816-4:2020 clause.7.2.2 states that
                  * "When EF selection occurs as a side-effect of a C-RP using
                  * referencing by short EF identifier, curEF may change, while
                  * curDF does not change" but in this implementation, current DF

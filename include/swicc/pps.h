@@ -7,14 +7,14 @@
  */
 
 /**
- * According to ISO/IEC 7816-3:2006 p.20 sec.9.1, 0xFF shall be the first byte
- * of every PPS request and response.
+ * According to ISO/IEC 7816-3:2006 clause.9.1, 0xFF shall be the first
+ * byte of every PPS request and response.
  */
 #define SWICC_PPS_PPSS ((uint8_t)0xFF)
 
 /**
- * ISO/IEC 7816-3:2006 p.21 sec.9.2 shows a diagram where the possible PPS bytes
- * are PPSS, PPS0, PPS1, PPS2, PPS3, PCK so 6 in total.
+ * ISO/IEC 7816-3:2006 clause.9.2 shows a diagram where the possible PPS
+ * bytes are PPSS, PPS0, PPS1, PPS2, PPS3, PCK so 6 in total.
  */
 #define SWICC_PPS_LEN_MAX 6U
 

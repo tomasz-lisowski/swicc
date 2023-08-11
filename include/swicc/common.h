@@ -55,7 +55,7 @@ typedef struct swicc_net_msg_s swicc_net_msg_st;
 
 /**
  * @brief Compute the elementary time unit (ETU) as described in ISO/IEC
- * 7816-3:2006 p.13 sec.7.1.
+ * 7816-3:2006 clause.7.1.
  * @param[out] etu Where the computed ETU will be written.
  * @param[in] fi The clock rate conversion integer (Fi).
  * @param[in] di The baud rate adjustment integer (Di).
@@ -66,7 +66,7 @@ void swicc_etu(uint32_t *const etu, uint16_t const fi, uint8_t const di,
 
 /**
  * @brief Compute check byte for a buffer. This means the result of XOR'ing all
- * bytes together. ISO/IEC 7816-3:2006 p.18 sec.8.2.5.
+ * bytes together. ISO/IEC 7816-3:2006 clause.8.2.5.
  * @param[in] buf_raw Buffer.
  * @param[in] buf_raw_len Length of the data in the buffer.
  * @return XOR of all bytes in the buffer.

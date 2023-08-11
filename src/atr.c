@@ -1,8 +1,8 @@
 #include <swicc/swicc.h>
 
 /**
- * ATR defined according to ISO/IEC 7816-3:2006 p.15-20 sec.8 and ISO/IEC
- * 7816-4:2020 p.120 sec.12.2.2.
+ * ATR defined according to ISO/IEC 7816-3:2006 clause.8 and ISO/IEC
+ * 7816-4:2020 clause.12.2.2.
  */
 uint8_t const swicc_atr[] = {
     0b00111011, /**
@@ -15,7 +15,7 @@ uint8_t const swicc_atr[] = {
                  *       + H (implicit character parity bit of moments 2 to 10
                  *            i.e. after character start and including this
                  *            moment)
-                 * ISO/IEC 7816-3:2006 p.15 sec.8.1
+                 * ISO/IEC 7816-3:2006 clause.8.1
                  */
 
     /**

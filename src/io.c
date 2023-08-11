@@ -3,7 +3,7 @@
 
 /**
  * A lookup table for the Fi (clock rate conversion integer) parameter.
- * Described in a table by ISO/IEC 7816-3:2006 p.18 sec.8.3.
+ * Described in a table by ISO/IEC 7816-3:2006 clause.8.3.
  */
 uint16_t const swicc_io_fi[SWICC_TP_CONF_NUM] = {
     [0b0000] = 372,         [0b0001] = 372,         [0b0010] = 558,
@@ -16,7 +16,7 @@ uint16_t const swicc_io_fi[SWICC_TP_CONF_NUM] = {
 
 /**
  * A lookup table for the Di (baud rate adjustment integer) parameter.
- * Described in a table by ISO/IEC 7816-3:2006 p.18 sec.8.3.
+ * Described in a table by ISO/IEC 7816-3:2006 clause.8.3.
  */
 uint8_t const swicc_io_di[SWICC_TP_CONF_NUM] = {
     [0b0000] = 0 /* RFU */, [0b0001] = 1,           [0b0010] = 2,
@@ -29,7 +29,7 @@ uint8_t const swicc_io_di[SWICC_TP_CONF_NUM] = {
 
 /**
  * A lookup table for the f(max) (maximum supported clock frequency) parameter.
- * Described in a table by ISO/IEC 7816-3:2006 p.19 sec.8.3.
+ * Described in a table by ISO/IEC 7816-3:2006 clause.8.3.
  */
 uint32_t const swicc_io_fmax[SWICC_TP_CONF_NUM] = {
     [0b0000] = 4000,        [0b0001] = 5000,        [0b0010] = 6000,

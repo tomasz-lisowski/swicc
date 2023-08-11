@@ -23,8 +23,8 @@ typedef struct swicc_apdu_rc_s
 /**
  * @brief Reset the response chaining buffer.
  * @param[in, out] rc
- * @warning ISO/IEC 7816-4:2020 p.12 sec.5.3.4 states that the behavior of the
- * card, if the interface tries to resume response chaining after another
+ * @warning ISO/IEC 7816-4:2020 clause.5.3.4 states that the behavior of
+ * the card, if the interface tries to resume response chaining after another
  * command is run in between GET RESPONSE instructions, is undefined. By
  * resetting the buffer at the start of instructions, the behavior can be made
  * deterministic i.e. resuming response chaining would always fail.

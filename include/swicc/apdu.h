@@ -36,7 +36,7 @@ typedef enum swicc_apdu_cla_type_e
     SWICC_APDU_CLA_TYPE_RFU, /* Reserved for future use */
 } swicc_apdu_cla_type_et;
 
-/* First byte of status word. ISO/IEC 7816-4:2020 p.17 sec.5.6 table.6. */
+/* First byte of status word. ISO/IEC 7816-4:2020 clause.5.6 table.6. */
 typedef enum swicc_apdu_sw1_e
 {
     /* Normal processing. */
@@ -66,7 +66,7 @@ typedef enum swicc_apdu_sw1_e
     SWICC_APDU_SW1_CHER_CLA = 0x6E,  /* CLA unsupported. */
     SWICC_APDU_SW1_CHER_UNK = 0x6F,  /* No diagnosis. */
 
-    /* Procedure byte. ISO/IEC 7816-3:2006 p.23 sec.10.3.3 table.11. */
+    /* Procedure byte. ISO/IEC 7816-3:2006 clause.10.3.3 table.11. */
     SWICC_APDU_SW1_PROC_NULL = 0x60, /* Request no action on data transfer */
 
     /**

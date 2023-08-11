@@ -41,12 +41,12 @@
 
 /**
  * The limit on the number of bytes in the tag (=3) is mentioned in ISO/IEC
- * 7816-4:2020 p.20 sec.6.3.
+ * 7816-4:2020 clause.6.3.
  */
 #define SWICC_DATO_BERTLV_TAG_LEN_MAX 3U /* In bytes. */
 
 /**
- * ISO/IEC 7816-4:2020 p.20 sec.6.3 states that length fields longer than 5
+ * ISO/IEC 7816-4:2020 clause.6.3 states that length fields longer than 5
  * bytes (including the initial byte b0) are RFU.
  */
 #define SWICC_DATO_BERTLV_LEN_LEN_MAX 5U /* In bytes. */
@@ -68,7 +68,7 @@ typedef enum swicc_dato_bertlv_len_form_e
     SWICC_DATO_BERTLV_LEN_FORM_DEFINITE_SHORT,
     SWICC_DATO_BERTLV_LEN_FORM_DEFINITE_LONG,
     SWICC_DATO_BERTLV_LEN_FORM_INDEFINITE, /* Unsupported per ISO/IEC
-                                              7816-4:2020 p.20 sec.6.3. */
+                                              7816-4:2020 clause.6.3. */
     SWICC_DATO_BERTLV_LEN_FORM_RFU,
 } swicc_dato_bertlv_len_form_et;
 
@@ -91,7 +91,7 @@ typedef struct swicc_dato_bertlv_len_s
  */
 static_assert(
     SWICC_DATO_BERTLV_LEN_LEN_MAX - 1U ==
-                  sizeof((swicc_dato_bertlv_len_st){0}.val),
+        sizeof((swicc_dato_bertlv_len_st){0}.val),
     "The maximum BER-TLV len field length does not match the size of the value data type used to store it.");
 
 typedef struct swicc_dato_bertlv_s
@@ -126,8 +126,8 @@ typedef struct swicc_dato_bertlv_enc_s
  * byte(s)).
  * @param[out] bertlv_tag_out Where to store the created BER-TLV tag.
  * @param[in] tag Tag of the BER-TLV. This is NOT the tag number, rather it is
- * the raw tag (bytes) as described in e.g. ISO/IEC 7816-4:2020 p.27 sec.7.4.3
- * table.11.
+ * the raw tag (bytes) as described in e.g. ISO/IEC 7816-4:2020
+ * clause.7.4.3 table.11.
  * @return Return code.
  */
 swicc_ret_et swicc_dato_bertlv_tag_create(

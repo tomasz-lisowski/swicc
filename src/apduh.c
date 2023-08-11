@@ -21,7 +21,7 @@ static swicc_ret_et apduh_unk(swicc_st *const swicc_state,
 
 /**
  * @brief Handle the SELECT command in the interindustry class.
- * @note As described in ISO/IEC 7816-4:2020 p.74 sec.11.2.2.
+ * @note As described in ISO/IEC 7816-4:2020 clause.11.2.2.
  */
 static swicc_apduh_ft apduh_select;
 static swicc_ret_et apduh_select(swicc_st *const swicc_state,
@@ -30,8 +30,8 @@ static swicc_ret_et apduh_select(swicc_st *const swicc_state,
                                  uint32_t const procedure_count)
 {
     /**
-     * ISO/IEC 7816-4:2020 pg.75 sec.11.2.2 table.63 states any value with not
-     * all 0's at start is RFU.
+     * ISO/IEC 7816-4:2020 clause.11.2.2 table.63 states any value with
+     * not all 0's at start is RFU.
      */
     if ((cmd->hdr->p2 & 0b11110000) != 0)
     {
@@ -321,7 +321,7 @@ static swicc_ret_et apduh_select(swicc_st *const swicc_state,
         {
             /**
              * Create tags for use in encoding.
-             * ISO/IEC 7816-4:2020 p.27 sec.7.4.3 table.11.
+             * ISO/IEC 7816-4:2020 clause.7.4.3 table.11.
              */
             static uint8_t const tags[] = {
                 0x62, /* '6F': FCP Template */
@@ -561,7 +561,7 @@ static swicc_ret_et apduh_select(swicc_st *const swicc_state,
 
 /**
  * @brief Handle the READ BINARY command in the interindustry class.
- * @note As described in ISO/IEC 7816-4:2020 p.74 sec.11.3.3.
+ * @note As described in ISO/IEC 7816-4:2020 clause.11.3.3.
  */
 static swicc_apduh_ft apduh_bin_read;
 static swicc_ret_et apduh_bin_read(swicc_st *const swicc_state,
@@ -749,7 +749,7 @@ static swicc_ret_et apduh_bin_read(swicc_st *const swicc_state,
 
 /**
  * @brief Handle the READ RECORD command in the interindustry class.
- * @note As described in ISO/IEC 7816-4:2020 p.82 sec.11.4.3.
+ * @note As described in ISO/IEC 7816-4:2020 clause.11.4.3.
  */
 static swicc_apduh_ft apduh_rcrd_read;
 static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
@@ -902,7 +902,7 @@ static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
         /**
          * RFU values should never be received.
          * P1 = 0x00 is used for "special purposes" and P1 = 0xFF is RFU per
-         * ISO/IEC 7816-4:2020 p.82 sec.11.4.2.
+         * ISO/IEC 7816-4:2020 clause.11.4.2.
          */
         if ((p2_val == 0b11111 && meth == METH_RCRD_ID) ||
             (p2_val == 0b11111 && meth == METH_RCRD_NUM) || what == WHAT_RFU ||
@@ -1016,7 +1016,7 @@ static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
 
 /**
  * @brief Handle the GET RESPONSE command in the interindustry class.
- * @note As described in ISO/IEC 7816-4:2020 p.82 sec.11.4.3.
+ * @note As described in ISO/IEC 7816-4:2020 clause.11.4.3.
  */
 static swicc_apduh_ft apduh_res_get;
 static swicc_ret_et apduh_res_get(swicc_st *const swicc_state,
