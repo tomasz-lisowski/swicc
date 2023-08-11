@@ -142,7 +142,7 @@ uint8_t const swicc_atr[] = {
                  * 't', 'z', 'y' with: 4y + 2z + t + 1 (when not all =1, else it
                  * means 8 or more)
                  */
-    0xDC,       /**
+    0x06,       /**
                  * Check byte (TCK)
                  *  = XOR of all bytes (with TCK=0)
                  */
