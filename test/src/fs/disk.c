@@ -769,8 +769,7 @@ TEST(fs_disk, swicc_disk_file_rcrd__disk)
                                           "[   INFO   ] ");
                         tauColouredPrintf(
                             TAU_COLOUR_DEFAULT_,
-                            "Failed to find record %u in file with ID 0x%04X "
-                            "in tree %u which is unexpected.\n",
+                            "Failed to find record %u in file with ID 0x%04X in tree %u which is unexpected.\n",
                             rcrd_idx,
                             file_rcrd_id[tree_iter.tree_idx][file_idx],
                             tree_iter.tree_idx);

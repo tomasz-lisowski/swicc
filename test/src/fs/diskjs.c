@@ -579,8 +579,8 @@ TEST(fs_diskjs, disk_json_prs__data)
 
             if (buf_out_idx + sizeof(disk.lutid.count) > buf_out_len)
             {
-                WARN("Test out file is too short to contain ID LUT item "
-                     "count (4B).");
+                WARN(
+                    "Test out file is too short to contain ID LUT item count (4B).");
                 CHECK_LE(buf_out_idx + sizeof(disk.lutid.count), buf_out_len);
             }
             else
@@ -606,8 +606,8 @@ TEST(fs_diskjs, disk_json_prs__data)
                                                      disk.lutid.size_item2) >
                     buf_out_len)
                 {
-                    WARN("Test out file is too short to contain ID LUT "
-                         "entries.");
+                    WARN(
+                        "Test out file is too short to contain ID LUT entries.");
                     CHECK_LE(buf_out_idx +
                                  lutid_count_exp * (disk.lutid.size_item1 +
                                                     disk.lutid.size_item2),

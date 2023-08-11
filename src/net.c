@@ -18,8 +18,8 @@ static void logger_default(char const *const fmt, ...)
 #ifdef DEBUG
     va_list argptr;
     va_start(argptr, fmt);
-    vprintf(fmt, argptr);
-    printf("\n");
+    vfprintf(stderr, fmt, argptr);
+    fprintf(stderr, "\n");
     va_end(argptr);
 #endif
 }
@@ -42,8 +42,8 @@ static swicc_ret_et msg_send(int32_t const sock,
 
     if (msg->hdr.size > sizeof(msg->data))
     {
-        logger("Message header indicates a data size larger than the buffer "
-               "itself.");
+        logger(
+            "Message header indicates a data size larger than the buffer itself.");
         return SWICC_RET_PARAM_BAD;
     }
 
@@ -108,8 +108,8 @@ static swicc_ret_et msg_recv(int32_t const sock, swicc_net_msg_st *const msg)
             if (msg->hdr.size > sizeof(msg->data) ||
                 msg->hdr.size < offsetof(swicc_net_msg_data_st, buf))
             {
-                logger("Value of the size field in the message header is too "
-                       "large. Got %u, expected %lu >= n <= %lu.",
+                logger(
+                    "Value of the size field in the message header is too large. Got %u, expected %lu >= n <= %lu.",
                        msg->hdr.size, offsetof(swicc_net_msg_data_st, buf),
                        sizeof(msg->data));
                 recv_failure = true;
@@ -129,8 +129,8 @@ static swicc_ret_et msg_recv(int32_t const sock, swicc_net_msg_st *const msg)
         }
         else
         {
-            logger("Failed to receive message header: recvd_bytes=%u "
-                   "header_len=%u.",
+            logger(
+                "Failed to receive message header: recvd_bytes=%u header_len=%u.",
                    recvd_bytes, sizeof(swicc_net_msg_hdr_st));
             recv_failure = true;
             break;
@@ -220,8 +220,7 @@ swicc_ret_et swicc_net_client_sig_register(void (*const sigh_exit)(int))
                         }
                         else
                         {
-                            logger("Failed to set new action for "
-                                   "SIGTERM: %s.",
+                            logger("Failed to set new action for SIGTERM: %s.",
                                    strerror(errno));
                         }
                     }
@@ -487,8 +486,8 @@ swicc_ret_et swicc_net_server_client_connect(
     }
     else if (errno == ECONNABORTED || errno == EPERM || errno == EPROTO)
     {
-        logger("Failed to accept a client connection because of client-side "
-               "problems, retrying...");
+        logger(
+            "Failed to accept a client connection because of client-side problems, retrying...");
         return SWICC_RET_ERROR;
     }
     else
@@ -556,9 +555,9 @@ swicc_ret_et swicc_net_client(swicc_st *const swicc_state,
             }
         }
 
-        static_assert(offsetof(swicc_net_msg_data_st, buf) < UINT8_MAX,
-                      "Data buffer is offset further than 255 bytes into "
-                      "message data which leads to an unsafe cast.");
+        static_assert(
+            offsetof(swicc_net_msg_data_st, buf) < UINT8_MAX,
+            "Data buffer is offset further than 255 bytes into message data which leads to an unsafe cast.");
         /**
          * Safe cast since buf is not offset further than 255 bytes (as
          * asserted).
@@ -600,10 +599,9 @@ swicc_ret_et swicc_net_client(swicc_st *const swicc_state,
                                     SWICC_NET_MSG_CTRL_MOCK_RESET_COLD_PPS_Y) ==
                         SWICC_RET_SUCCESS)
                     {
-                        static_assert(sizeof(swicc_atr) <=
-                                          sizeof(msg_tx.data.buf),
-                                      "Card ATR does not fit in the message "
-                                      "data buffer.");
+                        static_assert(
+                            sizeof(swicc_atr) <= sizeof(msg_tx.data.buf),
+                            "Card ATR does not fit in the message data buffer.");
                         memcpy(msg_tx.data.buf, swicc_atr, sizeof(swicc_atr));
                         msg_tx.hdr.size = offsetof(swicc_net_msg_data_st, buf) +
                                           sizeof(swicc_atr);

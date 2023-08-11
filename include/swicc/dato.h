@@ -89,10 +89,10 @@ typedef struct swicc_dato_bertlv_len_s
  * -1 because one byte is used to indicate the number of octets to come, so
  * those bits are not part of the length value.
  */
-static_assert(SWICC_DATO_BERTLV_LEN_LEN_MAX - 1U ==
+static_assert(
+    SWICC_DATO_BERTLV_LEN_LEN_MAX - 1U ==
                   sizeof((swicc_dato_bertlv_len_st){0}.val),
-              "The maximum BER-TLV len field length does not match the size of "
-              "the value data type used to store it.");
+    "The maximum BER-TLV len field length does not match the size of the value data type used to store it.");
 
 typedef struct swicc_dato_bertlv_s
 {

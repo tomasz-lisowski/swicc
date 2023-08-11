@@ -143,9 +143,9 @@ swicc_ret_et swicc_fs_file_prs(swicc_disk_tree_st const *const tree,
         break;
     }
     case SWICC_FS_ITEM_TYPE_FILE_EF_TRANSPARENT: {
-        static_assert(sizeof(swicc_fs_ef_transparent_hdr_raw_st) == 0,
-                      "Transparent EF header is not 0 bytes so need to add "
-                      "parsing for extra fields into the file parser");
+        static_assert(
+            sizeof(swicc_fs_ef_transparent_hdr_raw_st) == 0,
+            "Transparent EF header is not 0 bytes so need to add parsing for extra fields into the file parser");
         break;
     }
     case SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED: {

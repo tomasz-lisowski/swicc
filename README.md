@@ -39,7 +39,7 @@ swicc_net_client_st client_ctx = {0U};
 
 static void sig_exit_handler(__attribute__((unused)) int signum)
 {
-    printf("Shutting down...\n");
+    fprintf(stderr, "Shutting down...\n");
     swicc_net_client_destroy(&client_ctx);
     exit(0);
 }
@@ -64,30 +64,30 @@ int32_t main(int32_t const argc, char const *const argv[const argc])
                     ret = swicc_net_client(&swicc_ctx, &client_ctx);
                     if (ret != SWICC_RET_SUCCESS)
                     {
-                        printf("Failed to run network client.\n");
+                        fprintf(stderr, "Failed to run network client.\n");
                     }
                     swicc_net_client_destroy(&client_ctx);
                 }
                 else
                 {
-                    printf("Failed to create a client.\n");
+                    fprintf(stderr, "Failed to create a client.\n");
                 }
             }
             else
             {
-                printf("Failed to register signal handler.\n");
+                fprintf(stderr, "Failed to register signal handler.\n");
             }
             swicc_terminate(&swicc_ctx);
         }
         else
         {
-            printf("Failed to mount disk.\n");
+            fprintf(stderr, "Failed to mount disk.\n");
             swicc_disk_unload(&disk);
         }
     }
     else
     {
-        printf("Failed to create disk.\n");
+        fprintf(stderr, "Failed to create disk.\n");
     }
 
     return 0;

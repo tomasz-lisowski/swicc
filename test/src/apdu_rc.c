@@ -105,9 +105,9 @@ TEST(apdu_rc, swicc_apdu_rc_deq__data)
     /* Safe cast since this will not  */
     buf_deq_len_tot += buf_deq_len;
 
-    static_assert(SWICC_DATA_MAX >= 55U + 124,
-                  "swICC data len max is less than 55 + 124 which makes this "
-                  "test invalid.");
+    static_assert(
+        SWICC_DATA_MAX >= 55U + 124,
+        "swICC data len max is less than 55 + 124 which makes this test invalid.");
     buf_deq_len_exp = 124U;
     buf_deq_len = buf_deq_len_exp;
 

@@ -540,9 +540,9 @@ static swicc_ret_et apduh_select(swicc_st *const swicc_state,
                  * around is to static assert that only short APDUs are
                  * used.
                  */
-                static_assert(SWICC_DATA_MAX == SWICC_DATA_MAX_SHRT,
-                              "Response buffer length might not fit in SW2 "
-                              "if SW1 is 0x61");
+                static_assert(
+                    SWICC_DATA_MAX == SWICC_DATA_MAX_SHRT,
+                    "Response buffer length might not fit in SW2 if SW1 is 0x61");
                 /* Safe cast due to check inside the BER-TLV loop. */
                 res->sw2 = (uint8_t)bertlv_len;
                 res->data.len = 0U;

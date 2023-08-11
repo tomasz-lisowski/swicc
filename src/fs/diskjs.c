@@ -31,12 +31,11 @@ static swicc_fs_item_type_et const item_type_enum[ITEM_TYPE_COUNT] = {
     SWICC_FS_ITEM_TYPE_HEX,
     SWICC_FS_ITEM_TYPE_ASCII,
 };
-static_assert(sizeof(item_type_str) / sizeof(item_type_str[0U]) ==
-                      sizeof(item_type_enum) / sizeof(item_type_enum[0U]) &&
-                  sizeof(item_type_str) / sizeof(item_type_str[0U]) ==
-                      ITEM_TYPE_COUNT,
-              "Item type string array and item type enumeration member array "
-              "length are not equal which may lead to errors in diskjs.");
+static_assert(
+    sizeof(item_type_str) / sizeof(item_type_str[0U]) ==
+            sizeof(item_type_enum) / sizeof(item_type_enum[0U]) &&
+        sizeof(item_type_str) / sizeof(item_type_str[0U]) == ITEM_TYPE_COUNT,
+    "Item type string array and item type enumeration member array length are not equal which may lead to errors in diskjs.");
 
 /**
  * Used when creating a swICC FS disk. The 'start' size is the initial buffer
@@ -105,14 +104,16 @@ static swicc_ret_et jsitem_prs_file_raw(cJSON const *const item_json,
                 }
                 else
                 {
-                    printf("File: Failed to convert ID hex string to a byte "
-                           "array: '%.*s'.\n",
-                           (uint32_t)sizeof(id) * 2U, id_str);
+                    fprintf(
+                        stderr,
+                        "File: Failed to convert ID hex string to a byte array: '%.*s'.\n",
+                        (uint32_t)sizeof(id) * 2U, id_str);
                 }
             }
             else
             {
-                printf(
+                fprintf(
+                    stderr,
                     "File: ID ('%s') length invalid (got %lu, expected 4).\n",
                     id_str, strlen(id_str));
             }
@@ -145,14 +146,16 @@ static swicc_ret_et jsitem_prs_file_raw(cJSON const *const item_json,
                 }
                 else
                 {
-                    printf("File: Failed to convert SID hex string to a byte "
-                           "array: '%.*s'.\n",
-                           (uint32_t)sizeof(sid) * 2U, sid_str);
+                    fprintf(
+                        stderr,
+                        "File: Failed to convert SID hex string to a byte array: '%.*s'.\n",
+                        (uint32_t)sizeof(sid) * 2U, sid_str);
                 }
             }
             else
             {
-                printf(
+                fprintf(
+                    stderr,
                     "File: SID ('%s') length invalid (got %lu, expected 2).\n",
                     sid_str, strlen(sid_str));
             }
@@ -171,7 +174,7 @@ static swicc_ret_et jsitem_prs_file_raw(cJSON const *const item_json,
         }
         else
         {
-            printf("File: Failed to parse ID and/or SID.\n");
+            fprintf(stderr, "File: Failed to parse ID and/or SID.\n");
         }
     }
     return ret;
@@ -250,7 +253,7 @@ static swicc_ret_et jsitem_prs_demux(cJSON const *const item_json,
     }
     else
     {
-        printf("Item: 'type' missing or not of type: string.\n");
+        fprintf(stderr, "Item: 'type' missing or not of type: string.\n");
     }
     return ret;
 }
@@ -329,13 +332,14 @@ static swicc_ret_et jsitem_prs_file_folder(cJSON const *const item_json,
             {
                 /* Unexpected so can't recover. */
                 ret = SWICC_RET_ERROR;
-                printf("Folder: Buffer too short to contain item.\n");
+                fprintf(stderr, "Folder: Buffer too short to contain item.\n");
             }
         }
     }
     else
     {
-        printf("Folder: 'contents' missing or not of type: null, array.\n");
+        fprintf(stderr,
+                "Folder: 'contents' missing or not of type: null, array.\n");
     }
     return ret;
 }
@@ -425,9 +429,10 @@ static swicc_ret_et jsitem_prs_file_adf(cJSON const *const item_json,
                  */
                 if (aid_len < SWICC_FS_ADF_AID_RID_LEN)
                 {
-                    printf("File ADF: AID is too short to contain the RID (got "
-                           "%u, expected >=%u).\n",
-                           aid_len, SWICC_FS_ADF_AID_RID_LEN);
+                    fprintf(
+                        stderr,
+                        "File ADF: AID is too short to contain the RID (got %u, expected >=%u).\n",
+                        aid_len, SWICC_FS_ADF_AID_RID_LEN);
                     ret = SWICC_RET_ERROR;
                 }
                 else
@@ -464,7 +469,8 @@ static swicc_ret_et jsitem_prs_file_adf(cJSON const *const item_json,
     }
     else
     {
-        printf("File ADF: 'name' is missing or not of type: object.\n");
+        fprintf(stderr,
+                "File ADF: 'name' is missing or not of type: object.\n");
     }
     return ret;
 }
@@ -544,7 +550,8 @@ static swicc_ret_et jsitem_prs_file_df(cJSON const *const item_json,
     }
     else
     {
-        printf("File DF/MF: 'name' is missing or not of type: object.\n");
+        fprintf(stderr,
+                "File DF/MF: 'name' is missing or not of type: object.\n");
     }
     return ret;
 }
@@ -607,8 +614,9 @@ static swicc_ret_et jsitem_prs_file_ef_transparent(cJSON const *const item_json,
             }
             else
             {
-                printf("File EF transparent: 'contents' missing or not of "
-                       "type: null, object.\n");
+                fprintf(
+                    stderr,
+                    "File EF transparent: 'contents' missing or not of type: null, object.\n");
             }
 
             if (ret_data == SWICC_RET_SUCCESS)
@@ -734,8 +742,9 @@ static swicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
                 }
                 else
                 {
-                    printf("File EF linear-fixed/cyclic: 'contents' missing or "
-                           "not of type: null, array.\n");
+                    fprintf(
+                        stderr,
+                        "File EF linear-fixed/cyclic: 'contents' missing or not of type: null, array.\n");
                 }
 
                 /**
@@ -756,8 +765,9 @@ static swicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
             }
             else
             {
-                printf("File EF linear-fixed/cyclic: 'rcrd_size' missing or "
-                       "not of type: number.\n");
+                fprintf(
+                    stderr,
+                    "File EF linear-fixed/cyclic: 'rcrd_size' missing or not of type: number.\n");
             }
         }
     }
@@ -837,9 +847,10 @@ static swicc_ret_et prs_bertlv(cJSON const *const bertlv_json,
                 double const cla_raw = cJSON_GetNumberValue(tag_class_obj);
                 if (cla_raw > UINT32_MAX || cla_raw < 0)
                 {
-                    printf("Item dato BER-TLV: CLA is outside of the valid "
-                           "range (got %lf, expected <%lf and >%lf).\n",
-                           cla_raw, (double)UINT32_MAX, cla_raw);
+                    fprintf(
+                        stderr,
+                        "Item dato BER-TLV: CLA is outside of the valid range (got %lf, expected <%lf and >%lf).\n",
+                        cla_raw, (double)UINT32_MAX, cla_raw);
                     return SWICC_RET_ERROR;
                 }
 
@@ -953,10 +964,10 @@ static swicc_ret_et prs_bertlv(cJSON const *const bertlv_json,
                             }
                             else
                             {
-                                printf("Item dato BER-TLV: Failed to convert "
-                                       "value hex string to a byte array: "
-                                       "'%.*s'.\n",
-                                       (uint32_t)val_str_len, val_str);
+                                fprintf(
+                                    stderr,
+                                    "Item dato BER-TLV: Failed to convert value hex string to a byte array: '%.*s'.\n",
+                                    (uint32_t)val_str_len, val_str);
                             }
                             free(bytearr);
                         }
@@ -981,14 +992,16 @@ static swicc_ret_et prs_bertlv(cJSON const *const bertlv_json,
             }
             else
             {
-                printf("Item dato BER-TLV: 'class' missing or not of type: "
-                       "number, or 'number' missing or not of type: number.\n");
+                fprintf(
+                    stderr,
+                    "Item dato BER-TLV: 'class' missing or not of type: number, or 'number' missing or not of type: number.\n");
             }
         }
         else
         {
-            printf("Item dato BER-TLV: 'tag' missing or not of type: null, "
-                   "object, or 'val' missing or not of type: null, array.\n");
+            fprintf(
+                stderr,
+                "Item dato BER-TLV: 'tag' missing or not of type: null, object, or 'val' missing or not of type: null, array.\n");
         }
     }
     return SWICC_RET_ERROR;
@@ -1065,15 +1078,17 @@ static swicc_ret_et jsitem_prs_item_dato_bertlv(cJSON const *const item_json,
         }
         else
         {
-            printf("Item dato BER-TLV: Failed to parse the JSON representation "
-                   "into a BER-TLV DO.\n");
+            fprintf(
+                stderr,
+                "Item dato BER-TLV: Failed to parse the JSON representation into a BER-TLV DO.\n");
         }
         ret = ret_enc;
     }
     else
     {
-        printf("Item dato BER-TLV: 'contents' missing or not of type: null, "
-               "object.\n");
+        fprintf(
+            stderr,
+            "Item dato BER-TLV: 'contents' missing or not of type: null, object.\n");
     }
     return ret;
 }
@@ -1133,22 +1148,25 @@ static swicc_ret_et jsitem_prs_item_hex(cJSON const *const item_json,
                 }
                 else
                 {
-                    printf("Item hex: Failed to convert hex string to a byte "
-                           "array: '%.*s'.\n",
-                           (uint32_t)hexstr_len, contents_str);
+                    fprintf(
+                        stderr,
+                        "Item hex: Failed to convert hex string to a byte array: '%.*s'.\n",
+                        (uint32_t)hexstr_len, contents_str);
                 }
             }
             else
             {
-                printf("Item hex: Hex string has an invalid length (got %lu, "
-                       "expected <=%u and multiple of 2).\n",
-                       hexstr_len, UINT32_MAX);
+                fprintf(
+                    stderr,
+                    "Item hex: Hex string has an invalid length (got %lu, expected <=%u and multiple of 2).\n",
+                    hexstr_len, UINT32_MAX);
             }
         }
     }
     else
     {
-        printf("Item hex: 'contents' missing or not of type: null, string.\n");
+        fprintf(stderr,
+                "Item hex: 'contents' missing or not of type: null, string.\n");
     }
     return ret;
 }
@@ -1205,15 +1223,17 @@ static swicc_ret_et jsitem_prs_item_ascii(cJSON const *const item_json,
             }
             else
             {
-                printf("Item ASCII: ASCII string is too long (got %lu, "
-                       "expected <=%u).\n",
-                       ascii_len, UINT32_MAX);
+                fprintf(
+                    stderr,
+                    "Item ASCII: ASCII string is too long (got %lu, expected <=%u).\n",
+                    ascii_len, UINT32_MAX);
             }
         }
     }
     else
     {
-        printf(
+        fprintf(
+            stderr,
             "Item ASCII: 'contents' missing or not of type: null, string.\n");
     }
     return ret;
@@ -1252,7 +1272,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
     swicc_ret_et ret = SWICC_RET_SUCCESS;
     if (disk->root != NULL)
     {
-        printf("Root: Old disk must be unloaded first.\n");
+        fprintf(stderr, "Root: Old disk must be unloaded first.\n");
         return SWICC_RET_ERROR;
     }
 
@@ -1273,8 +1293,9 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                 tree = malloc(sizeof(*tree));
                 if (tree == NULL)
                 {
-                    printf("Tree: Failed to allocate space for a tree struct "
-                           "for the root tree.\n");
+                    fprintf(
+                        stderr,
+                        "Tree: Failed to allocate space for a tree struct for the root tree.\n");
                     /* Nothing should have been allocated before. */
                     ret = SWICC_RET_ERROR;
                     break;
@@ -1286,8 +1307,9 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                 tree->next = malloc(sizeof(*tree));
                 if (tree->next == NULL)
                 {
-                    printf("Tree: Failed to allocate a tree struct for next "
-                           "tree.\n");
+                    fprintf(
+                        stderr,
+                        "Tree: Failed to allocate a tree struct for next tree.\n");
                     ret = SWICC_RET_ERROR;
                     break;
                 }
@@ -1298,7 +1320,7 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
             tree->buf = malloc(DISK_SIZE_START);
             if (tree->buf == NULL)
             {
-                printf("Tree: Failed to allocate a tree buffer.\n");
+                fprintf(stderr, "Tree: Failed to allocate a tree buffer.\n");
                 ret = SWICC_RET_ERROR;
                 break;
             }
@@ -1321,7 +1343,8 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                             tree->size + DISK_SIZE_RESIZE;
                         if (tree_buf_size_new > UINT32_MAX)
                         {
-                            printf(
+                            fprintf(
+                                stderr,
                                 "Tree: Buffer size limit has been reached.\n");
                             ret = SWICC_RET_ERROR;
                             /**
@@ -1334,27 +1357,29 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                          * Safe cast due to the bound check against uint32 max.
                          */
                         tree->size = (uint32_t)tree_buf_size_new;
-                        printf("Tree: Allocated more memory, retrying.\n");
+                        fprintf(stderr,
+                                "Tree: Allocated more memory, retrying.\n");
                     }
                     else
                     {
-                        printf("Tree: Failed to realloc tree buffer from %u "
-                               "bytes to %u bytes.\n",
-                               tree->size, tree->size + DISK_SIZE_RESIZE);
+                        fprintf(
+                            stderr,
+                            "Tree: Failed to realloc tree buffer from %u bytes to %u bytes.\n",
+                            tree->size, tree->size + DISK_SIZE_RESIZE);
                         ret = SWICC_RET_ERROR;
                         break;
                     }
                 }
                 else if (ret != SWICC_RET_SUCCESS)
                 {
-                    printf("Tree: Failed to parse tree JSON: %s.\n",
-                           swicc_dbg_ret_str(ret));
+                    fprintf(stderr, "Tree: Failed to parse tree JSON: %s.\n",
+                            swicc_dbg_ret_str(ret));
                 }
             } while (ret == SWICC_RET_BUFFER_TOO_SHORT);
             if (ret != SWICC_RET_SUCCESS)
             {
-                printf("Tree: Failed to parse tree contents: %s.\n",
-                       swicc_dbg_ret_str(ret));
+                fprintf(stderr, "Tree: Failed to parse tree contents: %s.\n",
+                        swicc_dbg_ret_str(ret));
                 break;
             }
 
@@ -1371,13 +1396,13 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
                  * No need to clean up SID LUT since this will be done when
                  * whole root get emptied due to this error.
                  */
-                printf("Tree: Failed to create the SID LUT: %s.\n",
-                       swicc_dbg_ret_str(ret));
+                fprintf(stderr, "Tree: Failed to create the SID LUT: %s.\n",
+                        swicc_dbg_ret_str(ret));
                 break;
             }
 
             /**
-             * Unsafe cast which relies on there being fewer than 256 trees in
+             * Unsafe case which relies on there being fewer than 256 trees in
              * the root.
              */
             tree_count = (uint8_t)(tree_count + 1U);
@@ -1389,23 +1414,24 @@ static swicc_ret_et disk_json_prs(swicc_disk_st *const disk,
             swicc_disk_root_empty(disk);
             memset(disk, 0U, sizeof(*disk));
             ret = SWICC_RET_ERROR;
-            printf("Root: Failed to create the forest of trees (parsed %u "
-                   "trees): %s.\n",
-                   tree_count, swicc_dbg_ret_str(ret));
+            fprintf(
+                stderr,
+                "Root: Failed to create the forest of trees (parsed %u trees): %s.\n",
+                tree_count, swicc_dbg_ret_str(ret));
         }
         if (ret == SWICC_RET_SUCCESS)
         {
             ret = swicc_disk_lutid_rebuild(disk);
             if (ret != SWICC_RET_SUCCESS)
             {
-                printf("Root: Failed to rebuild ID LUT.\n");
+                fprintf(stderr, "Root: Failed to rebuild ID LUT.\n");
                 swicc_disk_lutid_empty(disk);
             }
         }
     }
     else
     {
-        printf("Root: 'disk' missing or not of type: object.\n");
+        fprintf(stderr, "Root: 'disk' missing or not of type: object.\n");
         ret = SWICC_RET_ERROR;
     }
     return ret;
