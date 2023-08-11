@@ -11,5 +11,6 @@ If you would like to compile the library with extra compiler flags, use the `ARG
 ```make main-dbg ARG="-DDEBUG_CLR -DEXAMPLE_DEFINE -fsanitize=address"```
 
 All possible values that can be added to `ARG`:
-- `-DEBUG_CLR` to add color to the debug output.
-- `-DEBUG_MSG` to parse received network messages and print them.
+- `-DDEBUG_CLR` to add color to the debug output.
+- `-DDEBUG_MSG` to parse received network messages and print them.
+- `-DTRACE_PYSIM` to output traces of APDU messages on stdout.

@@ -1204,5 +1204,36 @@ swicc_ret_et swicc_apduh_demux(swicc_st *const swicc_state,
         res->sw2 = 0;
         res->data.len = 0;
     }
+
+    /**
+     * When the status word is not indicating that a procedure shall be sent,
+     * then it means that the response is an APDUR. Since the APDUC is cached
+     * and accessible at this point as well, we can perform tracing of the
+     * complete APDU inside of this if.
+     */
+    if (!(res->sw1 == SWICC_APDU_SW1_PROC_NULL ||
+          res->sw1 == SWICC_APDU_SW1_PROC_ACK_ONE ||
+          res->sw1 == SWICC_APDU_SW1_PROC_ACK_ALL))
+    {
+#ifdef TRACE_PYSIM
+        printf("{\n");
+        printf("\t\"type\": \"cmd\",\n");
+        printf("\t\"cmd\": \"%02X %02X %02X %02X %02X ", cmd->hdr->cla.raw,
+               cmd->hdr->ins, cmd->hdr->p1, cmd->hdr->p2, *cmd->p3);
+        for (uint16_t i = 0; i < cmd->data->len; i++)
+        {
+            printf("%02X ", cmd->data->b[i]);
+        }
+        printf("\",\n");
+        printf("\t\"rsp\": \"");
+        for (uint16_t i = 0; i < res->data.len; i++)
+        {
+            printf("%02X ", res->data.b[i]);
+        }
+        printf("%02X %02X", res->sw1, res->sw2);
+        printf("\"\n},\n");
+#endif
+    }
+
     return ret;
 }
