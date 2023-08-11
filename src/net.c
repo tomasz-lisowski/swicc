@@ -633,7 +633,7 @@ swicc_ret_et swicc_net_client(swicc_st *const swicc_state,
                     (uint16_t)buf_rx_len; /* Safe cast due to bound check. */
                 swicc_state->buf_tx = msg_tx.data.buf;
                 swicc_state->buf_tx_len = sizeof(msg_tx.data.buf);
-#ifdef DEBUG_MSG
+#ifdef DEBUG_NET_MSG
                 static_assert(
                     offsetof(swicc_net_msg_data_st, buf) < UINT16_MAX,
                     "Unsafe cast since offset is larger than what uint16 can hold.");
