@@ -5,7 +5,6 @@ DIR_TEST:=test
 DIR_INCLUDE:=include
 DIR_BUILD:=build
 CC:=gcc
-CXX:=g++
 AR:=ar
 
 MAIN_NAME:=swicc
@@ -42,7 +41,7 @@ TEST_CC_FLAGS:=\
 	-Wshadow \
 	-O2 \
 	-I$(DIR_INCLUDE) \
-	-Itest/$(DIR_INCLUDE) \
+	-$(DIR_TEST)/$(DIR_INCLUDE) \
 	-I$(DIR_LIB)/cjson \
 	-I$(DIR_LIB)/tau \
 	-I. \
@@ -74,7 +73,7 @@ $(DIR_BUILD)/$(DIR_TEST).$(EXT_BIN): $(DIR_BUILD)/$(LIB_PREFIX)$(MAIN_NAME).$(EX
 # Build cjson lib.
 $(DIR_LIB)/cjson/build/libcjson.a:
 	$(call pal_mkdir,$(DIR_LIB)/cjson/build)
-	cd $(DIR_LIB)/cjson/build && cmake -G "$(CMAKE_GENERATOR)" -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DCMAKE_MAKE_PROGRAM=$(MAKE) \
+	cd $(DIR_LIB)/cjson/build && cmake -G "$(CMAKE_GENERATOR)" -DCMAKE_C_COMPILER=$(CC) -DCMAKE_MAKE_PROGRAM=$(MAKE) \
 		-DENABLE_CJSON_TEST=Off -DENABLE_CJSON_UTILS=Off -DENABLE_TARGET_EXPORT=On \
 		-DENABLE_CUSTOM_COMPILER_FLAGS=Off -DENABLE_VALGRIND=Off -DENABLE_SANITIZERS=Off \
 		-DENABLE_SAFE_STACK=Off -DBUILD_SHARED_LIBS=Off -DBUILD_SHARED_AND_STATIC_LIBS=Off \
