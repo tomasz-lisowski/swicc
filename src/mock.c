@@ -97,7 +97,8 @@ swicc_ret_et swicc_mock_reset_cold(swicc_st *const swicc_state,
              * back a PPS response.
              */
             memcpy(swicc_state->buf_rx, &pps_req[2U], pps_req_len - 2U);
-            swicc_state->buf_rx_len = pps_req_len - 2U;
+            /* Safe cast since this is just 2. */
+            swicc_state->buf_rx_len = (uint8_t)(pps_req_len - 2U);
             swicc_state->buf_tx_len = buf_tx_size;
             break;
         }
