@@ -1,3 +1,4 @@
+#include "swicc/net.h"
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -33,9 +34,10 @@ static void print_usage(char const *const arg0)
     // clang-format on
 }
 
-static uint32_t parse_data(char const *const data_in, uint8_t *const data_out,
-                           uint32_t const data_in_len,
-                           uint32_t const data_out_len_max)
+static uint32_t parse_file_data(char const *const data_in,
+                                uint8_t *const data_out,
+                                uint32_t const data_in_len,
+                                uint32_t const data_out_len_max)
 {
     uint32_t data_out_len = 0U;
     uint8_t nibble_count = 0U;
@@ -82,6 +84,78 @@ static uint32_t parse_data(char const *const data_in, uint8_t *const data_out,
         }
     }
     return data_out_len;
+}
+
+static uint32_t message_io(swicc_net_msg_st *const msg,
+                           uint32_t const response_lenexp_expected,
+                           uint32_t const response_length_expected_max)
+{
+    if (swicc_net_send(server_ctx.sock_client[0U], msg) != SWICC_RET_SUCCESS)
+    {
+        fprintf(stderr, "Failed to send message to client.\n");
+        return 1;
+    }
+    if (swicc_net_recv(server_ctx.sock_client[0U], msg) != SWICC_RET_SUCCESS)
+    {
+        fprintf(stderr, "Failed to receive message from client.\n");
+        return 2;
+    }
+
+    uint32_t const hdr_size_expected_le =
+        (uint32_t)(offsetof(swicc_net_msg_data_st, buf));
+    uint32_t const cont_state_expected_eq = 0x6000;
+    uint32_t const buf_len_exp_expected_eq = response_lenexp_expected;
+    uint8_t const ctrl_expected_eq = SWICC_NET_MSG_CTRL_SUCCESS;
+    if (msg->hdr.size < hdr_size_expected_le)
+    {
+        fprintf(stderr, "Received unexpected response, hdr.size=%u (>=%u).\n",
+                msg->hdr.size, hdr_size_expected_le);
+        return 3;
+    }
+
+    fprintf(stderr, "Intermediate response: length=%u '",
+            msg->hdr.size - hdr_size_expected_le);
+    for (uint16_t response_data_index = 0;
+         response_data_index < msg->hdr.size - hdr_size_expected_le;
+         ++response_data_index)
+    {
+        fprintf(stderr, "%02X", msg->data.buf[response_data_index]);
+    }
+    fprintf(stderr, "'.\n");
+
+    if (msg->hdr.size > hdr_size_expected_le + response_length_expected_max)
+    {
+        fprintf(stderr, "Received unexpected response, hdr.size=%u (<= %u).\n",
+                msg->hdr.size,
+                hdr_size_expected_le + response_length_expected_max);
+
+        return 4;
+    }
+    else if (msg->data.cont_state != cont_state_expected_eq)
+    {
+        fprintf(
+            stderr,
+            "Received unexpected response, data.contact_state=0x%08X (==0x%08X).\n",
+            msg->data.cont_state, cont_state_expected_eq);
+        return 5;
+    }
+    else if (msg->data.ctrl != ctrl_expected_eq)
+    {
+        fprintf(
+            stderr,
+            "Received unexpected response, data.control=0x%02X (==0x%02X).\n",
+            msg->data.ctrl, ctrl_expected_eq);
+        return 6;
+    }
+    else if (msg->data.buf_len_exp != response_lenexp_expected)
+    {
+        fprintf(stderr,
+                "Received unexpected response, data.len_exp=%u (==%u).\n",
+                msg->data.buf_len_exp, buf_len_exp_expected_eq);
+        return 7;
+    }
+
+    return 0;
 }
 
 int32_t main(int32_t const argc, char const *const argv[argc])
@@ -148,8 +222,31 @@ int32_t main(int32_t const argc, char const *const argv[argc])
         {
             fprintf(stderr, "Client connected.\n");
 
+            bool reset_failure = false;
+            swicc_net_msg_st msg_reset = {
+                .hdr =
+                    {
+                        .size =
+                            (uint32_t)(offsetof(swicc_net_msg_data_st, buf)),
+                    },
+                .data =
+                    {
+                        .cont_state = 0x00,
+                        .ctrl = SWICC_NET_MSG_CTRL_MOCK_RESET_COLD_PPS_Y,
+                        .buf_len_exp = 0,
+                    },
+            };
+
+            fprintf(stderr, "Resetting card.\n");
+            uint32_t message_io_error = 0;
+            if ((message_io_error =
+                     message_io(&msg_reset, 0, SWICC_DATA_MAX)) != 0)
+            {
+                reset_failure = true;
+            }
+
             FILE *file_data = fopen(str_data_path, "r");
-            if (file_data != NULL)
+            if (!reset_failure && file_data != NULL)
             {
                 uint8_t file_done = 0U;
                 while (!file_done)
@@ -174,36 +271,124 @@ int32_t main(int32_t const argc, char const *const argv[argc])
                     if (file_line_len > 0U)
                     {
                         swicc_net_msg_st msg = {0U};
-                        uint32_t const msg_data_len =
-                            parse_data(file_line, msg.data.buf, file_line_len,
-                                       sizeof(msg.data.buf));
-                        fprintf(stderr, "File line: '%.*s' Data length: %u\n",
-                                file_line_len, file_line, msg_data_len);
+                        uint32_t const msg_data_len = parse_file_data(
+                            file_line, msg.data.buf, file_line_len,
+                            sizeof(msg.data.buf));
+                        if (msg_data_len < 5U)
+                        {
+                            fprintf(
+                                stderr,
+                                "Command needs to contain at least 5 bytes, found %u.\n",
+                                msg_data_len);
+                            break;
+                        }
+                        uint8_t const command_p3 = msg.data.buf[4];
+                        fprintf(stdout, "Command: length=%u '%.*s'.\n", 5U,
+                                file_line_len, file_line);
 
                         static_assert(offsetof(swicc_net_msg_data_st, buf) <
                                           UINT32_MAX,
                                       "Offset too large to fit in a uint32.");
                         msg.hdr.size =
                             (uint32_t)(offsetof(swicc_net_msg_data_st, buf) +
-                                       msg_data_len);
+                                       5U);
                         msg.data.ctrl = SWICC_NET_MSG_CTRL_NONE;
+                        msg.data.cont_state = 0x707E;
                         msg.data.buf_len_exp = 0U;
-                        msg.data.cont_state = 0U;
 
-                        if (swicc_net_send(server_ctx.sock_client[0U], &msg) !=
-                            SWICC_RET_SUCCESS)
+                        fprintf(stderr, "Sending command header.\n");
+                        if ((message_io_error = message_io(&msg, 0, 0)) != 0)
                         {
-                            fprintf(stderr,
-                                    "Failed to send message to client.\n");
                             break;
                         }
-                        if (swicc_net_recv(server_ctx.sock_client[0U], &msg) !=
-                            SWICC_RET_SUCCESS)
+
+                        msg.hdr.size =
+                            (uint32_t)(offsetof(swicc_net_msg_data_st, buf));
+                        msg.data.ctrl = SWICC_NET_MSG_CTRL_NONE;
+                        msg.data.cont_state = 0x707E;
+                        msg.data.buf_len_exp = 0U;
+                        fprintf(stderr, "Sending intermediate.\n");
+                        if ((message_io_error = message_io(
+                                 &msg,
+                                 msg_data_len > 5U ? msg_data_len - 5U : 5U,
+                                 1)) != 0)
                         {
-                            fprintf(stderr,
-                                    "Failed to receive message from client.\n");
+                            if (message_io_error == 7 &&
+                                msg.data.buf_len_exp == 0)
+                            {
+                                /**
+                                 * This means the command is getting data
+                                 * without sending data.
+                                 */
+                                msg.hdr.size = (uint32_t)(offsetof(
+                                    swicc_net_msg_data_st, buf));
+                                msg.data.ctrl = SWICC_NET_MSG_CTRL_NONE;
+                                msg.data.cont_state = 0x707E;
+                                msg.data.buf_len_exp = command_p3;
+                                fprintf(
+                                    stderr,
+                                    "Sending intermediate to get data, P3=%u.\n",
+                                    command_p3);
+                                if ((message_io_error =
+                                         message_io(&msg, 0, command_p3)) != 0)
+                                {
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                        /**
+                         * When a command has data, that data is sent after
+                         * receiving a procedure byte from the card.
+                         */
+                        if (msg_data_len > 5U)
+                        {
+                            memmove(&msg.data.buf[0U], &msg.data.buf[5U],
+                                    msg_data_len - 5U);
+                            msg.hdr.size =
+                                (uint32_t)(offsetof(swicc_net_msg_data_st,
+                                                    buf) +
+                                           (msg_data_len - 5U));
+                            msg.data.ctrl = SWICC_NET_MSG_CTRL_NONE;
+                            msg.data.cont_state = 0x707E;
+                            msg.data.buf_len_exp = 0U;
+                            fprintf(stderr, "Sending command data.\n");
+                            if ((message_io_error = message_io(&msg, 0, 0)) !=
+                                0)
+                            {
+                                break;
+                            }
+                        }
+
+                        msg.hdr.size =
+                            (uint32_t)(offsetof(swicc_net_msg_data_st, buf));
+                        msg.data.ctrl = SWICC_NET_MSG_CTRL_NONE;
+                        msg.data.cont_state = 0x707E;
+                        msg.data.buf_len_exp = 0U;
+                        fprintf(stderr, "Sending intermediate.\n");
+                        if ((message_io_error =
+                                 message_io(&msg, 5, SWICC_DATA_MAX)) != 0)
+                        {
                             break;
                         }
+
+                        const uint32_t response_data_length =
+                            msg.hdr.size -
+                            (uint32_t)offsetof(swicc_net_msg_data_st, buf);
+                        fprintf(stdout, "Response: length=%u '",
+                                response_data_length);
+                        for (uint16_t response_data_index = 0;
+                             response_data_index < response_data_length;
+                             ++response_data_index)
+                        {
+                            fprintf(stdout, "%02X",
+                                    msg.data.buf[response_data_index]);
+                        }
+                        fprintf(stdout, "'.\n");
                     }
 
                     if (file_line_len == 0U || feof(file_data) ||
