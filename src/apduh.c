@@ -1116,32 +1116,29 @@ swicc_ret_et swicc_apduh_pro_register(swicc_st *const swicc_state,
     return SWICC_RET_SUCCESS;
 }
 
-static __attribute__((unused)) void trace_pysim(
+static __attribute__((unused)) void trace_custom(
     bool trace_cmd, bool trace_res, swicc_apdu_cmd_st const *const cmd,
     swicc_apdu_res_st *const res)
 {
     if (trace_cmd)
     {
-        fprintf(stdout, "{\n");
-        fprintf(stdout, "    \"type\": \"cmd\",\n");
-        fprintf(stdout, "    \"cmd\": \"%02X %02X %02X %02X %02X ",
-                cmd->hdr->cla.raw, cmd->hdr->ins, cmd->hdr->p1, cmd->hdr->p2,
-                *cmd->p3);
+        printf("%02X%02X%02X%02X%02X", cmd->hdr->cla.raw, cmd->hdr->ins,
+               cmd->hdr->p1, cmd->hdr->p2, *cmd->p3);
         for (uint16_t i = 0; i < cmd->data->len; i++)
         {
-            fprintf(stdout, "%02X ", cmd->data->b[i]);
+            printf("%02X", cmd->data->b[i]);
         }
-        fprintf(stdout, "\",\n");
+        printf("\n");
+        fflush(stdout);
     }
     if (trace_res)
     {
-        fprintf(stdout, "    \"rsp\": \"");
         for (uint16_t i = 0; i < res->data.len; i++)
         {
-            fprintf(stdout, "%02X ", res->data.b[i]);
+            printf("%02X", res->data.b[i]);
         }
-        fprintf(stdout, "%02X %02X", res->sw1, res->sw2);
-        fprintf(stdout, "\"\n},\n");
+        printf("%02X%02X\n", res->sw1, res->sw2);
+        fflush(stdout);
     }
 }
 
@@ -1235,8 +1232,8 @@ swicc_ret_et swicc_apduh_demux(swicc_st *const swicc_state,
     }
     else if (ret == SWICC_RET_SUCCESS)
     {
-#ifdef TRACE_PYSIM
-#pragma message("Tracing format: pySIM.")
+#ifdef TRACE_CUSTOM
+#pragma message("Tracing format: custom.")
         /**
          * When the status word is not indicating that a procedure shall be
          * sent, then it means that the response is an APDUR.
@@ -1245,7 +1242,7 @@ swicc_ret_et swicc_apduh_demux(swicc_st *const swicc_state,
               res->sw1 == SWICC_APDU_SW1_PROC_ACK_ONE ||
               res->sw1 == SWICC_APDU_SW1_PROC_ACK_ALL))
         {
-            trace_pysim(true, true, cmd, res);
+            trace_custom(true, true, cmd, res);
         }
 #endif
     }

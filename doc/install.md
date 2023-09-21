@@ -13,4 +13,4 @@ If you would like to compile the library with extra compiler flags, use the `ARG
 All possible values that can be added to `ARG`:
 - `-DDEBUG_CLR` to add color to the debug output.
 - `-DDEBUG_NET_MSG` to parse received network messages and print them.
-- `-DTRACE_PYSIM` to output traces of APDU messages on stdout.
+- `-DTRACE_CUSTOM` to output traces of APDU messages on stdout.
