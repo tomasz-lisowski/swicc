@@ -1,3 +1,4 @@
+#include "swicc/common.h"
 #include <endian.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -1112,7 +1113,22 @@ static swicc_ret_et apduh_res_get(swicc_st *const swicc_state,
 swicc_ret_et swicc_apduh_pro_register(swicc_st *const swicc_state,
                                       swicc_apduh_ft *const handler)
 {
+    if (swicc_state == NULL || handler == NULL)
+    {
+        return SWICC_RET_PARAM_BAD;
+    }
     swicc_state->internal.apduh_pro = handler;
+    return SWICC_RET_SUCCESS;
+}
+
+swicc_ret_et swicc_apduh_override_register(swicc_st *const swicc_state,
+                                           swicc_apduh_ft *const handler)
+{
+    if (swicc_state == NULL || handler == NULL)
+    {
+        return SWICC_RET_PARAM_BAD;
+    }
+    swicc_state->internal.apduh_override = handler;
     return SWICC_RET_SUCCESS;
 }
 
@@ -1230,22 +1246,41 @@ swicc_ret_et swicc_apduh_demux(swicc_st *const swicc_state,
         res->sw2 = 0;
         res->data.len = 0;
     }
-    else if (ret == SWICC_RET_SUCCESS)
+    else
     {
+        /**
+         * There was success and there is valid data to send back to the
+         * terminal.
+         */
+    }
+
+    if (swicc_state->internal.apduh_override != NULL)
+    {
+        ret = swicc_state->internal.apduh_override(swicc_state, cmd, res,
+                                                   procedure_count);
+        if (ret != SWICC_RET_SUCCESS)
+        {
+            /* This would only happen if the override function failed.*/
+            ret = SWICC_RET_SUCCESS;
+            res->sw1 = SWICC_APDU_SW1_CHER_UNK;
+            res->sw2 = 0;
+            res->data.len = 0;
+        }
+    }
+
 #ifdef TRACE_CUSTOM
 #pragma message("Tracing format: custom.")
-        /**
-         * When the status word is not indicating that a procedure shall be
-         * sent, then it means that the response is an APDUR.
-         */
-        if (!(res->sw1 == SWICC_APDU_SW1_PROC_NULL ||
-              res->sw1 == SWICC_APDU_SW1_PROC_ACK_ONE ||
-              res->sw1 == SWICC_APDU_SW1_PROC_ACK_ALL))
-        {
-            trace_custom(true, true, cmd, res);
-        }
-#endif
+    /**
+     * When the status word is not indicating that a procedure shall be
+     * sent, then it means that the response is an APDUR.
+     */
+    if (!(res->sw1 == SWICC_APDU_SW1_PROC_NULL ||
+          res->sw1 == SWICC_APDU_SW1_PROC_ACK_ONE ||
+          res->sw1 == SWICC_APDU_SW1_PROC_ACK_ALL))
+    {
+        trace_custom(true, true, cmd, res);
     }
+#endif
 
     return ret;
 }

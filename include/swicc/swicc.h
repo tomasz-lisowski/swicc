@@ -119,6 +119,8 @@ typedef struct swicc_s
 
         swicc_tp_st tp;
 
-        swicc_apduh_ft *apduh_pro; /* For all proprietary classes. */
+        swicc_apduh_ft *apduh_pro;      /* For all proprietary classes. */
+        swicc_apduh_ft *apduh_override; /* For overriding responses before the
+                                           get send back to the terminal. */
     } internal;
 } swicc_st;

@@ -79,12 +79,14 @@ swicc_ret_et swicc_reset(swicc_st *const swicc_state)
     }
 
     swicc_apduh_ft *const apduh_pro = swicc_state->internal.apduh_pro;
+    swicc_apduh_ft *const apduh_override = swicc_state->internal.apduh_override;
     memset(&swicc_state->internal, 0U, sizeof(swicc_state->internal));
     memset(&swicc_state->apdu_rc, 0U, sizeof(swicc_state->apdu_rc));
     memset(swicc_state->buf_tx, 0U, sizeof(*swicc_state->buf_tx));
     swicc_state->buf_tx_len = 0U;
     swicc_state->cont_state_tx = 0U;
     swicc_state->internal.apduh_pro = apduh_pro;
+    swicc_state->internal.apduh_override = apduh_override;
 
     return SWICC_RET_SUCCESS;
 }

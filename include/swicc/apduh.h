@@ -44,14 +44,28 @@ typedef swicc_ret_et swicc_apduh_ft(swicc_st *const swicc_state,
  * function that will get these proprietary messages and is expected to handle
  * them.
  * @param[in, out] swicc_state
- * @param[in] handler Handler for all proprietary messages.
+ * @param[in] handler Handler for all proprietary messages. An attempt to handle
+ * interindustry messages using the proprietary handler will be done before
+ * running interindustry handlers in order to give a chance to override the
+ * default implementastion.
  * @return Return code.
- * @note An attempt to handle interindustry messages using the proprietary
- * handler will be done before running interindustry handlers in order to give a
- * chance to override the default implementastion.
  */
 swicc_ret_et swicc_apduh_pro_register(swicc_st *const swicc_state,
                                       swicc_apduh_ft *const handler);
+
+/**
+ * @brief In some cases, the user may want to override what the card sends back
+ * to the terminal even if the command received is handled completely within an
+ * interindustry APDU handler.
+ * @param[in, out] swicc_state
+ * @param[in] handler This handler will run when an APDU response has been
+ * created and is about to be sent to the terminal. It will also run in cases
+ * where the status code is non-9000. It will not run when the command remains
+ * unhandled, or if there was any internal failure.
+ * @return Return code.
+ */
+swicc_ret_et swicc_apduh_override_register(swicc_st *const swicc_state,
+                                           swicc_apduh_ft *const handler);
 
 /**
  * @brief Handle all APDUs.
