@@ -541,8 +541,9 @@ swicc_ret_et swicc_net_client(swicc_st *const swicc_state,
     swicc_state->buf_tx_len = sizeof(msg_tx.data.buf);
 
     bool msg_received = false;
-    while (swicc_net_recv(client_ctx->sock_client, &msg_rx) ==
-           SWICC_RET_SUCCESS)
+    while (swicc_state->shutdown == false &&
+           swicc_net_recv(client_ctx->sock_client, &msg_rx) ==
+               SWICC_RET_SUCCESS)
     {
         if (SWICC_NET_CLIENT_LOG_KEEPALIVE ||
             msg_rx.data.ctrl != SWICC_NET_MSG_CTRL_KEEPALIVE)
@@ -705,6 +706,10 @@ swicc_ret_et swicc_net_client(swicc_st *const swicc_state,
         }
     }
 
+    if (swicc_state->shutdown == true)
+    {
+        return SWICC_RET_SUCCESS;
+    }
     if (ret != SWICC_RET_SUCCESS && msg_received)
     {
         return SWICC_RET_NET_DISCONNECTED;

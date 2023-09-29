@@ -41,6 +41,11 @@ typedef struct swicc_fs_s
 typedef struct swicc_s
 {
     /**
+     * Indicates if the card should shutdown gracefully right now.
+     */
+    bool shutdown;
+
+    /**
      * If card implementations utilizing swICC need to keep some internal state,
      * this could be used to store a pointer to that state. This is never used
      * by swICC internally.

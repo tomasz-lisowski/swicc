@@ -87,6 +87,7 @@ swicc_ret_et swicc_reset(swicc_st *const swicc_state)
     swicc_state->cont_state_tx = 0U;
     swicc_state->internal.apduh_pro = apduh_pro;
     swicc_state->internal.apduh_override = apduh_override;
+    swicc_state->shutdown = false;
 
     return SWICC_RET_SUCCESS;
 }
