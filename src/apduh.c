@@ -770,7 +770,7 @@ static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
     }
 
     /**
-     * This command does not take any data so sent a procedure to get all data
+     * This command does not take any data so send a procedure to get all data
      * but set expected data length to be 0.
      */
     if (procedure_count == 0U)
@@ -806,7 +806,7 @@ static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
     /* Which occurrence to read when reading using an ID. */
     __attribute__((unused)) swicc_fs_occ_et occ = SWICC_FS_OCC_FIRST;
 
-    /* What to record(s) to read when reading using a number. */
+    /* What record(s) to read when reading using a number. */
     enum what_e
     {
         WHAT_P1,
@@ -826,11 +826,11 @@ static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
      * Value of first 5 bits. This can be interpreted differently based on the
      * other bits and P1.
      */
-    uint8_t const p2_val = (cmd->hdr->p2 & 0b11111000) >> 3U;
+    uint8_t const p2_target = (cmd->hdr->p2 & 0b11111000) >> 3U;
 
     /* Parse P1 and P2 */
     {
-        switch (p2_val)
+        switch (p2_target)
         {
         case 0b00000:
             trgt = TRGT_EF_CUR;
@@ -903,10 +903,14 @@ static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
          * RFU values should never be received.
          * P1 = 0x00 is used for "special purposes" and P1 = 0xFF is RFU per
          * ISO/IEC 7816-4:2020 p.82 sec.11.4.2.
+         * TODO: We ignore P1 = 0x00 for now. It indicates current record.
+         * When the method of selecting record is by record number, ensure P1
+         * (i.e. record number) is at least 1.
          */
-        if ((p2_val == 0b11111 && meth == METH_RCRD_ID) ||
-            (p2_val == 0b11111 && meth == METH_RCRD_NUM) || what == WHAT_RFU ||
-            cmd->hdr->p1 == 0x00 || cmd->hdr->p1 == 0xFF)
+        if ((trgt == TRGT_MANY && meth == METH_RCRD_ID) ||
+            (trgt == TRGT_MANY && meth == METH_RCRD_NUM) || what == WHAT_RFU ||
+            cmd->hdr->p1 == 0x00 || cmd->hdr->p1 == 0xFF ||
+            (meth == METH_RCRD_NUM && cmd->hdr->p1 < 1))
         {
             res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
             res->sw2 = 0x86; /* "Incorrect parameters P1-P2" */
@@ -929,7 +933,7 @@ static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
                 break;
             }
             case TRGT_EF_SID: {
-                swicc_fs_sid_kt const sid = p2_val;
+                swicc_fs_sid_kt const sid = p2_target;
                 ret_ef = swicc_disk_lutsid_lookup(swicc_state->fs.va.cur_tree,
                                                   sid, &ef_cur);
                 break;
@@ -1008,6 +1012,276 @@ static swicc_ret_et apduh_rcrd_read(swicc_st *const swicc_state,
             }
         }
     }
+    res->sw1 = SWICC_APDU_SW1_CHER_UNK;
+    res->sw2 = 0U;
+    res->data.len = 0U;
+    return SWICC_RET_SUCCESS;
+}
+
+/**
+ * @brief Handle the UPDATE RECORD command in the interindustry class.
+ * @note As described in ISO/IEC 7816-4:2020 p.82 sec.11.4.5.
+ */
+static swicc_apduh_ft apduh_rcrd_update;
+static swicc_ret_et apduh_rcrd_update(swicc_st *const swicc_state,
+                                      swicc_apdu_cmd_st const *const cmd,
+                                      swicc_apdu_res_st *const res,
+                                      uint32_t const procedure_count)
+{
+    /**
+     * Odd instruction (DD) not supported. The data would contain an offset DO
+     * and discretionary DO for encapsulating the updating data.
+     */
+    if (cmd->hdr->ins != 0xDC)
+    {
+        res->sw1 = SWICC_APDU_SW1_CHER_INS;
+        res->sw2 = 0U;
+        res->data.len = 0U;
+        return SWICC_RET_SUCCESS;
+    }
+
+    /* Which records to update. */
+    enum trgt_e
+    {
+        TRGT_EF_CUR,
+        TRGT_EF_SID,
+        TRGT_MANY,
+    } trgt;
+
+    /* Which occurrence to update when updating using an ID. */
+    __attribute__((unused)) swicc_fs_occ_et occ = SWICC_FS_OCC_FIRST;
+
+    /* What record(s) to update when updating using a number. */
+    enum what_e
+    {
+        WHAT_P1,
+        WHAT_P1_TO_LAST,
+        WHAT_LAST_TO_P1,
+        WHAT_RFU,
+    } what = WHAT_RFU;
+
+    /* Method of selecting a record to update. */
+    enum meth_e
+    {
+        METH_RCRD_ID,
+        METH_RCRD_NUM,
+    } meth;
+
+    /**
+     * Value of first 5 bits. This can be interpreted differently based on the
+     * other bits and P1.
+     */
+    uint8_t const p2_target = (cmd->hdr->p2 & 0b11111000) >> 3U;
+
+    /* Parse P1 and P2 */
+    {
+        switch (p2_target)
+        {
+        case 0b00000:
+            trgt = TRGT_EF_CUR;
+            break;
+        case 0b11111:
+            trgt = TRGT_MANY;
+            break;
+        default:
+            trgt = TRGT_EF_SID;
+            break;
+        }
+
+        if (cmd->hdr->p2 & 0b00000100)
+        {
+            meth = METH_RCRD_NUM;
+            switch (cmd->hdr->p2 & 0b00000011)
+            {
+            case 0b00:
+                what = WHAT_P1;
+                break;
+            case 0b01:
+                what = WHAT_P1_TO_LAST;
+                break;
+            case 0b10:
+                what = WHAT_LAST_TO_P1;
+                break;
+            default:
+                what = WHAT_RFU;
+                break;
+            }
+        }
+        else
+        {
+            meth = METH_RCRD_ID;
+            switch (cmd->hdr->p2 & 0b00000011)
+            {
+            case 0b00:
+                occ = SWICC_FS_OCC_FIRST;
+                break;
+            case 0b01:
+                occ = SWICC_FS_OCC_LAST;
+                break;
+            case 0b10:
+                occ = SWICC_FS_OCC_NEXT;
+                break;
+            case 0b11:
+                occ = SWICC_FS_OCC_PREV;
+                break;
+            }
+        }
+    }
+
+    /* Perform the requested operation. */
+    {
+        /**
+         * Look at `apduh_rcrd_read`.
+         */
+        if (cmd->hdr->p2 == 0b11111000 || meth == METH_RCRD_ID ||
+            trgt == TRGT_MANY)
+        {
+            res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
+            res->sw2 = 0x81; /* "Function not supported" */
+            res->data.len = 0U;
+            return SWICC_RET_SUCCESS;
+        }
+
+        /**
+         * Look at `apduh_rcrd_read`.
+         */
+        if ((trgt == TRGT_MANY && meth == METH_RCRD_ID) ||
+            (trgt == TRGT_MANY && meth == METH_RCRD_NUM) || what == WHAT_RFU ||
+            cmd->hdr->p1 == 0x00 || cmd->hdr->p1 == 0xFF ||
+            (meth == METH_RCRD_NUM && cmd->hdr->p1 < 1))
+        {
+            res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
+            res->sw2 = 0x86; /* "Incorrect parameters P1-P2" */
+            res->data.len = 0U;
+            return SWICC_RET_SUCCESS;
+        }
+
+        if (meth == METH_RCRD_NUM)
+        {
+            /* Safe cast because P1 is >0. */
+            swicc_fs_rcrd_idx_kt const rcrd_idx = (uint8_t)(cmd->hdr->p1 - 1U);
+
+            swicc_fs_file_st ef_cur;
+            swicc_ret_et ret_ef = SWICC_RET_ERROR;
+            switch (trgt)
+            {
+            case TRGT_EF_CUR: {
+                ef_cur = swicc_state->fs.va.cur_ef;
+                ret_ef = SWICC_RET_SUCCESS;
+                break;
+            }
+            case TRGT_EF_SID: {
+                swicc_fs_sid_kt const sid = p2_target;
+                ret_ef = swicc_disk_lutsid_lookup(swicc_state->fs.va.cur_tree,
+                                                  sid, &ef_cur);
+                break;
+            }
+            default:
+                /* Already rejected 'many' operation before. */
+                __builtin_unreachable();
+            }
+
+            if (ret_ef == SWICC_RET_FS_NOT_FOUND)
+            {
+                res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
+                res->sw2 = 0x82; /* "File or application not found" */
+                res->data.len = 0U;
+                return SWICC_RET_SUCCESS;
+            }
+            else if (ret_ef == SWICC_RET_SUCCESS)
+            {
+                /* Got the target EF, can read the record now. */
+                uint8_t *rcrd_buf;
+                uint8_t rcrd_len;
+                swicc_ret_et const ret_rcrd =
+                    swicc_disk_file_rcrd(swicc_state->fs.va.cur_tree, &ef_cur,
+                                         rcrd_idx, &rcrd_buf, &rcrd_len);
+                if (ret_rcrd == SWICC_RET_FS_NOT_FOUND)
+                {
+                    res->sw1 = SWICC_APDU_SW1_CHER_P1P2_INFO;
+                    res->sw2 = 0x83; /* "Record not found" */
+                    res->data.len = 0U;
+                    return SWICC_RET_SUCCESS;
+                }
+                else if (ret_rcrd == SWICC_RET_SUCCESS)
+                {
+                    /**
+                     * This command (INS=DC) expects the updated data to be sent
+                     * over. Transmit a procedure byte to get all of it.
+                     */
+                    if (procedure_count == 0U)
+                    {
+                        res->sw1 = SWICC_APDU_SW1_PROC_ACK_ALL;
+                        res->sw2 = 0U;
+                        res->data.len = rcrd_len; /* Expecting as many bytes as
+                                                     are in the record. */
+                        return SWICC_RET_SUCCESS;
+                    }
+                    else
+                    {
+                        /**
+                         * We sent an ACK ALL procedure and expected as many
+                         * bytes as are in record but got a different amount
+                         * from terminal.
+                         */
+                        if (cmd->data->len != rcrd_len)
+                        {
+                            res->sw1 = SWICC_APDU_SW1_CHER_LEN;
+                            res->sw2 = 0x02; /* The value of Lc is not the one
+                                                expected. */
+                            res->data.len = rcrd_len;
+                            return SWICC_RET_SUCCESS;
+                        }
+                    }
+
+                    /* Check if the expected response length is as expected. */
+                    if (*cmd->p3 != rcrd_len)
+                    {
+                        /**
+                         * Asking the interface to retry the command but this
+                         * time with correct expected response length.
+                         */
+                        res->sw1 = SWICC_APDU_SW1_CHER_LE;
+                        res->sw2 = rcrd_len;
+                        res->data.len = 0U;
+                        return SWICC_RET_SUCCESS;
+                    }
+
+                    /**
+                     * Have to select the file on success (only if EF was
+                     * selected by SID).
+                     * @warning If this fails, something weird is going on.
+                     */
+                    swicc_ret_et const ret_file_select =
+                        trgt == TRGT_EF_SID
+                            ? swicc_va_select_file_sid(&swicc_state->fs,
+                                                       ef_cur.hdr_file.sid)
+                            : SWICC_RET_SUCCESS;
+                    if (ret_file_select == SWICC_RET_SUCCESS)
+                    {
+                        /**
+                         * In any case, have to select the record.
+                         * @warning If this fails, something weird is going on.
+                         */
+                        swicc_ret_et const ret_rcrd_select =
+                            swicc_va_select_record_idx(&swicc_state->fs,
+                                                       rcrd_idx);
+                        if (ret_rcrd_select == SWICC_RET_SUCCESS)
+                        {
+                            /* Update the record. */
+                            memcpy(rcrd_buf, cmd->data->b, rcrd_len);
+
+                            res->sw1 = SWICC_APDU_SW1_NORM_NONE;
+                            res->sw2 = 0U;
+                            res->data.len = 0U;
+                            return SWICC_RET_SUCCESS;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     res->sw1 = SWICC_APDU_SW1_CHER_UNK;
     res->sw2 = 0U;
     res->data.len = 0U;
@@ -1159,19 +1433,19 @@ swicc_ret_et swicc_apduh_demux(swicc_st *const swicc_state,
             apduh_func = apduh_select;
             break;
         case 0xB0:
-            apduh_func = apduh_bin_read;
-            break;
         case 0xB1:
             apduh_func = apduh_bin_read;
             break;
         case 0xB2:
-            apduh_func = apduh_rcrd_read;
-            break;
         case 0xB3:
             apduh_func = apduh_rcrd_read;
             break;
         case 0xC0:
             apduh_func = apduh_res_get;
+            break;
+        case 0xDC:
+        case 0xDD:
+            apduh_func = apduh_rcrd_update;
             break;
         }
         ret = apduh_func(swicc_state, cmd, res, procedure_count);
