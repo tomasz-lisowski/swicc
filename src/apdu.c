@@ -62,7 +62,6 @@ swicc_ret_et swicc_apdu_cmd_parse(uint8_t const *const buf_raw,
         return SWICC_RET_APDU_HDR_TOO_SHORT;
     }
 
-    memset(cmd, 0, sizeof(swicc_apdu_cmd_st));
     cmd->hdr->cla = swicc_apdu_cmd_cla_parse(buf_raw[0]);
     cmd->hdr->ins = buf_raw[1U];
     cmd->hdr->p1 = buf_raw[2U];
