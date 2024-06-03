@@ -21,7 +21,6 @@ MAIN_CC_FLAGS:=\
 	-Wno-unused-parameter \
 	-Wconversion \
 	-Wshadow \
-	-static \
 	-fPIC \
 	-O2 \
 	-I$(DIR_INCLUDE) \
