@@ -21,8 +21,8 @@ MAIN_CC_FLAGS:=\
 	-Wno-unused-parameter \
 	-Wconversion \
 	-Wshadow \
-	-fPIC \
 	-O2 \
+	-fPIC \
 	-I$(DIR_INCLUDE) \
 	-I$(DIR_LIB)/cjson \
 	-L$(DIR_LIB)/cjson/build \
@@ -41,6 +41,7 @@ TEST_CC_FLAGS:=\
 	-Wconversion \
 	-Wshadow \
 	-O2 \
+	-fPIC \
 	-I$(DIR_INCLUDE) \
 	-I$(DIR_TEST)/$(DIR_INCLUDE) \
 	-I$(DIR_LIB)/cjson \
@@ -55,12 +56,16 @@ all: main test
 main: $(DIR_BUILD)/$(LIB_PREFIX)$(MAIN_NAME).$(EXT_LIB_STATIC)
 main-dbg: MAIN_CC_FLAGS+=-g -DDEBUG
 main-dbg: main
-.PHONY: main main-dbg
+main-static: MAIN_CC_FLAGS+=-static
+main-static: main
+.PHONY: main main-dbg main-static
 
 test: main $(DIR_BUILD)/$(DIR_TEST).$(EXT_BIN)
 test-dbg: TEST_CC_FLAGS+=-g -DDEBUG -fsanitize=address
 test-dbg: test
-.PHONY: test test-dbg
+test-static: TEST_CC_FLAGS+=-static
+test-static: test
+.PHONY: test test-dbg test-static
 
 # Create the swICC static lib.
 $(DIR_BUILD)/$(LIB_PREFIX)$(MAIN_NAME).$(EXT_LIB_STATIC): $(DIR_BUILD) $(DIR_BUILD)/$(MAIN_NAME) $(DIR_BUILD)/cjson $(DIR_LIB)/cjson/build/libcjson.a $(MAIN_OBJ)
