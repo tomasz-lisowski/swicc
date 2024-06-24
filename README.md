@@ -2,11 +2,11 @@
 
 > Project **needs** to be cloned recursively. Downloading the ZIP is not enough.
 
-Software ICC (or swICC) is a framework providing an easy and flexible way to develop most types of smart cards. It also allows any swICC-based card to be connected to the PC through the [PC/SC](https://en.wikipedia.org/wiki/PC/SC) interface (using the [swICC PC/SC reader](https://github.com/tomasz-lisowski/swicc__pcsc)) which is the de facto standard for connecting smart cards to PCs.
+Software ICC (or swICC) is a framework providing an easy and flexible way to develop most types of smart cards. It also allows any swICC-based card to be connected to the PC through the [PC/SC](https://en.wikipedia.org/wiki/PC/SC) interface (using the [swICC PC/SC reader](https://github.com/tomasz-lisowski/swicc-pcsc)) which is the de facto standard for connecting smart cards to PCs.
 
 ## Scope
 - Framework for developing smart cards in software, with no hardware dependencies.
-- Any swICC-based card can connect to the PC via PC/SC using the [swICC PC/SC reader](https://github.com/tomasz-lisowski/swicc__pcsc).
+- Any swICC-based card can connect to the PC via PC/SC using the [swICC PC/SC reader](https://github.com/tomasz-lisowski/swicc-pcsc).
 - Smart card file system can be defined using JSON, examples present in `./test/data/disk`. The FS can be saved to disk as a `.swiccfs` file, and loaded back into the card.
 - Plenty debug utilities.
 - Includes an easy-to-use BER-TLV implementation.
@@ -97,7 +97,7 @@ int32_t main(int32_t const argc, char const *const argv[const argc])
 </details>
 
 5. `gcc main.c -I../include -L../build -lswicc -o card.elf` to build the card.
-6. To interact with the card over PC/SC, you will need to start a swICC card server, e.g., the [swICC PC/SC reader](https://github.com/tomasz-lisowski/swicc__pcsc).
+6. To interact with the card over PC/SC, you will need to start a swICC card server, e.g., the [swICC PC/SC reader](https://github.com/tomasz-lisowski/swicc-pcsc).
 7. `./card.elf` which will connect the card to the card reader.
 8. `pcsc_scan` (part of the `pcsc-tools` package) will show some details of the card.
 9. You can begin interacting with the card through PC/SC as you would with a real card.
