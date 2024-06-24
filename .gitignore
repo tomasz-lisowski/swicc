@@ -1,9 +1,13 @@
-# Compiler output
+# Compiler output.
 build/
 build-lib/
 
-# Clangd config
+# Clangd config.
 compile_flags.txt
 
-# Ignore example
+# Ignore example.
 example/
+
+# Docker output.
+docker/
+docker.log

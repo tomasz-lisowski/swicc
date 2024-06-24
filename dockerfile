@@ -1,11 +1,9 @@
-# docker build --progress=plain . -t tomasz-lisowski/swicc:1.0.0 2>&1 | tee build.log;
-# docker run -v ./build:/opt/swicc/build/host --tty --rm tomasz-lisowski/swicc:1.0.0;
-
 FROM ubuntu:22.04 AS base
 
 RUN set -eux; \
     apt-get -qq update; \
     apt-get -qq --yes dist-upgrade;
+
 
 FROM base AS base__swicc
 COPY . /opt/swicc
@@ -17,6 +15,14 @@ RUN set -eux; \
     make -j $(nproc) main-static test-static; \
     apt-get -qq --yes purge ${DEP};
 
+
 FROM base
-COPY --from=base__swicc /opt/swicc/build /opt/swicc/build/local
-ENTRYPOINT [ "/bin/bash", "-c", "(cp -r /opt/swicc/build/local/*.a /opt/swicc/build/host) && (cp -r /opt/swicc/build/local/*.elf /opt/swicc/build/host) && (mkdir -p /opt/swicc/build/host/tmp)" ]
+COPY --from=base__swicc /opt/swicc/build /opt/swicc/build
+COPY --from=base__swicc /opt/swicc/test/data /opt/swicc/test/data
+
+RUN set -eux; \
+    rm -r /opt/swicc/build/swicc; \
+    rm -r /opt/swicc/build/test; \
+    rm -r /opt/swicc/build/cjson;
+
+ENTRYPOINT [ "bash", "-c", "cp -r /opt/swicc/* /opt/out" ]
