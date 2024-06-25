@@ -9,5 +9,4 @@ compile_flags.txt
 example/
 
 # Docker output.
-docker/
 docker.log
