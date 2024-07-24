@@ -56,7 +56,10 @@ typedef struct swicc_net_msg_data_s
     /* Holds both control requests and success/failure of the request. */
     uint8_t ctrl;
 
-    uint8_t buf[SWICC_DATA_MAX];
+    /**
+     * +2 because we can have 256 bytes of response followed by 2 status bytes.
+     */
+    uint8_t buf[SWICC_DATA_MAX + 2U];
 } __attribute__((packed)) swicc_net_msg_data_st;
 
 /* Expected message format. */
