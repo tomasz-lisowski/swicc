@@ -19,7 +19,7 @@ swicc_ret_et swicc_dbg_net_msg_str(char *const buf_str,
         "\n        ("CLR_KND("Control")" "CLR_VAL("0x%02X")")"
         "\n        ("CLR_KND("Cont")" "CLR_VAL("0x%08X")")"
         "\n        ("CLR_KND("BufLenExp")" "CLR_VAL("%u")")"
-        "\n        ("CLR_KND("Buf")" [",
+        "\n        ("CLR_KND("Buf")" [ ",
         // clang-format on
         prestr, msg->hdr.size, msg->data.ctrl, msg->data.cont_state,
         msg->data.buf_len_exp);
@@ -33,10 +33,10 @@ swicc_ret_et swicc_dbg_net_msg_str(char *const buf_str,
     }
     uint16_t len = (uint16_t)len_base;
 
-    if (msg->hdr.size > sizeof(msg->data.buf) ||
+    if (msg->hdr.size > sizeof(msg->data) ||
         msg->hdr.size < offsetof(swicc_net_msg_data_st, buf))
     {
-        char const str_inv[] = CLR_VAL("invalid");
+        char const str_inv[] = CLR_VAL("invalid ");
         if (len + strlen(str_inv) > *buf_str_len)
         {
             return SWICC_RET_BUFFER_TOO_SHORT;
@@ -57,7 +57,7 @@ swicc_ret_et swicc_dbg_net_msg_str(char *const buf_str,
              */
             int32_t const len_extra =
                 snprintf(&buf_str[len], (uint16_t)(*buf_str_len - len),
-                         CLR_VAL(" %02X"), msg->data.buf[data_idx]);
+                         CLR_VAL("%02X "), msg->data.buf[data_idx]);
             if (len_extra < 0)
             {
                 return SWICC_RET_ERROR;
@@ -71,7 +71,7 @@ swicc_ret_et swicc_dbg_net_msg_str(char *const buf_str,
             len = (uint16_t)(len + (uint16_t)len_extra);
         }
     }
-    char const str_end[] = " ])))";
+    char const str_end[] = "])))";
     if (len + strlen(str_end) > *buf_str_len)
     {
         return SWICC_RET_BUFFER_TOO_SHORT;
