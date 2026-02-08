@@ -436,7 +436,23 @@ static void fsm_handle_s_cmd_procedure(swicc_st *const swicc_state)
                     return;
                 }
             }
+            else
+            {
+                /**
+                 * When deparsing the response fails, we need to send back a
+                 * status word here. We assume the TX buffer can hold 2 bytes
+                 * for the status word. If we don't send anything back, the PCSC
+                 * transaction will break due to an incomplete command.
+                 */
+                swicc_state->internal.tpdu_processed = true;
+                swicc_state->internal.fsm_state = SWICC_FSM_STATE_CMD_WAIT;
+                swicc_state->buf_tx[0] = SWICC_APDU_SW1_CHER_UNK;
+                swicc_state->buf_tx[1] = 0x00;
+                swicc_state->buf_tx_len = 2U;
+                return;
+            }
         }
+
         /**
          * Contact state is still fine so just return to waiting for command.
          */
