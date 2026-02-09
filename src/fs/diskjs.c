@@ -679,89 +679,104 @@ static swicc_ret_et jsitem_prs_file_ef_linearfixed(cJSON const *const item_json,
                  * Forcing this cast because the number in the JSON should
                  * have been a natural number.
                  */
-                uint8_t const rcrd_size =
-                    (uint8_t)cJSON_GetNumberValue(rcrd_size_obj);
-                ef_hdr_raw->rcrd_size = rcrd_size;
+                size_t const rcrd_size__unlimited =
+                    (size_t)cJSON_GetNumberValue(rcrd_size_obj);
+                if (rcrd_size__unlimited <= UINT8_MAX)
+                {
+                    uint8_t const rcrd_size = (uint8_t)rcrd_size__unlimited;
+                    ef_hdr_raw->rcrd_size = rcrd_size;
 
-                cJSON *const contents_arr =
-                    cJSON_GetObjectItemCaseSensitive(item_json, "contents");
-                swicc_ret_et ret_item = SWICC_RET_ERROR;
-                uint32_t contents_len = 0U; /* Parsed length. */
-                if (contents_arr != NULL && cJSON_IsNull(contents_arr) == true)
-                {
-                    contents_len = 0U;
-                    ret_item = SWICC_RET_SUCCESS;
-                }
-                else if (contents_arr != NULL &&
-                         cJSON_IsArray(contents_arr) == true)
-                {
-                    cJSON *item = NULL;
-                    cJSON_ArrayForEach(item, contents_arr)
+                    cJSON *const contents_arr =
+                        cJSON_GetObjectItemCaseSensitive(item_json, "contents");
+                    swicc_ret_et ret_item = SWICC_RET_ERROR;
+                    uint32_t contents_len = 0U; /* Parsed length. */
+                    if (contents_arr != NULL &&
+                        cJSON_IsNull(contents_arr) == true)
                     {
-                        /* Make sure another record can fit. */
-                        if (hdr_len + contents_len + ef_hdr_raw->rcrd_size >
-                            *buf_len)
+                        contents_len = 0U;
+                        ret_item = SWICC_RET_SUCCESS;
+                    }
+                    else if (contents_arr != NULL &&
+                             cJSON_IsArray(contents_arr) == true)
+                    {
+                        cJSON *item = NULL;
+                        cJSON_ArrayForEach(item, contents_arr)
+                        {
+                            /* Make sure another record can fit. */
+                            if (hdr_len + contents_len + ef_hdr_raw->rcrd_size >
+                                *buf_len)
+                            {
+                                ret_item = SWICC_RET_BUFFER_TOO_SHORT;
+                                break;
+                            }
+                            /* Safe cast due to size check. */
+                            uint32_t item_size =
+                                (uint32_t)(*buf_len - (hdr_len + contents_len));
+                            /**
+                             * By default, unused space must be filled with
+                             * 0xFF.
+                             */
+                            memset(&buf[hdr_len + contents_len], 0xFF,
+                                   ef_hdr_raw->rcrd_size);
+                            ret_item = jsitem_prs_demux(
+                                item, hdr_len + contents_len,
+                                &buf[hdr_len + contents_len], &item_size);
+                            if (ret_item != SWICC_RET_SUCCESS ||
+                                item_size > ef_hdr_raw->rcrd_size)
+                            {
+                                ret_item = SWICC_RET_ERROR;
+                                break;
+                            }
+
+                            /* Every item must have the same length. */
+                            contents_len += ef_hdr_raw->rcrd_size;
+                        }
+                        /* This would mean the contents array is empty. */
+                        if (item == NULL)
+                        {
+                            ret_item = SWICC_RET_SUCCESS;
+                        }
+
+                        /**
+                         * Enusre the buffer is not overflown with the parsed
+                         * items.
+                         */
+                        if (hdr_len + contents_len > *buf_len)
                         {
                             ret_item = SWICC_RET_BUFFER_TOO_SHORT;
-                            break;
                         }
-                        /* Safe cast due to size check. */
-                        uint32_t item_size =
-                            (uint32_t)(*buf_len - (hdr_len + contents_len));
-                        /**
-                         * By default, unused space must be filled with 0xFF.
-                         */
-                        memset(&buf[hdr_len + contents_len], 0xFF,
-                               ef_hdr_raw->rcrd_size);
-                        ret_item = jsitem_prs_demux(
-                            item, hdr_len + contents_len,
-                            &buf[hdr_len + contents_len], &item_size);
-                        if (ret_item != SWICC_RET_SUCCESS ||
-                            item_size > ef_hdr_raw->rcrd_size)
-                        {
-                            ret_item = SWICC_RET_ERROR;
-                            break;
-                        }
-
-                        /* Every item must have the same length. */
-                        contents_len += ef_hdr_raw->rcrd_size;
                     }
-                    /* This would mean the contents array is empty. */
-                    if (item == NULL)
+                    else
                     {
-                        ret_item = SWICC_RET_SUCCESS;
+                        fprintf(
+                            stderr,
+                            "File EF linear-fixed/cyclic: 'contents' missing or not of type: null, array.\n");
                     }
 
                     /**
-                     * Enusre the buffer is not overflown with the parsed items.
+                     * The buffer size was already checked and the items +
+                     * header will fit inside it.
                      */
-                    if (hdr_len + contents_len > *buf_len)
+                    if (ret_item == SWICC_RET_SUCCESS)
                     {
-                        ret_item = SWICC_RET_BUFFER_TOO_SHORT;
+                        file_raw->hdr_item.type =
+                            SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED;
+                        file_raw->hdr_item.lcs = SWICC_FS_LCS_OPER_ACTIV;
+                        /* Safe cast due to check on buffer length. */
+                        file_raw->hdr_item.size =
+                            (uint32_t)(hdr_len + contents_len);
+                        *buf_len = file_raw->hdr_item.size;
                     }
+                    ret = ret_item;
                 }
                 else
                 {
                     fprintf(
                         stderr,
-                        "File EF linear-fixed/cyclic: 'contents' missing or not of type: null, array.\n");
+                        "File EF linear-fixed/cyclic: 'rcrd_size' is too large: max=%u rcrd_size=%lu.\n",
+                        UINT8_MAX, rcrd_size__unlimited);
+                    ret = SWICC_RET_ERROR;
                 }
-
-                /**
-                 * The buffer size was already checked and the items + header
-                 * will fit inside it.
-                 */
-                if (ret_item == SWICC_RET_SUCCESS)
-                {
-                    file_raw->hdr_item.type =
-                        SWICC_FS_ITEM_TYPE_FILE_EF_LINEARFIXED;
-                    file_raw->hdr_item.lcs = SWICC_FS_LCS_OPER_ACTIV;
-                    /* Safe cast due to check on buffer length. */
-                    file_raw->hdr_item.size =
-                        (uint32_t)(hdr_len + contents_len);
-                    *buf_len = file_raw->hdr_item.size;
-                }
-                ret = ret_item;
             }
             else
             {
