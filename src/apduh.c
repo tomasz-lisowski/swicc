@@ -608,7 +608,7 @@ static swicc_ret_et apduh_bin_read(swicc_st *const swicc_state,
         }
     }
 
-    uint8_t const len_expected = *cmd->p3;
+    uint16_t const len_expected = *cmd->p3 == 0 ? 256 : *cmd->p3;
     uint16_t offset;
     swicc_fs_file_st file;
 
@@ -692,7 +692,7 @@ static swicc_ret_et apduh_bin_read(swicc_st *const swicc_state,
             res->data.len = 0U;
             return SWICC_RET_SUCCESS;
         }
-        else if (offset + len_expected > file.data_size)
+        else if ( (uint32_t)offset + (uint32_t)len_expected > file.data_size)
         {
             res->sw1 = SWICC_APDU_SW1_CHER_LE;
             /* Safe cast since offset is less than data size. */
